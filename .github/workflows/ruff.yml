@@ -15,11 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Ruff Linter
-        uses: astral-sh/ruff-action@v3.3.1
+        uses: astral-sh/ruff-action@v3
         with:
           args: "check --output-format=github"
 
       - name: Run Ruff Formatter
-        uses: astral-sh/ruff-action@v3.3.1
+        uses: astral-sh/ruff-action@v3
         with:
           args: "format --check --diff"
