@@ -12,11 +12,10 @@ from pydantic import BaseModel, field_validator, ValidationInfo
 import re
 from thefuzz import fuzz
 import asyncio
-from typing import Optional, Union
+from typing import Optional,Union
 
 # Rich imports handled by Kura base class
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from rich.console import Console
 
@@ -69,7 +68,7 @@ class MetaClusterModel(BaseMetaClusterModel):
     def checkpoint_filename(self) -> str:
         """The filename to use for checkpointing this model's output."""
         return "meta_clusters.jsonl"
-
+    
     def __init__(
         self,
         max_concurrent_requests: int = 50,
@@ -77,82 +76,62 @@ class MetaClusterModel(BaseMetaClusterModel):
         embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
         clustering_model: Union[BaseClusteringMethod, None] = None,
         max_clusters: int = 10,
-        console: Optional["Console"] = None,
+        console: Optional['Console'] = None,
         **kwargs,  # For future use
     ):
         if clustering_model is None:
             from kura.k_means import KmeansClusteringMethod
-
             clustering_model = KmeansClusteringMethod(12)
-
+        
         self.max_concurrent_requests = max_concurrent_requests
         self.client = instructor.from_provider(model, async_client=True)
         self.console = console
         self.max_clusters = max_clusters
-
+        
         if embedding_model is None:
             embedding_model = OpenAIEmbeddingModel()
-
+        
         self.embedding_model = embedding_model
         self.clustering_model = clustering_model
         self.model = model
         self.console = console
-
+        
         # Debug: Check if console is set
         if self.console:
             print(f"MetaClusterModel: Console is set to {type(self.console)}")
         else:
-            print(
-                "MetaClusterModel: Console is None - Rich progress bars will not be available"
-            )
+            print("MetaClusterModel: Console is None - Rich progress bars will not be available")
 
-    async def _gather_with_progress(
-        self,
-        tasks,
-        desc: str = "Processing",
-        disable: bool = False,
-        show_preview: bool = False,
-    ):
+    async def _gather_with_progress(self, tasks, desc: str = "Processing", disable: bool = False, show_preview: bool = False):
         """Helper method to run async gather with Rich progress bar if available, otherwise tqdm."""
         if self.console and not disable:
             try:
-                from rich.progress import (
-                    Progress,
-                    SpinnerColumn,
-                    TextColumn,
-                    BarColumn,
-                    TaskProgressColumn,
-                    TimeRemainingColumn,
-                )
+                from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
                 from rich.live import Live
                 from rich.layout import Layout
                 from rich.panel import Panel
                 from rich.text import Text
                 from rich.errors import LiveError
-
+                
                 # Check if a Live display is already active by trying to get the current live instance
                 try:
                     # Try to access the console's current live instance
-                    if (
-                        hasattr(self.console, "_live")
-                        and self.console._live is not None
-                    ):
-                        show_preview = (
-                            False  # Disable preview if Live is already active
-                        )
+                    if hasattr(self.console, '_live') and self.console._live is not None:
+                        show_preview = False  # Disable preview if Live is already active
                 except AttributeError:
                     pass  # Console doesn't have _live attribute, that's fine
-
+                
                 if show_preview:
                     # Use Live display with progress and preview buffer
                     layout = Layout()
                     layout.split_column(
-                        Layout(name="progress", size=3), Layout(name="preview")
+                        Layout(name="progress", size=3),
+                        Layout(name="preview")
                     )
-
+                    
                     preview_buffer = []
                     max_preview_items = 3
-
+                    
                     # Create progress with cleaner display
                     progress = Progress(
                         SpinnerColumn(),
@@ -160,11 +139,11 @@ class MetaClusterModel(BaseMetaClusterModel):
                         BarColumn(),
                         TaskProgressColumn(),
                         TimeRemainingColumn(),
-                        console=self.console,
+                        console=self.console
                     )
                     task_id = progress.add_task(f"[cyan]{desc}...", total=len(tasks))
                     layout["progress"].update(progress)
-
+                    
                     try:
                         with Live(layout, console=self.console, refresh_per_second=4):
                             completed_tasks = []
@@ -172,54 +151,36 @@ class MetaClusterModel(BaseMetaClusterModel):
                                 result = await task
                                 completed_tasks.append(result)
                                 progress.update(task_id, completed=i + 1)
-
+                                
                                 # Handle different result types
                                 if isinstance(result, list):
                                     # For operations that return lists of clusters
                                     for item in result:
-                                        if (
-                                            hasattr(item, "name")
-                                            and hasattr(item, "description")
-                                            and item.parent_id is None
-                                        ):
+                                        if hasattr(item, 'name') and hasattr(item, 'description') and item.parent_id is None:
                                             preview_buffer.append(item)
                                             if len(preview_buffer) > max_preview_items:
                                                 preview_buffer.pop(0)
-                                elif hasattr(result, "name") and hasattr(
-                                    result, "description"
-                                ):
+                                elif hasattr(result, 'name') and hasattr(result, 'description'):
                                     # For operations that return single clusters
                                     preview_buffer.append(result)
                                     if len(preview_buffer) > max_preview_items:
                                         preview_buffer.pop(0)
-
+                                
                                 # Update preview display if we have clusters
                                 if preview_buffer:
                                     preview_text = Text()
                                     for j, cluster in enumerate(preview_buffer):
-                                        preview_text.append(
-                                            "Meta Cluster: ", style="bold magenta"
-                                        )
-                                        preview_text.append(
-                                            f"{cluster.name[:80]}...\n",
-                                            style="bold white",
-                                        )
-                                        preview_text.append(
-                                            "Description: ", style="bold cyan"
-                                        )
-                                        preview_text.append(
-                                            f"{cluster.description[:100]}...\n\n",
-                                            style="dim white",
-                                        )
-
-                                    layout["preview"].update(
-                                        Panel(
-                                            preview_text,
-                                            title=f"[magenta]Recent Meta Clusters ({len(preview_buffer)}/{max_preview_items})",
-                                            border_style="magenta",
-                                        )
-                                    )
-
+                                        preview_text.append("Meta Cluster: ", style="bold magenta")
+                                        preview_text.append(f"{cluster.name[:80]}...\n", style="bold white")
+                                        preview_text.append("Description: ", style="bold cyan")
+                                        preview_text.append(f"{cluster.description[:100]}...\n\n", style="dim white")
+                                    
+                                    layout["preview"].update(Panel(
+                                        preview_text,
+                                        title=f"[magenta]Recent Meta Clusters ({len(preview_buffer)}/{max_preview_items})",
+                                        border_style="magenta"
+                                    ))
+                            
                             return completed_tasks
                     except LiveError:
                         # If Rich Live fails (e.g., another Live is active), fall back to simple progress
@@ -238,22 +199,20 @@ class MetaClusterModel(BaseMetaClusterModel):
                         BarColumn(),
                         TaskProgressColumn(),
                         TimeRemainingColumn(),
-                        console=self.console,
+                        console=self.console
                     )
-
+                    
                     with progress:
-                        task_id = progress.add_task(
-                            f"[cyan]{desc}...", total=len(tasks)
-                        )
-
+                        task_id = progress.add_task(f"[cyan]{desc}...", total=len(tasks))
+                        
                         completed_tasks = []
                         for i, task in enumerate(asyncio.as_completed(tasks)):
                             result = await task
                             completed_tasks.append(result)
                             progress.update(task_id, completed=i + 1)
-
+                        
                         return completed_tasks
-
+                        
             except (ImportError, LiveError):
                 # Rich not available or Live error, run silently
                 return await asyncio.gather(*tasks)
@@ -423,35 +382,24 @@ Based on this information, determine the most appropriate higher-level cluster a
 
             return res
 
-    async def generate_meta_clusters(
-        self, clusters: list[Cluster], show_preview: bool = True
-    ) -> list[Cluster]:
+    async def generate_meta_clusters(self, clusters: list[Cluster], show_preview: bool = True) -> list[Cluster]:
         # Use a single Live display for the entire meta clustering operation
         if self.console and show_preview:
             try:
-                from rich.progress import (
-                    Progress,
-                    SpinnerColumn,
-                    TextColumn,
-                    BarColumn,
-                    TaskProgressColumn,
-                    TimeRemainingColumn,
-                )
+                from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
                 from rich.live import Live
                 from rich.layout import Layout
                 from rich.panel import Panel
                 from rich.text import Text
                 from rich.errors import LiveError
-
+                
                 # Create layout for the entire meta clustering operation
                 layout = Layout()
                 layout.split_column(
-                    Layout(
-                        name="progress", size=6
-                    ),  # More space for multiple progress bars
-                    Layout(name="preview"),
+                    Layout(name="progress", size=6),  # More space for multiple progress bars
+                    Layout(name="preview")
                 )
-
+                
                 # Create progress display
                 progress = Progress(
                     SpinnerColumn(),
@@ -459,107 +407,85 @@ Based on this information, determine the most appropriate higher-level cluster a
                     BarColumn(),
                     TaskProgressColumn(),
                     TimeRemainingColumn(),
-                    console=self.console,
+                    console=self.console
                 )
                 layout["progress"].update(progress)
-
+                
                 preview_buffer = []
                 max_preview_items = 3
-
+                
                 try:
                     with Live(layout, console=self.console, refresh_per_second=4):
                         # Step 1: Generate candidate clusters
                         candidate_labels = await self.generate_candidate_clusters(
                             clusters, Semaphore(self.max_concurrent_requests)
                         )
-
+                        
                         # Step 2: Label clusters with progress
-                        label_task_id = progress.add_task(
-                            "[cyan]Labeling clusters...", total=len(clusters)
-                        )
+                        label_task_id = progress.add_task("[cyan]Labeling clusters...", total=len(clusters))
                         cluster_labels = []
                         for i, cluster in enumerate(clusters):
                             result = await self.label_cluster(cluster, candidate_labels)
                             cluster_labels.append(result)
                             progress.update(label_task_id, completed=i + 1)
-
+                        
                         # Group clusters by label
                         label_to_clusters = {}
                         for label in cluster_labels:
                             if label["label"] not in label_to_clusters:
                                 label_to_clusters[label["label"]] = []
                             label_to_clusters[label["label"]].append(label["cluster"])
-
+                        
                         # Step 3: Rename cluster groups with progress and preview
-                        rename_task_id = progress.add_task(
-                            "[cyan]Renaming cluster groups...",
-                            total=len(label_to_clusters),
-                        )
+                        rename_task_id = progress.add_task("[cyan]Renaming cluster groups...", total=len(label_to_clusters))
                         new_clusters = []
                         for i, cluster_group in enumerate(label_to_clusters.values()):
                             result = await self.rename_cluster_group(cluster_group)
                             new_clusters.append(result)
                             progress.update(rename_task_id, completed=i + 1)
-
+                            
                             # Update preview with new meta clusters
                             for cluster_list in result:
                                 for cluster in cluster_list:
-                                    if (
-                                        hasattr(cluster, "name")
-                                        and hasattr(cluster, "description")
-                                        and cluster.parent_id is None
-                                    ):
+                                    if hasattr(cluster, 'name') and hasattr(cluster, 'description') and cluster.parent_id is None:
                                         preview_buffer.append(cluster)
                                         if len(preview_buffer) > max_preview_items:
                                             preview_buffer.pop(0)
-
+                            
                             # Update preview display
                             if preview_buffer:
                                 preview_text = Text()
                                 for j, cluster in enumerate(preview_buffer):
-                                    preview_text.append(
-                                        "Meta Cluster: ", style="bold magenta"
-                                    )
-                                    preview_text.append(
-                                        f"{cluster.name[:80]}...\n", style="bold white"
-                                    )
-                                    preview_text.append(
-                                        "Description: ", style="bold cyan"
-                                    )
-                                    preview_text.append(
-                                        f"{cluster.description[:100]}...\n\n",
-                                        style="dim white",
-                                    )
-
-                                layout["preview"].update(
-                                    Panel(
-                                        preview_text,
-                                        title=f"[magenta]Recent Meta Clusters ({len(preview_buffer)}/{max_preview_items})",
-                                        border_style="magenta",
-                                    )
-                                )
-
+                                    preview_text.append("Meta Cluster: ", style="bold magenta")
+                                    preview_text.append(f"{cluster.name[:80]}...\n", style="bold white")
+                                    preview_text.append("Description: ", style="bold cyan")
+                                    preview_text.append(f"{cluster.description[:100]}...\n\n", style="dim white")
+                                
+                                layout["preview"].update(Panel(
+                                    preview_text,
+                                    title=f"[magenta]Recent Meta Clusters ({len(preview_buffer)}/{max_preview_items})",
+                                    border_style="magenta"
+                                ))
+                        
                         # Flatten results
                         res = []
                         for new_cluster in new_clusters:
                             res.extend(new_cluster)
-
+                        
                         return res
-
+                        
                 except LiveError:
                     # Fall back to the original method without Live display
                     return await self._generate_meta_clusters_fallback(clusters)
-
+                    
             except ImportError:
                 # Rich not available, fall back
                 return await self._generate_meta_clusters_fallback(clusters)
         else:
             # No console or preview disabled, use original method
             return await self._generate_meta_clusters_fallback(clusters)
-
-    async def _generate_meta_clusters_fallback(
-        self, clusters: list[Cluster]
-    ) -> list[Cluster]:
+    
+    async def _generate_meta_clusters_fallback(self, clusters: list[Cluster]) -> list[Cluster]:
         """Fallback method for generate_meta_clusters when Live display is not available"""
         candidate_labels = await self.generate_candidate_clusters(
             clusters, Semaphore(self.max_concurrent_requests)
@@ -639,9 +565,7 @@ Description: {cluster.description}
 
         new_clusters = await self._gather_with_progress(
             [
-                self.generate_meta_clusters(
-                    cluster_id_to_clusters[cluster_id], show_preview=True
-                )
+                self.generate_meta_clusters(cluster_id_to_clusters[cluster_id], show_preview=True)
                 for cluster_id in cluster_id_to_clusters
             ],
             desc="Generating Meta Clusters",
