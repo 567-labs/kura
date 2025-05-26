@@ -28,7 +28,6 @@ with timer("Importing kura modules"):
     
     # Import v1 visualization functions
     from kura.v1.visualization import (
-        visualise_clusters,
         visualise_clusters_enhanced,
         visualise_clusters_rich,
         visualise_from_checkpoint_manager,

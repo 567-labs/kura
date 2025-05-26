@@ -5,7 +5,6 @@ from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
 from kura.cluster import ClusterModel
 from kura.visualization import ClusterVisualizer
-import shutil
 from kura.base_classes import (
     BaseEmbeddingModel,
     BaseSummaryModel,
