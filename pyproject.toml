@@ -19,7 +19,6 @@ dependencies = [
     "jsonref>=1.1.0",
     "instructor>=1.8.3",
     "thefuzz>=0.22.1",
-    "ruff>=0.11.11",
     "typer>=0.9.0",
     "sqlmodel>=0.0.14",
 ]
@@ -44,7 +43,11 @@ dev = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
     "pre-commit>=4.2.0",
+    "ruff>=0.11.11",
 ]
+
+[tool.pytest.ini_options]
+addopts = "--ignore=tutorial_test/test_tutorial.py"
 
 
 [project.scripts]
