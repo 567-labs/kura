@@ -1,5 +1,5 @@
 from asyncio import Semaphore, gather
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 import instructor
 from tqdm.asyncio import tqdm_asyncio
