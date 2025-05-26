@@ -237,7 +237,7 @@ class ClusterVisualizer:
         print("🎯 ENHANCED CLUSTER VISUALIZATION")
         print("="*80)
         
-        with open(self.meta_cluster_checkpoint_path) as f:
+        with open(self.kura.meta_cluster_checkpoint_path) as f:
             clusters = [Cluster.model_validate_json(line) for line in f]
 
         node_id_to_cluster = {}

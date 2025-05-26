@@ -27,8 +27,8 @@ class SummaryModel(BaseSummaryModel):
         max_concurrent_requests: int = 50,
         extractors: list[
             Callable[
-                [Conversation, Semaphore, dict[str, Any]],
-                dict,
+                [Conversation, Semaphore],
+                Union[ExtractedProperty, list[ExtractedProperty]]
             ]
         ] = [],
         console: Optional['Console'] = None,
@@ -166,7 +166,7 @@ class SummaryModel(BaseSummaryModel):
                         
                         return completed_tasks
                         
-            except (ImportError, LiveError):
+            except (ImportError, LiveError): #type: ignore
                 # Rich not available or Live error, fall back to simple print statements
                 self.console.print(f"[cyan]Starting {desc}...[/cyan]")
                 completed_tasks = []

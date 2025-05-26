@@ -53,15 +53,15 @@ class Kura:
     
     def __init__(
         self,
-        embedding_model: BaseEmbeddingModel = None,
-        summarisation_model: BaseSummaryModel = None,
-        cluster_model: BaseClusterModel = None,
-        meta_cluster_model: BaseMetaClusterModel = None,
+        embedding_model: Union[BaseEmbeddingModel, None] = None,
+        summarisation_model: Union[BaseSummaryModel, None] = None,
+        cluster_model: Union[BaseClusterModel, None] = None,
+        meta_cluster_model: Union[BaseMetaClusterModel, None] = None,
         dimensionality_reduction: BaseDimensionalityReduction = HDBUMAP(),
         checkpoint_dir: str = "./checkpoints",
         conversation_checkpoint_name: str = "conversations.json",
         disable_checkpoints: bool = False,
-        console: Optional['Console'] = None,
+        console: Optional['Console'] = None, # type: ignore
         disable_progress: bool = False,
         **kwargs, # For future use
     ):
@@ -86,8 +86,8 @@ class Kura:
             rather than constructor arguments.
         """
         # Initialize Rich console if available and not provided
-        if console is None and RICH_AVAILABLE and not disable_progress:
-            self.console = Console()
+        if console is None and RICH_AVAILABLE and not disable_progress and Console:
+            self.console =  Console()
         else:
             self.console = console
         
@@ -219,7 +219,7 @@ class Kura:
 
         print(f"Starting with {len(root_clusters)} clusters")
 
-        while len(root_clusters) > self.meta_cluster_model.max_clusters:
+        while len(root_clusters) > self.meta_cluster_model.max_clusters: #type: ignore
             # We get the updated list of clusters
             new_current_level = await self.meta_cluster_model.reduce_clusters(
                 root_clusters

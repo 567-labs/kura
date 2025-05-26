@@ -215,7 +215,7 @@ class MetaClusterModel(BaseMetaClusterModel):
                         
                         return completed_tasks
                         
-            except (ImportError, LiveError):
+            except (ImportError, LiveError): #type: ignore
                 # Rich not available or Live error, run silently
                 return await asyncio.gather(*tasks)
         else:
@@ -447,12 +447,11 @@ Based on this information, determine the most appropriate higher-level cluster a
                             progress.update(rename_task_id, completed=i + 1)
                             
                             # Update preview with new meta clusters
-                            for cluster_list in result:
-                                for cluster in cluster_list:
-                                    if hasattr(cluster, 'name') and hasattr(cluster, 'description') and cluster.parent_id is None:
-                                        preview_buffer.append(cluster)
-                                        if len(preview_buffer) > max_preview_items:
-                                            preview_buffer.pop(0)
+                            for cluster in result:
+                                if hasattr(cluster, 'name') and hasattr(cluster, 'description') and cluster.parent_id is None:
+                                    preview_buffer.append(cluster)
+                                    if len(preview_buffer) > max_preview_items:
+                                        preview_buffer.pop(0)
                             
                             # Update preview display
                             if preview_buffer:
@@ -563,7 +562,7 @@ Description: {cluster.description}
 
         cluster_id_to_clusters: dict[int, list[Cluster]] = (
             self.clustering_model.cluster(clusters_and_embeddings)
-        )
+        ) #type: ignore
 
         new_clusters = await self._gather_with_progress(
             [
