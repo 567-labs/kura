@@ -34,7 +34,7 @@ class GeneratedLabel(BaseModel):
     def validate_cluster_slugs(
         cls, cluster_slugs: list[str], info: ValidationInfo
     ) -> list[str]:
-        valid_slugs = info.context["valid_slugs"]
+        valid_slugs = info.context["valid_slugs"]  # type:ignore
         invalid_slugs = set(cluster_slugs) - set(valid_slugs)
         if invalid_slugs:
             raise ValueError(
@@ -64,16 +64,14 @@ class GeneratedClassifiers(BaseModel):
 
 class GeneratedExamples(BaseModel):
     positive_examples: list[str] = Field(
-        ...,
         description="3 positive examples that clearly demonstrate this label",
-        min_items=2,
-        max_items=3,
+        min_length=2,
+        max_length=3,
     )
     negative_examples: list[str] = Field(
-        ...,
         description="3 negative examples that clearly do NOT fit this label",
-        min_items=2,
-        max_items=3,
+        min_length=2,
+        max_length=3,
     )
 
 
@@ -289,7 +287,7 @@ def generate(
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=Console()
+        console=Console(),
     ) as progress:
         # Generate labels
         task = progress.add_task("🏷️  Generating labels...", total=None)
@@ -297,11 +295,16 @@ def generate(
             meta_clusters, classifier_description, single
         )
         progress.remove_task(task)
-        
-        print(f"[bold green]✅ Generated {len(generated_classifier.labels)} labels[/bold green]")
-        
+
+        print(
+            f"[bold green]✅ Generated {len(generated_classifier.labels)} labels[/bold green]"
+        )
+
         # Generate few shot examples
-        task = progress.add_task(f"🎯 Generating few shot examples for {len(generated_classifier.labels)} labels...", total=None)
+        task = progress.add_task(
+            f"🎯 Generating few shot examples for {len(generated_classifier.labels)} labels...",
+            total=None,
+        )
         summary_mapping = {conv.chat_id: conv for conv in conversation_summaries}
         labels = asyncio.run(
             generate_all_examples(
@@ -330,8 +333,8 @@ def generate(
                         "label": label.label,
                         "description": label.description,
                         "examples": {
-                            "positive_examples": label.examples.examples_positive,
-                            "negative_examples": label.examples.examples_negative,
+                            "positive_examples": label.examples.examples_positive,  # type:ignore
+                            "negative_examples": label.examples.examples_negative,  # type:ignore
                         },
                     }
                     for label in classification_definition.label_definitions
