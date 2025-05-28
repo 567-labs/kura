@@ -150,6 +150,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
                 cluster = Cluster(
                     name=resp.name,
                     description=resp.summary,
+                    slug=resp.slug,
                     chat_ids=[item.chat_id for item in summaries],
                     parent_id=None,
                 )

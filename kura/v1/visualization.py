@@ -236,6 +236,7 @@ def _build_cluster_tree(clusters: List[Cluster]) -> dict[str, ClusterTreeNode]:
             id=cluster.id,
             name=cluster.name,
             description=cluster.description,
+            slug=cluster.slug,
             count=len(cluster.chat_ids),
             children=[],
         )
@@ -296,6 +297,7 @@ def visualise_clusters(
         id="root",
         name="Clusters",
         description="All clusters",
+        slug="all_clusters",
         count=total_conversations,
         children=[node.id for node in root_nodes],
     )
@@ -348,6 +350,7 @@ def visualise_clusters_enhanced(
         id="root",
         name=f"📚 All Clusters ({total_conversations:,} total conversations)",
         description="Hierarchical conversation clustering results",
+        slug="all_clusters",
         count=total_conversations,
         children=[node.id for node in root_nodes],
     )

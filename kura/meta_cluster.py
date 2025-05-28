@@ -410,6 +410,7 @@ Based on this information, determine the most appropriate higher-level cluster a
             new_cluster = Cluster(
                 name=resp.name,
                 description=resp.summary,
+                slug=resp.slug,
                 chat_ids=[
                     chat_id for cluster in clusters for chat_id in cluster.chat_ids
                 ],
@@ -424,6 +425,7 @@ Based on this information, determine the most appropriate higher-level cluster a
                         id=cluster.id,
                         name=cluster.name,
                         description=cluster.description,
+                        slug=cluster.slug,
                         chat_ids=cluster.chat_ids,
                         parent_id=new_cluster.id,
                     )
@@ -615,6 +617,7 @@ Based on this information, determine the most appropriate higher-level cluster a
             new_cluster = Cluster(
                 name=clusters[0].name,
                 description=clusters[0].description,
+                slug=clusters[0].slug,
                 chat_ids=clusters[0].chat_ids,
                 parent_id=None,
             )

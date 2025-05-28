@@ -9,6 +9,10 @@ class Cluster(BaseModel):
     )
     name: str
     description: str
+    slug: str = Field(
+        ...,
+        description="A three-word snake_case summary of what this cluster is about",
+    )
     chat_ids: list[str]
     parent_id: Union[str, None]
 
@@ -29,11 +33,16 @@ class GeneratedCluster(BaseModel):
         ...,
         description="A clear, precise, two-sentence description in past tense that captures the essence of the clustered statements and distinguishes them from contrastive examples. Should be specific to this group without including PII or proper nouns",
     )
+    slug: str = Field(
+        ...,
+        description="A three-word snake_case summary of what this cluster is about. Examples: 'birthday_party_planning', 'gambling_content_generation', 'code_debugging_help'",
+    )
 
 
 class ClusterTreeNode(BaseModel):
     id: str
     name: str
     description: str
+    slug: str
     count: int
     children: list[str]

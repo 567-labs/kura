@@ -131,6 +131,7 @@ class ClusterVisualizer:
                 id=node.id,
                 name=node.name,
                 description=node.description,
+                slug=node.slug,
                 count=len(node.chat_ids),  # Access the actual count value
                 children=[],
             )
@@ -149,6 +150,7 @@ class ClusterVisualizer:
             id="root",
             name="Clusters",
             description="All clusters",
+            slug="all_clusters",
             count=sum(node.count for node in root_nodes),
             children=[node.id for node in root_nodes],
         )
@@ -276,6 +278,7 @@ class ClusterVisualizer:
                 id=node.id,
                 name=node.name,
                 description=node.description,
+                slug=node.slug,
                 count=len(node.chat_ids),  # Access the actual count value
                 children=[],
             )
@@ -293,6 +296,7 @@ class ClusterVisualizer:
             id="root",
             name=f"📚 All Clusters ({total_conversations:,} total conversations)",
             description="Hierarchical conversation clustering results",
+            slug="all_clusters",
             count=total_conversations,
             children=[node.id for node in root_nodes],
         )
@@ -343,6 +347,7 @@ class ClusterVisualizer:
                 id=node.id,
                 name=node.name,
                 description=node.description,
+                slug=node.slug,
                 count=len(node.chat_ids),  # Access the actual count value
                 children=[],
             )
