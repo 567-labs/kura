@@ -97,7 +97,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "all-MiniLM-L6-v2",
         model_batch_size: int = 128,
     ):
-        from sentence_transformers import SentenceTransformer
+        from sentence_transformers import SentenceTransformer  # type: ignore
 
         logger.info(
             f"Initializing SentenceTransformerEmbeddingModel with model={model_name}, batch_size={model_batch_size}"
