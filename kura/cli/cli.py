@@ -20,26 +20,6 @@ app = typer.Typer()
 class GeneratedLabel(BaseModel):
     label: str = Field(..., description="The name of the label")
     description: str = Field(..., description="The description of the label")
-    relevant_cluster_slugs: list[str] = Field(
-        ...,
-        description="The clusters that are relevant to the label. This is used to help the classifier understand the context of the label.",
-    )
-
-    @field_validator("relevant_cluster_slugs")
-    def validate_relevant_cluster_slugs(
-        cls, value: list[str], info: ValidationInfo
-    ) -> list[str]:
-        if len(value) == 0:
-            raise ValueError("No relevant clusters provided")
-
-        valid_slugs = info.context.get("slugs", [])
-        invalid_slugs = [slug for slug in value if slug not in valid_slugs]
-        if invalid_slugs:
-            raise ValueError(
-                f"Invalid cluster slugs provided: {', '.join(invalid_slugs)}. Valid slugs are: {', '.join(valid_slugs)}"
-            )
-
-        return value
 
 
 class GeneratedClassifiers(BaseModel):
@@ -97,8 +77,7 @@ Based on this task description, you will analyze the following conversation clus
 
 Important:
 1. Only create labels that are explicitly required by the task description
-2. For each label, provide a list of relevant clusters that might be useful in providing examples for the label. Choose the top 5-10 clusters that are most relevant to the label.
-3. Ensure labels are mutually exclusive to avoid classification ambiguity
+2. Ensure labels are mutually exclusive to avoid classification ambiguity
 
 """,
             },
@@ -113,7 +92,6 @@ Important:
                 for cluster in meta_clusters
             ],
             "description": description,
-            "slugs": [cluster.slug for cluster in meta_clusters],
         },
         response_model=GeneratedClassifiers,
     )
