@@ -2,6 +2,7 @@ import typer
 import subprocess
 import uvicorn
 import instructor
+import asyncio
 from kura.cli.server import api
 from rich import print
 import yaml
@@ -9,9 +10,11 @@ import os
 from instructor_classify.schema import (
     ClassificationDefinition,
     LabelDefinition,
+    Examples,
 )
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator, ValidationInfo
 from kura.types.cluster import Cluster
+from kura.types.summarisation import ConversationSummary
 from kura.v1.kura import CheckpointManager
 
 app = typer.Typer()
@@ -20,6 +23,22 @@ app = typer.Typer()
 class GeneratedLabel(BaseModel):
     label: str = Field(..., description="The name of the label")
     description: str = Field(..., description="The description of the label")
+    cluster_slugs: list[str] = Field(
+        ...,
+        description="Slugs of 2-3 clusters that best represent this label",
+    )
+
+    @field_validator("cluster_slugs")
+    def validate_cluster_slugs(
+        cls, cluster_slugs: list[str], info: ValidationInfo
+    ) -> list[str]:
+        valid_slugs = info.context["valid_slugs"]
+        invalid_slugs = set(cluster_slugs) - set(valid_slugs)
+        if invalid_slugs:
+            raise ValueError(
+                f"Only use cluster slugs from the provided list: {valid_slugs}"
+            )
+        return cluster_slugs
 
 
 class GeneratedClassifiers(BaseModel):
@@ -39,6 +58,21 @@ class GeneratedClassifiers(BaseModel):
         if len(self.labels) == 0:
             raise ValueError("No labels generated")
         return self
+
+
+class GeneratedExamples(BaseModel):
+    positive_examples: list[str] = Field(
+        ...,
+        description="3 positive examples that clearly demonstrate this label",
+        min_items=2,
+        max_items=3,
+    )
+    negative_examples: list[str] = Field(
+        ...,
+        description="3 negative examples that clearly do NOT fit this label",
+        min_items=2,
+        max_items=3,
+    )
 
 
 def generate_labels_from_clusters(
@@ -85,6 +119,8 @@ Important:
 - Create independent labels - each conversation can be assigned one or more relevant labels. Make sure to reflect this in the generated system prompt too.
 {% endif %}
 
+For each label you create, you must cite 2-3 cluster slugs that best represent that label. These will be used down the line to generate few shot examples for the classifier.
+
 """,
             },
         ],
@@ -97,12 +133,97 @@ Important:
                 }
                 for cluster in meta_clusters
             ],
+            "valid_slugs": [cluster.slug for cluster in meta_clusters],
             "description": description,
             "is_single_label": is_single_label,
         },
         response_model=GeneratedClassifiers,
     )
     return resp
+
+
+async def generate_examples_for_label(
+    client: instructor.AsyncInstructor,
+    label: GeneratedLabel,
+    clusters: list[Cluster],
+    summaries: dict[str, ConversationSummary],
+) -> LabelDefinition:
+    """Generate 3 new examples for a label and return a LabelDefinition with few shot examples."""
+
+    relevant_clusters = [c for c in clusters if c.slug in label.cluster_slugs]
+    for cluster in relevant_clusters:
+        cluster.chat_ids = cluster.chat_ids[:3]
+
+    relevant_summaries = [
+        summaries[chat_id]
+        for cluster in relevant_clusters
+        for chat_id in cluster.chat_ids
+    ]
+
+    response = await client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an expert at generating training examples for classification tasks. Create clear, specific examples that demonstrate the label concept.",
+            },
+            {
+                "role": "user",
+                "content": """
+Generate training examples for the following classification label by analyzing the provided conversation summaries.
+
+<label>
+<name>{{ label.label }}</name>
+<description>{{ label.description }}</description>
+</label>
+
+<conversation_summaries>
+{% for summary in conversation_summaries %}
+<conversation id="{{ summary.chat_id }}">
+<summary>{{ summary.summary }}</summary>
+<key_topics>{{ summary.key_topics | join(", ") }}</key_topics>
+</conversation>
+{% endfor %}
+</conversation_summaries>
+
+Based on these conversation summaries and the label definition:
+
+1. Create 3 positive examples - conversations that clearly demonstrate this label
+2. Create 3 negative examples - conversations that clearly do NOT fit this label
+
+The examples should be realistic conversation summaries that could plausibly appear in a customer support or conversation dataset. Make them specific and clear so they can effectively train a classifier.
+""",
+            },
+        ],
+        context={
+            "label": label,
+            "conversation_summaries": relevant_summaries,
+        },
+        response_model=GeneratedExamples,
+    )
+
+    result = LabelDefinition(
+        label=label.label,
+        description=label.description,
+        examples=Examples(
+            examples_positive=response.positive_examples,
+            examples_negative=response.negative_examples,
+        ),
+    )
+    return result
+
+
+async def generate_all_examples(
+    labels: list[GeneratedLabel],
+    clusters: list[Cluster],
+    summaries: dict[str, ConversationSummary],
+) -> list[LabelDefinition]:
+    """Generate examples for all labels concurrently."""
+    client = instructor.from_provider("openai/gpt-4.1", async_client=True)
+    tasks = [
+        generate_examples_for_label(client, label, clusters, summaries)
+        for label in labels
+    ]
+    return await asyncio.gather(*tasks)
 
 
 @app.command()
@@ -143,39 +264,42 @@ def generate(
     print(f"[bold green]📁 Reading from:[/bold green] {checkpoint_dir}")
     print(f"[bold green]📝 Generating to:[/bold green] {output_dir}")
 
-    # Load clusters from checkpoint directory using CheckpointManager
+    # Load clusters and conversations from checkpoint directory using CheckpointManager
     try:
         checkpoint_manager = CheckpointManager(checkpoint_dir)
         meta_clusters = checkpoint_manager.load_checkpoint(
             "meta_clusters.jsonl", Cluster
         )
+        conversation_summaries = checkpoint_manager.load_checkpoint(
+            "summaries.jsonl", ConversationSummary
+        )
 
-        if meta_clusters is None:
+        if meta_clusters is None or conversation_summaries is None:
             print(
                 f"[bold yellow]⚠️  No meta_clusters.jsonl found in {checkpoint_dir}[/bold yellow]"
             )
             raise typer.Exit(1)
+
     except Exception as e:
-        print(f"[bold yellow]⚠️  Could not load clusters: {e}[/bold yellow]")
+        print(f"[bold yellow]⚠️  Could not load data: {e}[/bold yellow]")
         raise typer.Exit(1)
 
     generated_classifier = generate_labels_from_clusters(
         meta_clusters, classifier_description, single
     )
+    summary_mapping = {conv.chat_id: conv for conv in conversation_summaries}
+    labels = asyncio.run(
+        generate_all_examples(
+            generated_classifier.labels, meta_clusters, summary_mapping
+        )
+    )
 
     classification_definition = ClassificationDefinition(
-        label_definitions=[
-            LabelDefinition(
-                label=label.label,
-                description=label.description,
-            )
-            for label in generated_classifier.labels
-        ],
+        label_definitions=labels,
         system_message=generated_classifier.system_prompt,
         classification_type="single" if single else "multi",
     )
 
-    # Run instruct-classify init command
     try:
         subprocess.run(
             ["instruct-classify", "init", output_dir],
@@ -189,6 +313,10 @@ def generate(
                     {
                         "label": label.label,
                         "description": label.description,
+                        "examples": {
+                            "positive_examples": label.examples.examples_positive,
+                            "negative_examples": label.examples.examples_negative,
+                        },
                     }
                     for label in classification_definition.label_definitions
                 ],
