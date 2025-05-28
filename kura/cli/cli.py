@@ -10,9 +10,9 @@ from instructor_classify.schema import (
     ClassificationDefinition,
     LabelDefinition,
 )
-from pydantic import BaseModel, Field, ValidationInfo, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator
 from kura.types.cluster import Cluster
-from pathlib import Path
+from kura.v1.kura import CheckpointManager
 
 app = typer.Typer()
 
@@ -132,10 +132,18 @@ def generate(
     print(f"[bold green]📁 Reading from:[/bold green] {checkpoint_dir}")
     print(f"[bold green]📝 Generating to:[/bold green] {output_dir}")
 
-    # Load clusters from checkpoint directory
+    # Load clusters from checkpoint directory using CheckpointManager
     try:
-        meta_cluster_file = Path(checkpoint_dir) / "meta_clusters.jsonl"
-        meta_clusters = Cluster.load_from_checkpoint(str(meta_cluster_file))
+        checkpoint_manager = CheckpointManager(checkpoint_dir)
+        meta_clusters = checkpoint_manager.load_checkpoint(
+            "meta_clusters.jsonl", Cluster
+        )
+
+        if meta_clusters is None:
+            print(
+                f"[bold yellow]⚠️  No meta_clusters.jsonl found in {checkpoint_dir}[/bold yellow]"
+            )
+            raise typer.Exit(1)
     except Exception as e:
         print(f"[bold yellow]⚠️  Could not load clusters: {e}[/bold yellow]")
         raise typer.Exit(1)

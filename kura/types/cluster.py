@@ -23,21 +23,6 @@ class Cluster(BaseModel):
 
     def __str__(self) -> str:
         return f"Name: {self.name}\nDescription: {self.description}"
-    
-    @classmethod
-    def load_from_checkpoint(cls, checkpoint_path: str) -> list["Cluster"]:
-        """Load clusters from a checkpoint file."""
-        checkpoint_path = Path(checkpoint_path)
-        
-        if not checkpoint_path.exists():
-            raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
-        
-        try:
-            with open(checkpoint_path) as f:
-                clusters = [cls.model_validate_json(line) for line in f]
-            return clusters
-        except Exception as e:
-            raise ValueError(f"Failed to load clusters from {checkpoint_path}: {e}")
 
 
 class GeneratedCluster(BaseModel):
