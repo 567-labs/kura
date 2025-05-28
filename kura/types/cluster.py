@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, computed_field
 import uuid
 from typing import Union
-from pathlib import Path
 
 
 class Cluster(BaseModel):
