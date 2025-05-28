@@ -5,6 +5,8 @@ import instructor
 import asyncio
 from kura.cli.server import api
 from rich import print
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
 import yaml
 import os
 from instructor_classify.schema import (
@@ -284,15 +286,29 @@ def generate(
         print(f"[bold yellow]⚠️  Could not load data: {e}[/bold yellow]")
         raise typer.Exit(1)
 
-    generated_classifier = generate_labels_from_clusters(
-        meta_clusters, classifier_description, single
-    )
-    summary_mapping = {conv.chat_id: conv for conv in conversation_summaries}
-    labels = asyncio.run(
-        generate_all_examples(
-            generated_classifier.labels, meta_clusters, summary_mapping
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=Console()
+    ) as progress:
+        # Generate labels
+        task = progress.add_task("🏷️  Generating labels...", total=None)
+        generated_classifier = generate_labels_from_clusters(
+            meta_clusters, classifier_description, single
         )
-    )
+        progress.remove_task(task)
+        
+        print(f"[bold green]✅ Generated {len(generated_classifier.labels)} labels[/bold green]")
+        
+        # Generate few shot examples
+        task = progress.add_task(f"🎯 Generating few shot examples for {len(generated_classifier.labels)} labels...", total=None)
+        summary_mapping = {conv.chat_id: conv for conv in conversation_summaries}
+        labels = asyncio.run(
+            generate_all_examples(
+                generated_classifier.labels, meta_clusters, summary_mapping
+            )
+        )
+        progress.remove_task(task)
 
     classification_definition = ClassificationDefinition(
         label_definitions=labels,
