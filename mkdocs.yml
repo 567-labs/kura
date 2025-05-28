@@ -38,6 +38,7 @@ nav:
     - Installation: getting-started/installation.md
     - Quickstart: getting-started/quickstart.md
     - Configuration: getting-started/configuration.md
+    - Generate Classifiers: getting-started/generate-classifiers.md
     - Procedural API Tutorial: getting-started/tutorial-procedural-api.md
   - Core Concepts:
     - Overview: core-concepts/overview.md

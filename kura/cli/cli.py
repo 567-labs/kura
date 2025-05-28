@@ -42,7 +42,7 @@ class GeneratedClassifiers(BaseModel):
 
 
 def generate_labels_from_clusters(
-    meta_clusters: list[Cluster], description: str
+    meta_clusters: list[Cluster], description: str, is_single_label: bool
 ) -> GeneratedClassifiers:
     """Generate labels from clusters and meta clusters based on user description."""
 
@@ -76,8 +76,14 @@ Based on this task description, you will analyze the following conversation clus
 </clusters>
 
 Important:
-1. Only create labels that are explicitly required by the task description
-2. Ensure labels are mutually exclusive to avoid classification ambiguity
+
+{% if is_single_label %}
+- Only create labels that are explicitly required by the task description
+- Create labels that are mutually exclusive - each conversation should be assigned exactly one label
+{% else %}
+- Only create labels that are explicitly required by the task description 
+- Create independent labels - each conversation can be assigned one or more relevant labels. Make sure to reflect this in the generated system prompt too.
+{% endif %}
 
 """,
             },
@@ -92,6 +98,7 @@ Important:
                 for cluster in meta_clusters
             ],
             "description": description,
+            "is_single_label": is_single_label,
         },
         response_model=GeneratedClassifiers,
     )
@@ -127,6 +134,10 @@ def generate(
         ...,
         help="Description of the classifiers you'd like to generate",
     ),
+    single: bool = typer.Option(
+        True,
+        help="Whether to create a single-label (True) or multi-label (False) classifier",
+    ),
 ):
     """Generate output from checkpoint files"""
     print(f"[bold green]📁 Reading from:[/bold green] {checkpoint_dir}")
@@ -149,7 +160,7 @@ def generate(
         raise typer.Exit(1)
 
     generated_classifier = generate_labels_from_clusters(
-        meta_clusters, classifier_description
+        meta_clusters, classifier_description, single
     )
 
     classification_definition = ClassificationDefinition(
@@ -161,6 +172,7 @@ def generate(
             for label in generated_classifier.labels
         ],
         system_message=generated_classifier.system_prompt,
+        classification_type="single" if single else "multi",
     )
 
     # Run instruct-classify init command
@@ -180,6 +192,7 @@ def generate(
                     }
                     for label in classification_definition.label_definitions
                 ],
+                "classification_type": classification_definition.classification_type,
             }
             yaml.dump(
                 yaml_content,
@@ -190,10 +203,8 @@ def generate(
     except subprocess.CalledProcessError as e:
         print(f"[bold red]❌ Failed to initialize output directory: {e}[/bold red]")
         raise typer.Exit(1)
-    except FileNotFoundError:
-        print(
-            "[bold red]❌ instruct-classify command not found. Is it installed?[/bold red]"
-        )
+    except Exception as e:
+        print(f"[bold red]❌ Failed to generate output: {e}[/bold red]")
         raise typer.Exit(1)
 
 
