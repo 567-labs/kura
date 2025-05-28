@@ -25,6 +25,7 @@ dependencies = [
     "mkdocs-material-extensions>=1.3.1",
     "mkdocs-rss-plugin>=1.17.1",
     "mkdocstrings[python]>=0.27.0",
+    "instructor-classify",
 ]
 
 
@@ -74,3 +75,6 @@ reportMissingTypeStubs = false
 
 pythonVersion = "3.9"
 pythonPlatform = "Linux"
+
+[tool.uv.sources]
+instructor-classify = { git = "https://github.com/jxnl/instructor-classify" }
