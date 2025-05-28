@@ -42,7 +42,6 @@ class SummaryModel(BaseSummaryModel):
         self.extractors = extractors
         self.max_concurrent_requests = max_concurrent_requests
         self.model = model
-        self.semaphore = asyncio.Semaphore(max_concurrent_requests)
         self.console = console
         logger.info(
             f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, extractors={len(extractors)}"
@@ -232,9 +231,8 @@ class SummaryModel(BaseSummaryModel):
     async def summarise(
         self, conversations: list[Conversation]
     ) -> list[ConversationSummary]:
-        # Initialise Semaphore if not already done
-        if self.sems is None:
-            self.sems = self.semaphore
+        # Initialise the Semaphore on each run so that it's attached to the same event loop
+        self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
 
         logger.info(
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
