@@ -46,7 +46,7 @@ def generate_labels_from_clusters(
 ) -> GeneratedClassifiers:
     """Generate labels from clusters and meta clusters based on user description."""
 
-    client = instructor.from_provider("openai/gpt-4.1")
+    client = instructor.from_provider("openai/gpt-4.1", async_client=False)
 
     resp = client.chat.completions.create(
         messages=[
