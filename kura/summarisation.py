@@ -34,7 +34,6 @@ class SummaryModel(BaseSummaryModel):
         """
         Initialize SummaryModel with core configuration.
 
-        Following AGENT.md principles, only core model configuration goes here.
         Per-use configuration (schemas, prompts, temperature) are method parameters.
 
         Args:
@@ -65,9 +64,6 @@ class SummaryModel(BaseSummaryModel):
     ) -> list[ConversationSummary]:
         """
         Summarise conversations with configurable parameters.
-
-        Following AGENT.md principles, all important configuration is exposed
-        as method parameters rather than buried in the implementation.
 
         Args:
             conversations: List of conversations to summarize
@@ -196,9 +192,6 @@ Remember that
     ) -> ConversationSummary:
         """
         Private method to summarise a single conversation.
-
-        Uses configurable parameters and shared client passed from the public summarise method.
-        Following AGENT.md principles, all behavior is controlled by parameters.
         """
         logger.debug(
             f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
@@ -253,18 +246,78 @@ Remember that
         **kwargs,
     ) -> list[ConversationSummary]:
         """
-        Summarise conversations with rich console output showing progress and results.
+        Summarise conversations with full-screen Rich console display showing progress and latest 3 results.
         """
-        from rich.progress import Progress
+        from rich.live import Live
+        from rich.layout import Layout
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich.progress import (
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            TaskProgressColumn,
+            TimeRemainingColumn,
+        )
 
         summaries = []
+        completed_summaries = []
+        max_preview_items = 3
 
-        with Progress(console=self.console) as progress:
-            task = progress.add_task(
-                "Summarising conversations...", total=len(conversations)
-            )
+        # Create full-screen layout
+        layout = Layout()
+        layout.split_column(Layout(name="progress", size=3), Layout(name="preview"))
 
-            # Process conversations concurrently but display results as they complete
+        # Create progress bar
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+            console=self.console,
+        )
+        task_id = progress.add_task("", total=len(conversations))
+        layout["progress"].update(progress)
+
+        def update_preview_display():
+            if completed_summaries:
+                preview_text = Text()
+
+                for summary in completed_summaries[
+                    -max_preview_items:
+                ]:  # Show latest 3
+                    preview_text.append(f"chat_id: {summary.chat_id}\n", style="cyan")
+                    preview_text.append(
+                        f"summary: {summary.summary or 'No summary'}\n", style="white"
+                    )
+                    concern = summary.concerning_score or 0
+                    frustration = summary.user_frustration or 0
+                    preview_text.append(
+                        f"Concern: {concern}/5, Frustration: {frustration}/5\n\n",
+                        style="yellow",
+                    )
+
+                layout["preview"].update(
+                    Panel(
+                        preview_text,
+                        title=f"[green]Generated Summaries ({len(completed_summaries)}/{len(conversations)})",
+                        border_style="green",
+                    )
+                )
+            else:
+                layout["preview"].update(
+                    Panel(
+                        Text("Waiting for summaries...", style="dim"),
+                        title="[yellow]Generated Summaries (0/0)",
+                        border_style="yellow",
+                    )
+                )
+
+        # Initialize preview display
+        update_preview_display()
+
+        with Live(layout, console=self.console, refresh_per_second=4):
+            # Process conversations concurrently
             tasks = []
             for conversation in conversations:
                 coro = self._summarise_single_conversation(
@@ -278,46 +331,22 @@ Remember that
                 tasks.append(coro)
 
             # Use asyncio.as_completed to show results as they finish
-            for coro in asyncio.as_completed(tasks):
+            for i, coro in enumerate(asyncio.as_completed(tasks)):
                 try:
                     summary = await coro
                     summaries.append(summary)
+                    completed_summaries.append(summary)
 
-                    # Display the completed summary
-                    self._display_summary(summary)
+                    # Update progress
+                    progress.update(task_id, completed=i + 1)
 
-                    progress.update(task, advance=1)
+                    # Update preview display
+                    update_preview_display()
 
                 except Exception as e:
                     logger.error(f"Failed to summarise conversation: {e}")
-                    progress.update(task, advance=1)
+                    # Still update progress on error
+                    progress.update(task_id, completed=i + 1)
+                    update_preview_display()
 
         return summaries
-
-    def _display_summary(self, summary: ConversationSummary) -> None:
-        """Display a completed summary using rich console."""
-        if not self.console:
-            return
-
-        from rich.panel import Panel
-        from rich.text import Text
-
-        # Create a formatted display of the summary
-        summary_text = Text()
-        summary_text.append("Chat ID: ", style="bold blue")
-        summary_text.append(f"{summary.chat_id}\n")
-
-        if summary.summary:
-            summary_text.append("Summary: ", style="bold green")
-            summary_text.append(f"{summary.summary}\n")
-
-        if summary.concerning_score:
-            summary_text.append("Concerning Score: ", style="bold yellow")
-            summary_text.append(f"{summary.concerning_score}/5\n")
-
-        if summary.user_frustration:
-            summary_text.append("User Frustration: ", style="bold red")
-            summary_text.append(f"{summary.user_frustration}/5\n")
-
-        panel = Panel(summary_text, title="📝 Summary Complete", border_style="green")
-        self.console.print(panel)
