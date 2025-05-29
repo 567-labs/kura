@@ -1,16 +1,17 @@
-from typing import Optional, Type, Callable
+from typing import Optional, Type, Callable, TypeVar
 import asyncio
 import logging
 
 import instructor
 from tqdm.asyncio import tqdm_asyncio
-from pydantic import BaseModel
 from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
+
+T = TypeVar("T", bound=GeneratedSummary)
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +59,11 @@ class SummaryModel(BaseSummaryModel):
         self,
         conversations: list[Conversation],
         *,
-        response_schema: Type[BaseModel] = GeneratedSummary,
+        response_schema: Type[T] = GeneratedSummary,
         prompt_template: Optional[str] = None,
         temperature: float = 0.2,
         **kwargs,
-    ) -> list[GeneratedSummary]:
+    ) -> list[T]:
         """
         Summarise conversations with configurable parameters.
 
@@ -186,11 +187,11 @@ Remember that
         conversation: Conversation,
         *,
         client,
-        response_schema: Type[BaseModel],
+        response_schema: Type[T],
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> GeneratedSummary:
+    ) -> T:
         """
         Private method to summarise a single conversation.
         """
@@ -231,11 +232,11 @@ Remember that
         conversations: list[Conversation],
         *,
         client,
-        response_schema: Type[BaseModel],
+        response_schema: Type[T],
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> list[GeneratedSummary]:
+    ) -> list[T]:
         """
         Summarise conversations with full-screen Rich console display showing progress and latest 3 results.
         """
@@ -344,8 +345,7 @@ Remember that
 
 
 def default_summary_mapper(
-    summary: GeneratedSummary, 
-    conversation: Conversation
+    summary: T, conversation: Conversation
 ) -> ConversationSummary:
     """Default mapper from GeneratedSummary to ConversationSummary."""
     return ConversationSummary(
@@ -362,7 +362,9 @@ async def summarise_conversations(
     conversations: list[Conversation],
     *,
     model: BaseSummaryModel,
-    summary_converter: Callable[[GeneratedSummary, Conversation], ConversationSummary] = default_summary_mapper,
+    summary_converter: Callable[
+        [T, Conversation], ConversationSummary
+    ] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
 ) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations.
@@ -410,7 +412,10 @@ async def summarise_conversations(
     logger.info(f"Generated {len(raw_summaries)} raw summaries")
 
     # Map to ConversationSummary objects
-    summaries = [summary_converter(summary, conversation) for summary, conversation in zip(raw_summaries, conversations)]
+    summaries = [
+        summary_converter(summary, conversation)
+        for summary, conversation in zip(raw_summaries, conversations)
+    ]
     logger.info(f"Mapped to {len(summaries)} conversation summaries")
 
     # Save to checkpoint
