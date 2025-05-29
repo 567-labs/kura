@@ -1,7 +1,7 @@
 from .kura import Kura
 from .cluster import ClusterModel
 from .meta_cluster import MetaClusterModel
-from .summarisation import SummaryModel
+from .summarisation import SummaryModel, summarise_conversations
 from .types import Conversation
 from .checkpoint import CheckpointManager
 
@@ -12,4 +12,6 @@ __all__ = [
     "SummaryModel",
     "Conversation",
     "CheckpointManager",
+    # Procedural Methods
+    "summarise_conversations",
 ]
