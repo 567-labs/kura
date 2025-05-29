@@ -1,7 +1,7 @@
 from kura.base_classes import BaseDimensionalityReduction, BaseEmbeddingModel
 from kura.types import Cluster, ProjectedCluster
 from kura.embedding import OpenAIEmbeddingModel
-from typing import Union, Any
+from typing import Union
 import numpy as np
 import logging
 
@@ -57,7 +57,7 @@ class HDBUMAP(BaseDimensionalityReduction):
             )
             return []
 
-        embeddings: np.ndarray = np.array(cluster_embeddings)
+        embeddings = np.array(cluster_embeddings)
         logger.debug(f"Created embedding matrix of shape {embeddings.shape}")
 
         # Project to 2D using UMAP
@@ -75,7 +75,7 @@ class HDBUMAP(BaseDimensionalityReduction):
                 min_dist=self.min_dist,
                 metric=self.metric,
             )
-            reduced_embeddings = umap_reducer.fit_transform(embeddings)  # pyright: ignore
+            reduced_embeddings = np.array(umap_reducer.fit_transform(embeddings))
             logger.info(
                 f"UMAP dimensionality reduction completed: {embeddings.shape} -> {reduced_embeddings.shape}"
             )
@@ -93,8 +93,8 @@ class HDBUMAP(BaseDimensionalityReduction):
                 description=cluster.description,
                 chat_ids=cluster.chat_ids,
                 parent_id=cluster.parent_id,
-                x_coord=float(reduced_embeddings[i][0]),  # pyright: ignore
-                y_coord=float(reduced_embeddings[i][1]),  # pyright: ignore
+                x_coord=float(reduced_embeddings[i, 0]),
+                y_coord=float(reduced_embeddings[i, 1]),
                 level=0
                 if cluster.parent_id is None
                 else 1,  # TODO: Fix this, should reflect the level of the cluster
