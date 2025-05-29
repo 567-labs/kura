@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Type, List
+from typing import Optional, Type, TypeVar
 
 from kura.types import (
-    ConversationSummary,
     Conversation,
     GeneratedSummary,
 )
-from pydantic import BaseModel
+
+
+T = TypeVar("T", bound=GeneratedSummary)
 
 
 class BaseSummaryModel(ABC):
@@ -26,33 +27,36 @@ class BaseSummaryModel(ABC):
     @abstractmethod
     async def summarise(
         self,
-        conversations: List[Conversation],
+        conversations: list[Conversation],
         *,
         # ✅ All configuration exposed as parameters (not buried in class)
-        response_schema: Type[BaseModel] = GeneratedSummary,
+        response_schema: Type[T] = GeneratedSummary,
         prompt_template: Optional[str] = None,
+        temperature: float = 0.2,
         **kwargs,
-    ) -> List[ConversationSummary]:
+    ) -> list[T]:
         """
         Summarise conversations with configurable parameters.
 
         This method implements pure summarization logic, converting conversations
-        to structured summaries.
+        to structured summaries using the specified response schema.
 
         Args:
             conversations: List of conversations to summarize
             response_schema: Pydantic model class for structured LLM output
             prompt_template: Custom prompt template (None = use model default)
-            **kwargs: Additional model-specific parameters (temperature, max_tokens, etc.)
+            temperature: LLM temperature for generation
+            **kwargs: Additional model-specific parameters (max_tokens, etc.)
 
         Returns:
-            List of conversation summaries (without extracted properties)
+            List of raw model outputs using the specified response_schema
 
         Example:
-            >>> model = OpenAISummaryModel()
+            >>> model = SummaryModel()
             >>> summaries = await model.summarise(
             ...     conversations=my_conversations,
             ...     response_schema=DetailedSummary,  # Custom schema
+            ...     temperature=0.1
             ... )
         """
         pass

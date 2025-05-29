@@ -346,7 +346,7 @@ Remember that
 
 
 def default_summary_mapper(
-    summary: T, conversation: Conversation
+    summary: GeneratedSummary, conversation: Conversation
 ) -> ConversationSummary:
     """Default mapper from GeneratedSummary to ConversationSummary."""
     return ConversationSummary(
@@ -363,10 +363,14 @@ async def summarise_conversations(
     conversations: list[Conversation],
     *,
     model: BaseSummaryModel,
+    response_schema: Type[T] = GeneratedSummary,
+    prompt_template: Optional[str] = None,
+    temperature: float = 0.2,
     summary_converter: Callable[
         [T, Conversation], ConversationSummary
     ] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
+    **kwargs,
 ) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations.
 
@@ -409,7 +413,13 @@ async def summarise_conversations(
 
     # Generate raw summaries
     logger.info("Generating new summaries...")
-    raw_summaries = await model.summarise(conversations)
+    raw_summaries = await model.summarise(
+        conversations,
+        response_schema=response_schema,
+        prompt_template=prompt_template,
+        temperature=temperature,
+        **kwargs,
+    )
     logger.info(f"Generated {len(raw_summaries)} raw summaries")
 
     # Map to ConversationSummary objects
