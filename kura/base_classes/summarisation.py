@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 class BaseSummaryModel(ABC):
     """
-    Minimal base class for summary models following AGENT.md principles.
+    Minimal base class for summary models following principles.
 
     This interface focuses on a single responsibility: converting conversations
     to summaries. All configuration (response schemas, prompts, etc.)
@@ -37,8 +37,7 @@ class BaseSummaryModel(ABC):
         Summarise conversations with configurable parameters.
 
         This method implements pure summarization logic, converting conversations
-        to structured summaries. Extraction of additional properties should be
-        handled by separate procedural functions following AGENT.md principles.
+        to structured summaries.
 
         Args:
             conversations: List of conversations to summarize
@@ -59,6 +58,7 @@ class BaseSummaryModel(ABC):
         pass
 
     @property
+    @abstractmethod
     def checkpoint_filename(self) -> str:
         """Return the filename to use for checkpointing this model's output."""
         pass

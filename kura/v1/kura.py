@@ -14,17 +14,16 @@ Key benefits over the class-based approach:
 
 import logging
 from typing import Optional, TypeVar, List
-import os
 from pydantic import BaseModel
 
 # Import existing Kura components
 from kura.base_classes import (
-    BaseSummaryModel,
     BaseClusterModel,
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
-from kura.types import Conversation, Cluster, ConversationSummary
+from kura.checkpoint import CheckpointManager
+from kura.types import Cluster, ConversationSummary
 from kura.types.dimensionality import ProjectedCluster
 
 # Set up logger

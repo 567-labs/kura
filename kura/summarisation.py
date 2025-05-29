@@ -45,15 +45,17 @@ class SummaryModel(BaseSummaryModel):
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
-        self.checkpoint_filename = checkpoint_filename
+        self._checkpoint_filename = checkpoint_filename
         self.console = console
 
         logger.info(
             f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
         )
 
+    @property
     def checkpoint_filename(self) -> str:
-        return self.checkpoint_filename
+        """Return the filename to use for checkpointing this model's output."""
+        return self._checkpoint_filename
 
     async def summarise(
         self,
@@ -278,7 +280,6 @@ Remember that
                 for summary in completed_summaries[
                     -max_preview_items:
                 ]:  # Show latest 3
-                    preview_text.append(f"chat_id: {summary.chat_id}\n", style="cyan")
                     preview_text.append(
                         f"summary: {summary.summary or 'No summary'}\n", style="white"
                     )
