@@ -1,7 +1,7 @@
 from kura.base_classes import BaseDimensionalityReduction, BaseEmbeddingModel
 from kura.types import Cluster, ProjectedCluster
 from kura.embedding import OpenAIEmbeddingModel
-from typing import Union
+from typing import Union, Any
 import numpy as np
 import logging
 
@@ -57,7 +57,7 @@ class HDBUMAP(BaseDimensionalityReduction):
             )
             return []
 
-        embeddings = np.array(cluster_embeddings)
+        embeddings: np.ndarray = np.array(cluster_embeddings)
         logger.debug(f"Created embedding matrix of shape {embeddings.shape}")
 
         # Project to 2D using UMAP
@@ -75,7 +75,7 @@ class HDBUMAP(BaseDimensionalityReduction):
                 min_dist=self.min_dist,
                 metric=self.metric,
             )
-            reduced_embeddings = umap_reducer.fit_transform(embeddings)
+            reduced_embeddings = umap_reducer.fit_transform(embeddings)  # pyright: ignore
             logger.info(
                 f"UMAP dimensionality reduction completed: {embeddings.shape} -> {reduced_embeddings.shape}"
             )
