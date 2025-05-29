@@ -58,7 +58,7 @@ class BaseSummaryModel(ABC):
         """
         pass
 
-    @abstractmethod
+    @property
     def checkpoint_filename(self) -> str:
         """Return the filename to use for checkpointing this model's output."""
         pass

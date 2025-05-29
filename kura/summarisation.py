@@ -5,6 +5,7 @@ import logging
 import instructor
 from tqdm.asyncio import tqdm_asyncio
 from pydantic import BaseModel
+from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
 from kura.types import Conversation, ConversationSummary
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SummaryModel(BaseSummaryModel):
     """
-    Instructor-based summary model following AGENT.md principles.
+    Instructor-based summary model following
 
     This implementation follows the embedding.py pattern:
     - Core configuration in constructor (model, concurrency, API keys)
@@ -23,33 +24,35 @@ class SummaryModel(BaseSummaryModel):
     - Clean separation of concerns (no extractors - handled separately)
     """
 
-    def checkpoint_filename(self) -> str:
-        """Return the filename to use for checkpointing this model's output."""
-        return "summaries.jsonl"
-
     def __init__(
         self,
         model: str = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
+        checkpoint_filename: str = "summaries.jsonl",
+        console: Optional[Console] = None,
     ):
         """
-        Initialize OpenAI summary model with core configuration.
+        Initialize SummaryModel with core configuration.
 
         Following AGENT.md principles, only core model configuration goes here.
         Per-use configuration (schemas, prompts, temperature) are method parameters.
 
         Args:
-            model: OpenAI model identifier (e.g., "openai/gpt-4o-mini")
-            concurrent_jobs: Maximum concurrent API requests
+            model: model identifier (e.g., "openai/gpt-4o-mini")
+            max_concurrent_requests: Maximum concurrent API requests
             **kwargs: Additional model-specific parameters (API keys, etc.)
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
-        self.client = instructor.from_provider(self.model, async_client=True)
+        self.checkpoint_filename = checkpoint_filename
+        self.console = console
 
         logger.info(
-            f"Initialized OpenAISummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
+            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
         )
+
+    def checkpoint_filename(self) -> str:
+        return self.checkpoint_filename
 
     async def summarise(
         self,
@@ -88,21 +91,32 @@ class SummaryModel(BaseSummaryModel):
 
         client = instructor.from_provider(self.model, async_client=True)
 
-        # Simple progress tracking with tqdm
-        summaries = await tqdm_asyncio.gather(
-            *[
-                self._summarise_single_conversation(
-                    conversation,
-                    client=client,
-                    response_schema=response_schema,
-                    prompt_template=prompt_template,
-                    temperature=temperature,
-                    **kwargs,
-                )
-                for conversation in conversations
-            ],
-            desc=f"Summarising {len(conversations)} conversations",
-        )
+        if not self.console:
+            # Simple progress tracking with tqdm
+            summaries = await tqdm_asyncio.gather(
+                *[
+                    self._summarise_single_conversation(
+                        conversation,
+                        client=client,
+                        response_schema=response_schema,
+                        prompt_template=prompt_template,
+                        temperature=temperature,
+                        **kwargs,
+                    )
+                    for conversation in conversations
+                ],
+                desc=f"Summarising {len(conversations)} conversations",
+            )
+        else:
+            # Rich console progress tracking with live summary display
+            summaries = await self._summarise_with_console(
+                conversations,
+                client=client,
+                response_schema=response_schema,
+                prompt_template=prompt_template,
+                temperature=temperature,
+                **kwargs,
+            )
 
         logger.info(
             f"Completed summarization of {len(conversations)} conversations, produced {len(summaries)} summaries"
@@ -174,7 +188,7 @@ Remember that
         self,
         conversation: Conversation,
         *,
-        client,  # ✅ Shared client passed from parent method
+        client,
         response_schema: Type[BaseModel],
         prompt_template: str,
         temperature: float,
@@ -190,7 +204,7 @@ Remember that
             f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
         )
 
-        async with self._semaphore:  # type: ignore
+        async with self.semaphore:  # type: ignore
             try:
                 resp = await client.chat.completions.create(  # type: ignore
                     temperature=temperature,
@@ -227,3 +241,83 @@ Remember that
             f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {getattr(resp, 'concerning_score', None)}, user_frustration: {getattr(resp, 'user_frustration', None)}"
         )
         return summary
+
+    async def _summarise_with_console(
+        self,
+        conversations: list[Conversation],
+        *,
+        client,
+        response_schema: Type[BaseModel],
+        prompt_template: str,
+        temperature: float,
+        **kwargs,
+    ) -> list[ConversationSummary]:
+        """
+        Summarise conversations with rich console output showing progress and results.
+        """
+        from rich.progress import Progress
+
+        summaries = []
+
+        with Progress(console=self.console) as progress:
+            task = progress.add_task(
+                "Summarising conversations...", total=len(conversations)
+            )
+
+            # Process conversations concurrently but display results as they complete
+            tasks = []
+            for conversation in conversations:
+                coro = self._summarise_single_conversation(
+                    conversation,
+                    client=client,
+                    response_schema=response_schema,
+                    prompt_template=prompt_template,
+                    temperature=temperature,
+                    **kwargs,
+                )
+                tasks.append(coro)
+
+            # Use asyncio.as_completed to show results as they finish
+            for coro in asyncio.as_completed(tasks):
+                try:
+                    summary = await coro
+                    summaries.append(summary)
+
+                    # Display the completed summary
+                    self._display_summary(summary)
+
+                    progress.update(task, advance=1)
+
+                except Exception as e:
+                    logger.error(f"Failed to summarise conversation: {e}")
+                    progress.update(task, advance=1)
+
+        return summaries
+
+    def _display_summary(self, summary: ConversationSummary) -> None:
+        """Display a completed summary using rich console."""
+        if not self.console:
+            return
+
+        from rich.panel import Panel
+        from rich.text import Text
+
+        # Create a formatted display of the summary
+        summary_text = Text()
+        summary_text.append("Chat ID: ", style="bold blue")
+        summary_text.append(f"{summary.chat_id}\n")
+
+        if summary.summary:
+            summary_text.append("Summary: ", style="bold green")
+            summary_text.append(f"{summary.summary}\n")
+
+        if summary.concerning_score:
+            summary_text.append("Concerning Score: ", style="bold yellow")
+            summary_text.append(f"{summary.concerning_score}/5\n")
+
+        if summary.user_frustration:
+            summary_text.append("User Frustration: ", style="bold red")
+            summary_text.append(f"{summary.user_frustration}/5\n")
+
+        panel = Panel(summary_text, title="📝 Summary Complete", border_style="green")
+        self.console.print(panel)

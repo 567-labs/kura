@@ -3,6 +3,7 @@ from .cluster import ClusterModel
 from .meta_cluster import MetaClusterModel
 from .summarisation import SummaryModel
 from .types import Conversation
+from .checkpoint import CheckpointManager
 
 __all__ = [
     "Kura",
@@ -10,4 +11,5 @@ __all__ = [
     "MetaClusterModel",
     "SummaryModel",
     "Conversation",
+    "CheckpointManager",
 ]
