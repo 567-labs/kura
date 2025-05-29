@@ -12,6 +12,7 @@ from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
 T = TypeVar("T", bound=GeneratedSummary)
+U = TypeVar("U")
 
 logger = logging.getLogger(__name__)
 
@@ -364,14 +365,15 @@ async def summarise_conversations(
     *,
     model: BaseSummaryModel,
     response_schema: Type[T] = GeneratedSummary,
+    output_schema: Type[U] = ConversationSummary,
     prompt_template: Optional[str] = None,
     temperature: float = 0.2,
     summary_converter: Callable[
-        [T, Conversation], ConversationSummary
+        [T, Conversation], U
     ] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
     **kwargs,
-) -> list[ConversationSummary]:
+) -> list[U]:
     """Generate summaries for a list of conversations.
 
     This is a pure function that takes conversations and a summary model,
@@ -384,10 +386,12 @@ async def summarise_conversations(
     Args:
         conversations: List of conversations to summarize
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
+        response_schema: Pydantic model class for the LLM's raw output
+        output_schema: Pydantic model class for the final output/checkpoint format
         checkpoint_manager: Optional checkpoint manager for caching
 
     Returns:
-        List of conversation summaries
+        List of final output objects (typically ConversationSummary)
 
     Example:
         >>> model = SummaryModel(api_key="sk-...")
@@ -405,7 +409,7 @@ async def summarise_conversations(
     # Try to load from checkpoint
     if checkpoint_manager:
         cached = checkpoint_manager.load_checkpoint(
-            model.checkpoint_filename, ConversationSummary
+            model.checkpoint_filename, output_schema
         )
         if cached:
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
