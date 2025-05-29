@@ -77,7 +77,7 @@ class HDBUMAP(BaseDimensionalityReduction):
             )
             reduced_embeddings = umap_reducer.fit_transform(embeddings)
             logger.info(
-                f"UMAP dimensionality reduction completed: {embeddings.shape} -> {reduced_embeddings.shape}"
+                f"UMAP dimensionality reduction completed: {embeddings.shape} -> {reduced_embeddings.shape if hasattr(reduced_embeddings, 'shape') else 'unknown shape'}"
             )
         except Exception as e:
             logger.error(f"UMAP dimensionality reduction failed: {e}")

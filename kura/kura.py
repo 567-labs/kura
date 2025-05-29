@@ -12,7 +12,7 @@ from kura.base_classes import (
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
-from typing import Union, Optional, TypeVar
+from typing import Union, Optional, TypeVar, Any
 import os
 from pydantic import BaseModel
 from kura.types.dimensionality import ProjectedCluster
@@ -64,7 +64,7 @@ class Kura:
         disable_checkpoints: bool = False,
         console: Optional["Console"] = None,  # type: ignore
         disable_progress: bool = False,
-        **kwargs,  # For future use
+        **kwargs: Any,  # For future use
     ):
         """Initialize a new Kura instance with custom or default components.
 
