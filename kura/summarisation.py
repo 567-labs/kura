@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Optional, Type, Callable
 import asyncio
 import logging
 
@@ -62,7 +62,7 @@ class SummaryModel(BaseSummaryModel):
         prompt_template: Optional[str] = None,
         temperature: float = 0.2,
         **kwargs,
-    ) -> list[ConversationSummary]:
+    ) -> list[GeneratedSummary]:
         """
         Summarise conversations with configurable parameters.
 
@@ -74,7 +74,7 @@ class SummaryModel(BaseSummaryModel):
             **kwargs: Additional model-specific parameters (max_tokens, etc.)
 
         Returns:
-            List of conversation summaries (without extracted properties)
+            List of model outputs using the specified response_schema (GeneratedSummary or subclass)
         """
         # Initialize semaphore per-run to match event loop
         self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
@@ -190,7 +190,7 @@ Remember that
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> ConversationSummary:
+    ) -> GeneratedSummary:
         """
         Private method to summarise a single conversation.
         """
@@ -221,20 +221,10 @@ Remember that
                 )
                 raise
 
-        # Create summary with basic metadata (no extractors - handled separately)
-        summary = ConversationSummary(
-            chat_id=conversation.chat_id,
-            **resp.model_dump(),
-            metadata={
-                "conversation_turns": len(conversation.messages),
-                **conversation.metadata,
-            },
-        )
-
         logger.debug(
             f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {getattr(resp, 'concerning_score', None)}, user_frustration: {getattr(resp, 'user_frustration', None)}"
         )
-        return summary
+        return resp
 
     async def _summarise_with_console(
         self,
@@ -245,7 +235,7 @@ Remember that
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> list[ConversationSummary]:
+    ) -> list[GeneratedSummary]:
         """
         Summarise conversations with full-screen Rich console display showing progress and latest 3 results.
         """
@@ -353,10 +343,26 @@ Remember that
         return summaries
 
 
+def default_summary_mapper(
+    summary: GeneratedSummary, 
+    conversation: Conversation
+) -> ConversationSummary:
+    """Default mapper from GeneratedSummary to ConversationSummary."""
+    return ConversationSummary(
+        chat_id=conversation.chat_id,
+        metadata={
+            "conversation_turns": len(conversation.messages),
+            **conversation.metadata,
+        },
+        **summary.model_dump(),
+    )
+
+
 async def summarise_conversations(
     conversations: list[Conversation],
     *,
     model: BaseSummaryModel,
+    summary_converter: Callable[[GeneratedSummary, Conversation], ConversationSummary] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
 ) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations.
@@ -398,10 +404,14 @@ async def summarise_conversations(
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
             return cached
 
-    # Generate summaries
+    # Generate raw summaries
     logger.info("Generating new summaries...")
-    summaries = await model.summarise(conversations)
-    logger.info(f"Generated {len(summaries)} summaries")
+    raw_summaries = await model.summarise(conversations)
+    logger.info(f"Generated {len(raw_summaries)} raw summaries")
+
+    # Map to ConversationSummary objects
+    summaries = [summary_converter(summary, conversation) for summary, conversation in zip(raw_summaries, conversations)]
+    logger.info(f"Mapped to {len(summaries)} conversation summaries")
 
     # Save to checkpoint
     if checkpoint_manager:
