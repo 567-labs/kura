@@ -132,7 +132,7 @@ async def summarise_conversations(
         List of conversation summaries
 
     Example:
-        >>> openai_model = OpenAISummaryModel(api_key="sk-...")
+        >>> model = SummaryModel(api_key="sk-...")
         >>> checkpoint_mgr = CheckpointManager("./checkpoints")
         >>> summaries = await summarise_conversations(
         ...     conversations=my_conversations,

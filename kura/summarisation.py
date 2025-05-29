@@ -1,250 +1,107 @@
-from asyncio import Semaphore, gather
-from typing import Callable, Optional, Union
-
-import instructor
-from tqdm.asyncio import tqdm_asyncio
+from typing import Optional, Type
 import asyncio
 import logging
 
+import instructor
+from tqdm.asyncio import tqdm_asyncio
+from pydantic import BaseModel
+
 from kura.base_classes import BaseSummaryModel
-from kura.types import Conversation, ConversationSummary, ExtractedProperty
+from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
-
-# Rich imports handled by Kura base class
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from rich.console import Console
 
 logger = logging.getLogger(__name__)
 
 
 class SummaryModel(BaseSummaryModel):
-    @property
+    """
+    Instructor-based summary model following AGENT.md principles.
+
+    This implementation follows the embedding.py pattern:
+    - Core configuration in constructor (model, concurrency, API keys)
+    - Per-use configuration as method parameters (schema, prompts, temperature)
+    - Clean separation of concerns (no extractors - handled separately)
+    """
+
     def checkpoint_filename(self) -> str:
-        """The filename to use for checkpointing this model's output."""
+        """Return the filename to use for checkpointing this model's output."""
         return "summaries.jsonl"
 
     def __init__(
         self,
         model: str = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
-        extractors: list[
-            Callable[
-                [Conversation, Semaphore],
-                Union[ExtractedProperty, list[ExtractedProperty]],
-            ]
-        ] = [],
-        console: Optional["Console"] = None,
-        **kwargs,  # For future use
     ):
-        self.sems = None
-        self.extractors = extractors
-        self.max_concurrent_requests = max_concurrent_requests
+        """
+        Initialize OpenAI summary model with core configuration.
+
+        Following AGENT.md principles, only core model configuration goes here.
+        Per-use configuration (schemas, prompts, temperature) are method parameters.
+
+        Args:
+            model: OpenAI model identifier (e.g., "openai/gpt-4o-mini")
+            concurrent_jobs: Maximum concurrent API requests
+            **kwargs: Additional model-specific parameters (API keys, etc.)
+        """
         self.model = model
-        self.console = console
+        self.max_concurrent_requests = max_concurrent_requests
+        self.client = instructor.from_provider(self.model, async_client=True)
+
         logger.info(
-            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, extractors={len(extractors)}"
+            f"Initialized OpenAISummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
         )
 
-    async def _gather_with_progress(
-        self,
-        tasks,
-        desc: str = "Processing",
-        disable: bool = False,
-        show_preview: bool = False,
-    ):
-        """Helper method to run async gather with Rich progress bar if available, otherwise tqdm."""
-        if self.console and not disable:
-            try:
-                from rich.progress import (
-                    Progress,
-                    SpinnerColumn,
-                    TextColumn,
-                    BarColumn,
-                    TaskProgressColumn,
-                    TimeRemainingColumn,
-                )
-                from rich.live import Live
-                from rich.layout import Layout
-                from rich.panel import Panel
-                from rich.text import Text
-                from rich.errors import LiveError
-
-                if show_preview:
-                    # Use Live display with progress and preview buffer
-                    layout = Layout()
-                    layout.split_column(
-                        Layout(name="progress", size=3), Layout(name="preview")
-                    )
-
-                    preview_buffer = []
-                    max_preview_items = 3
-
-                    # Create progress with cleaner display
-                    progress = Progress(
-                        SpinnerColumn(),
-                        TextColumn("[progress.description]{task.description}"),
-                        BarColumn(),
-                        TaskProgressColumn(),
-                        TimeRemainingColumn(),
-                        console=self.console,
-                    )
-                    task_id = progress.add_task(f"[cyan]{desc}...", total=len(tasks))
-                    layout["progress"].update(progress)
-
-                    try:
-                        with Live(layout, console=self.console, refresh_per_second=4):
-                            completed_tasks = []
-                            for i, task in enumerate(asyncio.as_completed(tasks)):
-                                result = await task
-                                completed_tasks.append(result)
-                                progress.update(task_id, completed=i + 1)
-
-                                # Add to preview buffer if it's a ConversationSummary
-                                if hasattr(result, "summary") and hasattr(
-                                    result, "chat_id"
-                                ):
-                                    preview_buffer.append(result)
-                                    if len(preview_buffer) > max_preview_items:
-                                        preview_buffer.pop(0)
-
-                                    # Update preview display
-                                    preview_text = Text()
-                                    for j, summary in enumerate(preview_buffer):
-                                        # Color based on user frustration level
-                                        frustration_style = {
-                                            1: "green",  # Not frustrated
-                                            2: "yellow",  # Slightly frustrated
-                                            3: "orange3",  # Moderately frustrated
-                                            4: "red",  # Very frustrated
-                                            5: "red1",  # Extremely frustrated
-                                        }.get(summary.user_frustration, "white")
-
-                                        # Color based on concerning score
-                                        concern_style = {
-                                            1: "green",  # Not concerning
-                                            2: "yellow",  # Slightly concerning
-                                            3: "orange3",  # Moderately concerning
-                                            4: "red",  # Very concerning
-                                            5: "red1",  # Extremely concerning
-                                        }.get(summary.concerning_score, "white")
-
-                                        preview_text.append(
-                                            f"Chat {summary.chat_id[:8]}...: ",
-                                            style="bold blue",
-                                        )
-                                        preview_text.append(
-                                            f"{summary.summary[:100]}...\n",
-                                            style=frustration_style,
-                                        )
-
-                                        if summary.request:
-                                            preview_text.append(
-                                                f"Request: {summary.request[:50]}...\n",
-                                                style=frustration_style,
-                                            )
-                                        if summary.languages:
-                                            preview_text.append(
-                                                f"Languages: {', '.join(summary.languages)}\n",
-                                                style="dim cyan",
-                                            )
-                                        if summary.task:
-                                            preview_text.append(
-                                                f"Task: {summary.task[:50]}...\n",
-                                                style=concern_style,
-                                            )
-
-                                        # Add frustration and concern indicators
-                                        if summary.user_frustration:
-                                            preview_text.append(
-                                                f"Frustration: {'😊' * summary.user_frustration}\n",
-                                                style=frustration_style,
-                                            )
-                                        if summary.concerning_score:
-                                            preview_text.append(
-                                                f"Concern: {'⚠️' * summary.concerning_score}\n",
-                                                style=concern_style,
-                                            )
-
-                                        preview_text.append("\n")
-
-                                    layout["preview"].update(
-                                        Panel(
-                                            preview_text,
-                                            title=f"[green]Recent Summaries ({len(preview_buffer)}/{max_preview_items})",
-                                            border_style="green",
-                                        )
-                                    )
-
-                            return completed_tasks
-                    except LiveError:
-                        # If Rich Live fails, fall back to simple progress without Live
-                        with progress:
-                            completed_tasks = []
-                            for i, task in enumerate(asyncio.as_completed(tasks)):
-                                result = await task
-                                completed_tasks.append(result)
-                                progress.update(task_id, completed=i + 1)
-                            return completed_tasks
-                else:
-                    # Regular progress bar without preview
-                    progress = Progress(
-                        SpinnerColumn(),
-                        TextColumn("[progress.description]{task.description}"),
-                        BarColumn(),
-                        TaskProgressColumn(),
-                        TimeRemainingColumn(),
-                        console=self.console,
-                    )
-
-                    with progress:
-                        task_id = progress.add_task(
-                            f"[cyan]{desc}...", total=len(tasks)
-                        )
-
-                        completed_tasks = []
-                        for i, task in enumerate(asyncio.as_completed(tasks)):
-                            result = await task
-                            completed_tasks.append(result)
-                            progress.update(task_id, completed=i + 1)
-
-                        return completed_tasks
-
-            except (ImportError, LiveError):  # type: ignore
-                # Rich not available or Live error, fall back to simple print statements
-                self.console.print(f"[cyan]Starting {desc}...[/cyan]")
-                completed_tasks = []
-                for i, task in enumerate(asyncio.as_completed(tasks)):
-                    result = await task
-                    completed_tasks.append(result)
-                    if (i + 1) % max(1, len(tasks) // 10) == 0 or i == len(tasks) - 1:
-                        self.console.print(
-                            f"[cyan]{desc}: {i + 1}/{len(tasks)} completed[/cyan]"
-                        )
-                self.console.print(f"[green]✓ {desc} completed![/green]")
-                return completed_tasks
-        else:
-            # Use tqdm as fallback when Rich is not available or disabled
-            return await tqdm_asyncio.gather(*tasks, desc=desc, disable=disable)
-
     async def summarise(
-        self, conversations: list[Conversation]
+        self,
+        conversations: list[Conversation],
+        *,
+        response_schema: Type[BaseModel] = GeneratedSummary,
+        prompt_template: Optional[str] = None,
+        temperature: float = 0.2,
+        **kwargs,
     ) -> list[ConversationSummary]:
-        # Initialise the Semaphore on each run so that it's attached to the same event loop
+        """
+        Summarise conversations with configurable parameters.
+
+        Following AGENT.md principles, all important configuration is exposed
+        as method parameters rather than buried in the implementation.
+
+        Args:
+            conversations: List of conversations to summarize
+            response_schema: Pydantic model class for structured LLM output
+            prompt_template: prompt_template which will be used to summarise the conversations
+            temperature: LLM temperature for generation
+            **kwargs: Additional model-specific parameters (max_tokens, etc.)
+
+        Returns:
+            List of conversation summaries (without extracted properties)
+        """
+        # Initialize semaphore per-run to match event loop
         self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
 
         logger.info(
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
 
-        summaries = await self._gather_with_progress(
-            [
-                self.summarise_conversation(conversation)
+        if prompt_template is None:
+            prompt_template = self._get_default_prompt_template()
+
+        client = instructor.from_provider(self.model, async_client=True)
+
+        # Simple progress tracking with tqdm
+        summaries = await tqdm_asyncio.gather(
+            *[
+                self._summarise_single_conversation(
+                    conversation,
+                    client=client,
+                    response_schema=response_schema,
+                    prompt_template=prompt_template,
+                    temperature=temperature,
+                    **kwargs,
+                )
                 for conversation in conversations
             ],
             desc=f"Summarising {len(conversations)} conversations",
-            show_preview=True,
         )
 
         logger.info(
@@ -252,83 +109,14 @@ class SummaryModel(BaseSummaryModel):
         )
         return summaries
 
-    async def apply_hooks(
-        self, conversation: Conversation
-    ) -> dict[str, Union[str, int, float, bool, list[str], list[int], list[float]]]:
-        logger.debug(
-            f"Applying {len(self.extractors)} extractors to conversation {conversation.chat_id}"
-        )
-
-        coros = [
-            extractor(conversation, self.semaphore) for extractor in self.extractors
-        ]
-
-        try:
-            metadata_extracted = await gather(*coros)  # pyright: ignore
-            logger.debug(
-                f"Successfully extracted metadata from {len(self.extractors)} extractors for conversation {conversation.chat_id}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to extract metadata for conversation {conversation.chat_id}: {e}"
-            )
-            raise
-
-        metadata = {}
-        for result in metadata_extracted:
-            if isinstance(result, ExtractedProperty):
-                if result.name in metadata:
-                    logger.error(
-                        f"Duplicate metadata name: {result.name} for conversation {conversation.chat_id}"
-                    )
-                    raise ValueError(
-                        f"Duplicate metadata name: {result.name}. Please use unique names for each metadata property."
-                    )
-
-                metadata[result.name] = result.value
-
-            if isinstance(result, list):
-                for extracted_property in result:
-                    assert isinstance(extracted_property, ExtractedProperty)
-                    if extracted_property.name in metadata:
-                        logger.error(
-                            f"Duplicate metadata name: {extracted_property.name} for conversation {conversation.chat_id}"
-                        )
-                        raise ValueError(
-                            f"Duplicate metadata name: {extracted_property.name}. Please use unique names for each metadata property."
-                        )
-                    metadata[extracted_property.name] = extracted_property.value
-
-        logger.debug(
-            f"Extracted {len(metadata)} metadata properties for conversation {conversation.chat_id}"
-        )
-        return metadata
-
-    async def summarise_conversation(
-        self, conversation: Conversation
-    ) -> ConversationSummary:
+    def _get_default_prompt_template(self) -> str:
         """
-        This summarisation model is designed to extract key information from a conversation between an AI assistant and a user.
-        It is designed to be used in a pipeline to summarise conversations and extract metadata.
+        Get the default prompt template for conversation summarization.
 
-        It is based on the Clio paper:
-            https://assets.anthropic.com/m/7e1ab885d1b24176/original/Clio-Privacy-Preserving-Insights-into-Real-World-AI-Use.pdf
-
-        It is designed to be used in a pipeline to summarise conversations and extract metadata.
+        Based on the Clio paper:
+        https://assets.anthropic.com/m/7e1ab885d1b24176/original/Clio-Privacy-Preserving-Insights-into-Real-World-AI-Use.pdf
         """
-        logger.debug(
-            f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
-        )
-
-        client = instructor.from_provider(self.model, async_client=True)
-        async with self.semaphore:  # type: ignore
-            try:
-                resp = await client.chat.completions.create(  # type: ignore
-                    temperature=0.2,  # as per the Clio paper
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": """
+        return """
 The following is a conversation between an AI assistant and a user:
 
 <messages>
@@ -380,11 +168,41 @@ Remember that
 - Summaries should start with "The user's overall request for the assistant is to"
 - Make sure to omit any personally identifiable information (PII), like names, locations, phone numbers, email addressess, company names and so on.
 - Make sure to indicate specific details such as programming languages, frameworks, libraries and so on which are relevant to the task.
-                        """,
+        """.strip()
+
+    async def _summarise_single_conversation(
+        self,
+        conversation: Conversation,
+        *,
+        client,  # ✅ Shared client passed from parent method
+        response_schema: Type[BaseModel],
+        prompt_template: str,
+        temperature: float,
+        **kwargs,
+    ) -> ConversationSummary:
+        """
+        Private method to summarise a single conversation.
+
+        Uses configurable parameters and shared client passed from the public summarise method.
+        Following AGENT.md principles, all behavior is controlled by parameters.
+        """
+        logger.debug(
+            f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
+        )
+
+        async with self._semaphore:  # type: ignore
+            try:
+                resp = await client.chat.completions.create(  # type: ignore
+                    temperature=temperature,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt_template,
                         },
                     ],
                     context={"messages": conversation.messages},
-                    response_model=GeneratedSummary,
+                    response_model=response_schema,
+                    **kwargs,
                 )
                 logger.debug(
                     f"Successfully generated summary for conversation {conversation.chat_id}"
@@ -395,28 +213,17 @@ Remember that
                 )
                 raise
 
-        try:
-            metadata = await self.apply_hooks(conversation)
-            logger.debug(
-                f"Successfully applied hooks for conversation {conversation.chat_id}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to apply hooks for conversation {conversation.chat_id}: {e}"
-            )
-            raise
-
+        # Create summary with basic metadata (no extractors - handled separately)
         summary = ConversationSummary(
             chat_id=conversation.chat_id,
             **resp.model_dump(),
             metadata={
                 "conversation_turns": len(conversation.messages),
                 **conversation.metadata,
-                **metadata,
             },
         )
 
         logger.debug(
-            f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {resp.concerning_score}, user_frustration: {resp.user_frustration}"
+            f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {getattr(resp, 'concerning_score', None)}, user_frustration: {getattr(resp, 'user_frustration', None)}"
         )
         return summary
