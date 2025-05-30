@@ -3,7 +3,7 @@ from .v1.kura import (
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
 )
-from .v1 import CheckpointManager
+from .checkpoint import CheckpointManager
 from .summarisation import SummaryModel, summarise_conversations
 from .types import Conversation
 
