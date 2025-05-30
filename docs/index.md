@@ -124,7 +124,7 @@ Clusters (190 conversations)
 ### Getting Started
 
 - [Installation Guide](getting-started/installation.md)
-- [Tutorial: Procedural API](getting-started/tutorial-procedural-api.md)
+- [Quickstart](getting-started/quickstart.md)
 
 ### Core Concepts
 
