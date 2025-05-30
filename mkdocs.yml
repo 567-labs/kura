@@ -75,28 +75,26 @@ theme:
     text: Roboto
     code: Roboto Mono
   favicon: assets/favicon.png
-  logo: assets/logo.svg
 
 copyright: Copyright &copy; 2025 Ivan Leo
 
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: getting-started/installation.md
-    - Quickstart: getting-started/quickstart.md
-    - Configuration: getting-started/configuration.md
-    - Procedural API Tutorial: getting-started/tutorial-procedural-api.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
   - Core Concepts:
-    - Overview: core-concepts/overview.md
-    - Conversations: core-concepts/conversations.md
-    - Summarization: core-concepts/summarization.md
-    - Embedding: core-concepts/embedding.md
-    - Clustering: core-concepts/clustering.md
-    - Meta-Clustering: core-concepts/meta-clustering.md
-    - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
+      - Overview: core-concepts/overview.md
+      - Conversations: core-concepts/conversations.md
+      - Summarization: core-concepts/summarization.md
+      - Embedding: core-concepts/embedding.md
+      - Clustering: core-concepts/clustering.md
+      - Meta-Clustering: core-concepts/meta-clustering.md
+      - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
   - API Reference: api/index.md
   - Blog:
-    - blog/index.md
+      - blog/index.md
 
 plugins:
   - social

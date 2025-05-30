@@ -22,9 +22,6 @@ dependencies = [
     "typer>=0.9.0",
     "sqlmodel>=0.0.14",
     "datasets>=3.6.0",
-    "mkdocs-material-extensions>=1.3.1",
-    "mkdocs-rss-plugin>=1.17.1",
-    "mkdocstrings[python]>=0.27.0",
 ]
 
 
@@ -35,12 +32,16 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 docs = [
-    "mkdocs-material>=9.5.49",
+    "mkdocs-material[imaging]>=9.5.49",
     "mkdocs-minify-plugin>=0.8.0",
     "mkdocs-rss-plugin>=1.17.1",
     "mkdocstrings>=0.27.0",
     "mkdocstrings-python>=1.13.0",
     "pymdown-extensions>=10.14",
+    "mkdocs-material-extensions>=1.3.1",
+    "mkdocs-rss-plugin>=1.17.1",
+    "mkdocstrings[python]>=0.27.0",
+    "mkdocs-minify-plugin>=0.8.0",
 ]
 dev = [
     "pyright>=1.1.399",

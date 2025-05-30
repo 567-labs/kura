@@ -25,8 +25,6 @@ When using the CLI, you can configure the checkpoint directory:
 kura --dir ./my_checkpoints
 ```
 
-## Procedural API Configuration (v1)
-
 The procedural API provides flexibility by breaking the pipeline into composable functions:
 
 ```python
@@ -85,15 +83,6 @@ async def analyze(conversations): # Added conversations as an argument
     return projected
 ```
 
-### Key Differences with Procedural API
-
-1. **Explicit Function Calls**: Each step is a separate function call.
-2. **Keyword Arguments**: All functions use keyword-only arguments for clarity.
-3. **Model Configuration**: Models are configured independently before being passed to the procedural functions.
-4. **Checkpoint Control**: Checkpoint behavior for each step can be managed by passing a configured `CheckpointManager` or `None` to disable checkpointing for specific steps.
-
-### Heterogeneous Models
-
 The procedural API excels at working with different model implementations for the same task:
 
 ```python
@@ -127,12 +116,13 @@ from kura import summarise_conversations
 #     checkpoint_manager=checkpoint_mgr
 # )
 ```
-*Note: The heterogeneous models example has been commented out as it relies on specific model classes (`OpenAISummaryModel`, `VLLMSummaryModel`, `HuggingFaceSummaryModel`) whose existence and import paths are not confirmed from the provided context. Ensure these are correctly defined and imported in your actual usage.*
+
+_Note: The heterogeneous models example has been commented out as it relies on specific model classes (`OpenAISummaryModel`, `VLLMSummaryModel`, `HuggingFaceSummaryModel`) whose existence and import paths are not confirmed from the provided context. Ensure these are correctly defined and imported in your actual usage._
 
 ## Next Steps
 
 Now that you understand how to configure Kura using the procedural API, you can:
 
 - [Learn about core concepts](../core-concepts/overview.md)
-- [Try the Procedural API Tutorial](../getting-started/tutorial-procedural-api.md)
+- [Try the Procedural API Tutorial](../getting-started/quickstart.md)
 - [Check out the API Reference](../api/index.md)
