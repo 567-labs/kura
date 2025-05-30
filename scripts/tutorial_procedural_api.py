@@ -20,7 +20,7 @@ def show_section_header(title):
 
 with timer("Importing kura modules"):
     # Import the procedural Kura v1 components
-    from kura.v1 import (
+    from kura import (
         summarise_conversations,
         generate_base_clusters_from_conversation_summaries,
         reduce_clusters_from_base_clusters,
