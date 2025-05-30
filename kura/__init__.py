@@ -7,7 +7,6 @@ from .v1 import CheckpointManager
 from .summarisation import SummaryModel, summarise_conversations
 from .types import Conversation
 
-
 __all__ = [
     "SummaryModel",
     "Conversation",
