@@ -2,6 +2,13 @@
 
 ![Kura Architecture](assets/images/kura-architecture.png)
 
+[![PyPI Downloads](https://img.shields.io/pypi/dm/kura?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/kura/)
+[![GitHub Stars](https://img.shields.io/github/stars/567-labs/kura?style=flat-square&logo=github)](https://github.com/567-labs/kura/stargazers)
+[![Documentation](https://img.shields.io/badge/docs-available-brightgreen?style=flat-square&logo=gitbook&logoColor=white)](https://567-labs.github.io/kura/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/pypi/pyversions/kura?style=flat-square&logo=python&logoColor=white)](https://pypi.org/project/kura/)
+[![PyPI Version](https://img.shields.io/pypi/v/kura?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/kura/)
+
 Kura is an open-source library for understanding chat data through machine learning, inspired by [Anthropic's CLIO](https://www.anthropic.com/research/clio). It provides a functional, composable API for clustering conversations to discover patterns and insights.
 
 ## Why Analyze Conversation Data?
@@ -103,31 +110,13 @@ async def process_conversations():
 results = asyncio.run(process_conversations())
 ```
 
-## Key Design Principles
-
-### Function-Based Architecture
-The procedural API follows the principle of **functions orchestrate, models execute**:
-- Each pipeline step is a pure function with explicit inputs/outputs
-- No hidden state or side effects
-- Works with any model implementing the required interface
-
-### Polymorphism Through Interfaces
-All functions work with heterogeneous models:
-- `BaseSummaryModel` - OpenAI, vLLM, Hugging Face, local models
-- `BaseClusterModel` - HDBSCAN, KMeans, custom algorithms
-- `BaseMetaClusterModel` - Different hierarchical strategies
-- `BaseDimensionalityReduction` - UMAP, t-SNE, PCA
-
-### Keyword-Only Arguments
-All functions use keyword-only arguments for clarity and maintainability.
-
 ## Documentation
 
-- **Getting Started**
+### Getting Started
   - [Installation Guide](getting-started/installation.md)
   - [Tutorial: Procedural API](getting-started/tutorial-procedural-api.md)
 
-- **Core Concepts**
+### Core Concepts
   - [Conversations](core-concepts/conversations.md)
   - [Embedding](core-concepts/embedding.md)
   - [Clustering](core-concepts/clustering.md)
@@ -135,7 +124,7 @@ All functions use keyword-only arguments for clarity and maintainability.
   - [Meta-Clustering](core-concepts/meta-clustering.md)
   - [Dimensionality Reduction](core-concepts/dimensionality-reduction.md)
 
-- **API Reference**
+### API Reference
   - [Procedural API Documentation](api/index.md)
 
 ## About

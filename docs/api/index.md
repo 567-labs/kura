@@ -21,11 +21,7 @@ from kura.summarisation import SummaryModel
 
 ## Core Classes
 
-### Main Module
-
-::: kura.Kura
-
-## Procedural API (v1)
+## Procedural API
 
 The procedural API provides a functional approach to conversation analysis with composable pipeline functions.
 

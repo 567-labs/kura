@@ -1,36 +1,83 @@
 site_name: Kura
 site_url: https://usekura.xyz
-site_author: Ivan Leo # Replace with your actual name or organization name
+site_author: Ivan Leo
 site_description: A tool for analysing and visualising chat data
+repo_name: kura
+repo_url: https://github.com/567-labs/kura
+edit_uri: edit/main/docs/
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/567-labs/kura # Replace with your GitHub repo link
+      link: https://github.com/567-labs/kura
     - icon: fontawesome/brands/twitter
-      link: https://twitter.com/ivanleomk # Replace with your Twitter handle
+      link: https://twitter.com/ivanleomk
   analytics:
     provider: google
     property: G-5ZYBS2C5VF
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="https://github.com/567-labs/kura/issues" target="_blank" rel="noopener">GitHub issues</a>.
 
 theme:
   name: material
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
   features:
+    - content.action.edit
+    - content.action.view
     - content.code.select
     - content.code.annotate
     - content.code.copy
     - content.tabs.link
+    - content.tooltips
     - navigation.tabs
     - navigation.sections
     - navigation.expand
-    - content.social.cards # Enables social cards
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - content.social.cards
   palette:
-    primary: indigo
-    accent: indigo
-  favicon: assets/favicon.png # Example path, replace with your actual favicon path
-  logo: assets/logo.svg # Example path, replace with your actual logo path
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/favicon.png
+  logo: assets/logo.svg
 
-copyright: Copyright &copy; 2025 Ivan Leo # Replace with your actual name or organization name
+copyright: Copyright &copy; 2025 Ivan Leo
 
 nav:
   - Home: index.md
@@ -52,6 +99,11 @@ nav:
     - blog/index.md
 
 plugins:
+  - social
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
   - blog
   - rss:
       match_path: blog/posts/.*
@@ -61,7 +113,6 @@ plugins:
         - categories
         - tags
       use_git: false
-  - search
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -72,21 +123,40 @@ plugins:
             show_root_heading: true
             show_if_no_docstring: true
             show_signature_annotations: true
-            members_order: source
+            members_order: alphabetical
+            allow_inspection: true
+            show_bases: true
 
 markdown_extensions:
+  - abbr
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: 567-labs
+      repo: kura
+  - pymdownx.mark
+  - pymdownx.smartsymbols
   - pymdownx.snippets
-  - pymdownx.superfences
-  - attr_list
-  - md_in_html
-  - admonition
-  - pymdownx.details
-  - pymdownx.tasklist:
-      custom_checkbox: true
   - pymdownx.tabbed:
       alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true

@@ -1,6 +1,10 @@
+mkdocs>=1.5.0
 mkdocs-material==9.5.44
+Pillow>=10.0.0
 mkdocs-minify-plugin==0.8.0
 mkdocstrings==0.27.0
 mkdocstrings-python==1.12.2
+mkdocs-jupyter>=0.24.0
+mkdocs-redirects>=1.2.0
 pymdown-extensions==10.12
 mkdocs-rss-plugin==1.16.0
