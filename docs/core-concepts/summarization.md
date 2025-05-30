@@ -146,7 +146,7 @@ Analyze this technical support conversation, focusing on:
 - Whether the solution was effective
 
 <messages>
-{% for message in messages %}
+{% for message in conversation.messages %}
 <message>{{message.role}}: {{message.content}}</message>
 {% endfor %}
 </messages>
