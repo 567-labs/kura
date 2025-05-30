@@ -137,7 +137,7 @@ class SummaryModel(BaseSummaryModel):
 The following is a conversation between an AI assistant and a user:
 
 <messages>
-{% for message in messages %}
+{% for message in conversation.messages %}
 <message>{{message.role}}: {{message.content}}</message>
 {% endfor %}
 </messages>

@@ -65,7 +65,7 @@ async def main():
     # }
 
 
-asyncio.run(main()
+asyncio.run(main())
 ```
 
 This extracts structured information including the conversation summary, user request, programming languages mentioned, task description, and quality metrics.
@@ -185,7 +185,7 @@ summaries = await summarise_conversations(
 
 Summary converters transform the raw LLM output into your final data structure, adding computed fields or reformatting data. This is where you merge conversation metadata with extracted content and apply business logic.
 
-This is then cached in the directory you specify if you're defined a checkpoint manager, allowing you to store and leverage this data in our interactive visualiser UI.
+This is then cached in the directory you specify if you've defined a checkpoint manager, allowing you to store and leverage this data in our interactive visualiser UI.
 
 ```python
 from kura.types import ConversationSummary
