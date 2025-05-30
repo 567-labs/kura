@@ -14,17 +14,16 @@ Key benefits over the class-based approach:
 
 import logging
 from typing import Optional, TypeVar, List
-import os
 from pydantic import BaseModel
 
 # Import existing Kura components
 from kura.base_classes import (
-    BaseSummaryModel,
     BaseClusterModel,
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
-from kura.types import Conversation, Cluster, ConversationSummary
+from kura.checkpoint import CheckpointManager
+from kura.types import Cluster, ConversationSummary
 from kura.types.dimensionality import ProjectedCluster
 
 # Set up logger
@@ -34,136 +33,8 @@ T = TypeVar("T", bound=BaseModel)
 
 
 # =============================================================================
-# Checkpoint Management
-# =============================================================================
-
-
-class CheckpointManager:
-    """Handles checkpoint loading and saving for pipeline steps."""
-
-    def __init__(self, checkpoint_dir: str, *, enabled: bool = True):
-        """Initialize checkpoint manager.
-
-        Args:
-            checkpoint_dir: Directory for saving checkpoints
-            enabled: Whether checkpointing is enabled
-        """
-        self.checkpoint_dir = checkpoint_dir
-        self.enabled = enabled
-
-        if self.enabled:
-            self.setup_checkpoint_dir()
-
-    def setup_checkpoint_dir(self) -> None:
-        """Create checkpoint directory if it doesn't exist."""
-        if not os.path.exists(self.checkpoint_dir):
-            os.makedirs(self.checkpoint_dir)
-            logger.info(f"Created checkpoint directory: {self.checkpoint_dir}")
-
-    def get_checkpoint_path(self, filename: str) -> str:
-        """Get full path for a checkpoint file."""
-        return os.path.join(self.checkpoint_dir, filename)
-
-    def load_checkpoint(self, filename: str, model_class: type[T]) -> Optional[List[T]]:
-        """Load data from a checkpoint file if it exists.
-
-        Args:
-            filename: Name of the checkpoint file
-            model_class: Pydantic model class for deserializing the data
-
-        Returns:
-            List of model instances if checkpoint exists, None otherwise
-        """
-        if not self.enabled:
-            return None
-
-        checkpoint_path = self.get_checkpoint_path(filename)
-        if os.path.exists(checkpoint_path):
-            logger.info(
-                f"Loading checkpoint from {checkpoint_path} for {model_class.__name__}"
-            )
-            with open(checkpoint_path, "r") as f:
-                return [model_class.model_validate_json(line) for line in f]
-        return None
-
-    def save_checkpoint(self, filename: str, data: List[T]) -> None:
-        """Save data to a checkpoint file.
-
-        Args:
-            filename: Name of the checkpoint file
-            data: List of model instances to save
-        """
-        if not self.enabled:
-            return
-
-        checkpoint_path = self.get_checkpoint_path(filename)
-        with open(checkpoint_path, "w") as f:
-            for item in data:
-                f.write(item.model_dump_json() + "\n")
-        logger.info(f"Saved checkpoint to {checkpoint_path} with {len(data)} items")
-
-
-# =============================================================================
 # Core Pipeline Functions
 # =============================================================================
-
-
-async def summarise_conversations(
-    conversations: List[Conversation],
-    *,
-    model: BaseSummaryModel,
-    checkpoint_manager: Optional[CheckpointManager] = None,
-) -> List[ConversationSummary]:
-    """Generate summaries for a list of conversations.
-
-    This is a pure function that takes conversations and a summary model,
-    and returns conversation summaries. Optionally uses checkpointing.
-
-    The function works with any model that implements BaseSummaryModel,
-    supporting heterogeneous backends (OpenAI, vLLM, Hugging Face, etc.)
-    through polymorphism.
-
-    Args:
-        conversations: List of conversations to summarize
-        model: Model to use for summarization (OpenAI, vLLM, local, etc.)
-        checkpoint_manager: Optional checkpoint manager for caching
-
-    Returns:
-        List of conversation summaries
-
-    Example:
-        >>> openai_model = OpenAISummaryModel(api_key="sk-...")
-        >>> checkpoint_mgr = CheckpointManager("./checkpoints")
-        >>> summaries = await summarise_conversations(
-        ...     conversations=my_conversations,
-        ...     model=openai_model,
-        ...     checkpoint_manager=checkpoint_mgr
-        ... )
-    """
-    logger.info(
-        f"Starting summarization of {len(conversations)} conversations using {type(model).__name__}"
-    )
-
-    # Try to load from checkpoint
-    if checkpoint_manager:
-        cached = checkpoint_manager.load_checkpoint(
-            model.checkpoint_filename, ConversationSummary
-        )
-        if cached:
-            logger.info(f"Loaded {len(cached)} summaries from checkpoint")
-            return cached
-
-    # Generate summaries
-    logger.info("Generating new summaries...")
-    summaries = await model.summarise(conversations)
-    logger.info(f"Generated {len(summaries)} summaries")
-
-    # Save to checkpoint
-    if checkpoint_manager:
-        logger.info(f"Saving summaries to checkpoint: {model.checkpoint_filename}")
-        checkpoint_manager.save_checkpoint(model.checkpoint_filename, summaries)
-
-    return summaries
 
 
 async def generate_base_clusters_from_conversation_summaries(
