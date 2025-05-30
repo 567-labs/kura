@@ -83,10 +83,11 @@ class Kura:
             dimensionality reduction) are now defined as properties in their respective base classes
             rather than constructor arguments.
         """
-        print("Kura is deprecated. Please use the procedural API functions instead.")
+        from warnings import warn
 
-        raise DeprecationWarning(
-            "Kura is deprecated. Please use the procedural API functions instead."
+        warn(
+            "Kura is deprecated. Please use the procedural API functions instead.",
+            DeprecationWarning,
         )
 
         # Initialize Rich console if available and not provided
