@@ -1,5 +1,4 @@
 from kura.dimensionality import HDBUMAP
-from kura.types import Conversation, Cluster
 from kura.embedding import OpenAIEmbeddingModel
 from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
@@ -15,8 +14,6 @@ from kura.base_classes import (
 from typing import Union, Optional, TypeVar
 import os
 from pydantic import BaseModel
-from kura.types.dimensionality import ProjectedCluster
-from kura.types import ConversationSummary
 
 # Try to import Rich, fall back gracefully if not available
 try:
