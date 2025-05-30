@@ -275,7 +275,7 @@ The procedural API in `kura/v1/` provides a functional approach to the pipeline:
 
 ### Example Usage
 ```python
-from kura.v1 import (
+from kura import (
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,

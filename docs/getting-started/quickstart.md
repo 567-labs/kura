@@ -27,14 +27,19 @@ Let's walk through each step.
 Here's a complete example to get you started with Kura using a sample dataset:
 
 ```python
-from kura import Kura
-from kura.types import Conversation
-import asyncio
-
-# Initialize Kura with default components
-kura = Kura(
-    checkpoint_dir="./tutorial_checkpoints"
+from kura import (
+    summarise_conversations,
+    generate_base_clusters_from_conversation_summaries,
+    reduce_clusters_from_base_clusters,
+    reduce_dimensionality_from_clusters,
+    CheckpointManager
 )
+from kura.types import Conversation
+from kura.summarisation import SummaryModel
+from kura.cluster import ClusterModel
+from kura.meta_cluster import MetaClusterModel
+from kura.dimensionality import HDBUMAP
+import asyncio
 
 # Load sample conversations from Hugging Face
 # This loads 190 synthetic programming conversations
@@ -44,23 +49,49 @@ conversations = Conversation.from_hf_dataset(
 )
 # Expected output: "Loaded 190 conversations successfully!"
 
-# Run the clustering pipeline
-# This will:
-# 1. Generate conversation summaries
-# 2. Create base clusters from summaries
-# 3. Reduce clusters hierarchically
-# 4. Project clusters to 2D for visualization
-asyncio.run(kura.cluster_conversations(conversations))
-# Expected output:
-# "Generated 190 summaries"
-# "Generated 19 base clusters"
-# "Reduced to 29 meta clusters"
-# "Generated 29 projected clusters"
+async def main():
+    # Initialize models and checkpoint manager
+    summary_model = SummaryModel()
+    cluster_model = ClusterModel()
+    meta_cluster_model = MetaClusterModel()
+    dimensionality_model = HDBUMAP()
+    checkpoint_manager = CheckpointManager("./tutorial_checkpoints", enabled=True)
+    
+    # Run the clustering pipeline step by step
+    # 1. Generate conversation summaries
+    summaries = await summarise_conversations(
+        conversations, 
+        model=summary_model, 
+        checkpoint_manager=checkpoint_manager
+    )
+    
+    # 2. Create base clusters from summaries
+    clusters = await generate_base_clusters_from_conversation_summaries(
+        summaries, 
+        model=cluster_model, 
+        checkpoint_manager=checkpoint_manager
+    )
+    
+    # 3. Reduce clusters hierarchically
+    reduced_clusters = await reduce_clusters_from_base_clusters(
+        clusters, 
+        model=meta_cluster_model, 
+        checkpoint_manager=checkpoint_manager
+    )
+    
+    # 4. Project clusters to 2D for visualization
+    result = await reduce_dimensionality_from_clusters(
+        reduced_clusters, 
+        model=dimensionality_model, 
+        checkpoint_manager=checkpoint_manager
+    )
+
+asyncio.run(main())
 
 # Visualize the results in the terminal
-kura.visualise_clusters()
-# Expected output: Hierarchical tree showing 10 root clusters
-# with topics like:
+from kura.visualization import visualise_clusters_rich
+visualise_clusters_rich(result)
+# Expected output: Hierarchical tree showing clusters with topics like:
 # - Create engaging, SEO-optimized content for online platforms (40 conversations)
 # - Help me visualize and analyze data across platforms (30 conversations)
 # - Troubleshoot and implement authentication in web APIs (22 conversations)
@@ -69,10 +100,10 @@ kura.visualise_clusters()
 
 This will:
 
-1. Initialize Kura with checkpoint directory for saving results
-2. Load 190 synthetic programming conversations from Hugging Face
-3. Process them through the complete analysis pipeline
-4. Generate 29 hierarchical clusters organized into 10 root categories
+1. Initialize models and checkpoint manager for saving results
+2. Load 190 synthetic programming conversations from Hugging Face  
+3. Process them through the complete analysis pipeline step by step
+4. Generate hierarchical clusters organized into categories
 5. Display the hierarchical clustering results in the terminal
 
 ### Expected Visualization Output

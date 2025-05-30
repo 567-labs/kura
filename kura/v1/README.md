@@ -69,7 +69,7 @@ All functions use keyword-only arguments for:
 ```python
 import asyncio
 import logging
-from kura.v1 import (
+from kura import (
     summarise_conversations, 
     generate_base_clusters_from_conversation_summaries, 
     reduce_clusters_from_base_clusters,
@@ -362,60 +362,11 @@ logging.basicConfig(
 )
 
 # Or get the specific logger
-logger = logging.getLogger('kura.v1.kura')
+logger = logging.getLogger('kura.kura')
 logger.setLevel(logging.DEBUG)
 ```
 
-## Migration from Class-based Kura
 
-### Before (Class-based)
-```python
-from kura import Kura
-
-kura = Kura(max_clusters=5, checkpoint_dir="./analysis")
-result = await kura.cluster_conversations(conversations)
-```
-
-### After (Procedural)
-```python
-from kura.v1 import (
-    summarise_conversations, generate_base_clusters_from_conversation_summaries, 
-    reduce_clusters_from_base_clusters, reduce_dimensionality_from_clusters, CheckpointManager
-)
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
-
-# Set up models and checkpointing
-summary_model = SummaryModel()
-cluster_model = ClusterModel()
-meta_cluster_model = MetaClusterModel(max_clusters=5)  # Configure here
-dimensionality_model = HDBUMAP()
-checkpoint_manager = CheckpointManager("./analysis", enabled=True)
-
-# Run pipeline with explicit keyword arguments
-summaries = await summarise_conversations(
-    conversations,
-    model=summary_model,
-    checkpoint_manager=checkpoint_manager
-)
-clusters = await generate_base_clusters_from_conversation_summaries(
-    summaries,
-    model=cluster_model,
-    checkpoint_manager=checkpoint_manager
-)
-reduced = await reduce_clusters_from_base_clusters(
-    clusters,
-    model=meta_cluster_model,
-    checkpoint_manager=checkpoint_manager
-)
-result = await reduce_dimensionality_from_clusters(
-    reduced,
-    model=dimensionality_model,
-    checkpoint_manager=checkpoint_manager
-)
-```
 
 ## Design Advantages
 
