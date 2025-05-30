@@ -32,7 +32,7 @@ def test_tutorial_imports():
         CheckpointManager,
     )
     
-    from kura.types import Conversation
+
     
     print("✅ All tutorial imports successful")
     
@@ -99,7 +99,7 @@ def test_checkpoint_manager():
         checkpoint_manager = CheckpointManager(str(checkpoint_dir), enabled=True)
         
         assert checkpoint_manager.checkpoint_dir == str(checkpoint_dir), "Checkpoint dir should match"
-        assert checkpoint_manager.enabled == True, "Checkpointing should be enabled"
+        assert checkpoint_manager.enabled, "Checkpointing should be enabled"
         
         test_filename = "test_summaries.jsonl"
         checkpoint_path = checkpoint_manager.get_checkpoint_path(test_filename)
@@ -107,7 +107,7 @@ def test_checkpoint_manager():
         
         assert checkpoint_path == str(expected_path), "Checkpoint path should be correct"
         
-        print(f"✅ CheckpointManager configured correctly")
+        print("✅ CheckpointManager configured correctly")
         print(f"   Checkpoint directory: {checkpoint_manager.checkpoint_dir}")
         print(f"   Enabled: {checkpoint_manager.enabled}")
         print(f"   Sample checkpoint path: {checkpoint_path}")
@@ -162,18 +162,18 @@ async def main():
     
     conversations = test_tutorial_data_loading()
     
-    checkpoint_manager = test_checkpoint_manager()
+    test_checkpoint_manager()
     
     # Test procedural API structure
     await test_procedural_api_structure()
     
     print("\n📊 Tutorial Reference Test Results:")
     print("=" * 40)
-    print(f"  ✅ Procedural API imports: PASS")
+    print("  ✅ Procedural API imports: PASS")
     print(f"  ✅ Conversation loading: PASS ({len(conversations)} conversations)")
-    print(f"  ✅ CheckpointManager: PASS")
-    print(f"  ✅ Function signatures: PASS")
-    print(f"  ✅ Import consistency: PASS")
+    print("  ✅ CheckpointManager: PASS")
+    print("  ✅ Function signatures: PASS")
+    print("  ✅ Import consistency: PASS")
     
     print("\n✨ Tutorial reference tests completed successfully!")
     print("=" * 60)
