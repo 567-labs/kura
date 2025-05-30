@@ -6,13 +6,14 @@ import instructor
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 
+
 from kura.base_classes import BaseSummaryModel
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
 T = TypeVar("T", bound=GeneratedSummary)
-U = TypeVar("U")
+U = TypeVar("U", bound=ConversationSummary)
 
 logger = logging.getLogger(__name__)
 
@@ -368,9 +369,7 @@ async def summarise_conversations(
     output_schema: Type[U] = ConversationSummary,
     prompt_template: Optional[str] = None,
     temperature: float = 0.2,
-    summary_converter: Callable[
-        [T, Conversation], U
-    ] = default_summary_mapper,
+    summary_converter: Callable[[T, Conversation], U] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
     **kwargs,
 ) -> list[U]:
