@@ -20,12 +20,24 @@ logger = logging.getLogger(__name__)
 
 class SummaryModel(BaseSummaryModel):
     """
-    Instructor-based summary model following
+    Instructor-based summary model for conversation analysis.
 
-    This implementation follows the embedding.py pattern:
-    - Core configuration in constructor (model, concurrency, API keys)
-    - Per-use configuration as method parameters (schema, prompts, temperature)
-    - Clean separation of concerns (no extractors - handled separately)
+    Example - Custom Schema:
+        >>> class CustomSummary(GeneratedSummary):
+        ...     sentiment: str
+        ...     complexity: int
+        >>>
+        >>> summaries = await model.summarise(
+        ...     conversations,
+        ...     response_schema=CustomSummary
+        ... )
+        # sentiment & complexity will be in summaries[0].metadata
+
+    Example - Custom Prompt:
+        >>> summaries = await model.summarise(
+        ...     conversations,
+        ...     additional_prompt="Also assess the technical complexity on a scale of 1-10."
+        ... )
     """
 
     def __init__(
@@ -43,7 +55,6 @@ class SummaryModel(BaseSummaryModel):
         Args:
             model: model identifier (e.g., "openai/gpt-4o-mini")
             max_concurrent_requests: Maximum concurrent API requests
-            **kwargs: Additional model-specific parameters (API keys, etc.)
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
@@ -71,15 +82,36 @@ class SummaryModel(BaseSummaryModel):
         """
         Summarise conversations with configurable parameters.
 
+        This method uses the CLIO conversation analysis framework, with automatic
+        extensibility for custom fields and prompt modifications.
+
         Args:
             conversations: List of conversations to summarize
-            response_schema: Pydantic model class for structured LLM output
-            additional_prompt: Additional text to append to the default prompt
+            response_schema: Pydantic model class for structured LLM output.
+                           Extend GeneratedSummary to add custom fields that will
+                           automatically be included in ConversationSummary.metadata
+            additional_prompt: Additional text to append to the default CLIO prompt.
+                             Use this to request custom analysis or fields
             temperature: LLM temperature for generation
-            **kwargs: Additional model-specific parameters (max_tokens, etc.)
 
         Returns:
-            List of model outputs using the specified response_schema (GeneratedSummary or subclass)
+            List of ConversationSummary objects with core fields populated and
+            any additional fields from extended schemas in metadata
+
+        Example:
+            >>> class CustomSummary(GeneratedSummary):
+            ...     sentiment: str
+            ...     technical_complexity: int
+            >>>
+            >>> summaries = await model.summarise(
+            ...     conversations,
+            ...     response_schema=CustomSummary,
+            ...     additional_prompt="Rate sentiment and technical complexity 1-10"
+            ... )
+            >>> # Access core fields
+            >>> print(summaries[0].summary)
+            >>> # Access custom fields in metadata
+            >>> print(summaries[0].metadata["sentiment"])
         """
         # Initialize semaphore per-run to match event loop
         self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
@@ -130,8 +162,12 @@ class SummaryModel(BaseSummaryModel):
         """
         Get the default prompt template for conversation summarization.
 
-        Based on the Clio paper:
-        https://assets.anthropic.com/m/7e1ab885d1b24176/original/Clio-Privacy-Preserving-Insights-into-Real-World-AI-Use.pdf
+        Based on the CLIO framework described in:
+        "Clio: Privacy-Preserving Insights into Real-World AI Use"
+        https://www.anthropic.com/research/clio
+
+        This prompt can be extended using the additional_prompt parameter
+        in the summarise() method to add custom analysis requirements.
         """
         return """
 The following is a conversation between an AI assistant and a user:
@@ -196,9 +232,13 @@ Remember that
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> T:
+    ) -> ConversationSummary:
         """
         Private method to summarise a single conversation.
+
+        Automatically maps all fields from the response_schema to ConversationSummary:
+        - Known GeneratedSummary fields are mapped directly to ConversationSummary fields
+        - Additional fields from extended schemas are placed in metadata for extensibility
         """
         logger.debug(
             f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
@@ -232,14 +272,14 @@ Remember that
         logger.debug(
             f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {getattr(resp, 'concerning_score', None)}, user_frustration: {getattr(resp, 'user_frustration', None)}"
         )
-        
+
         # Extract response data
         response_dict = resp.model_dump()
-        
+
         # Known GeneratedSummary fields that map directly to ConversationSummary
         known_fields = {
             "summary",
-            "request", 
+            "request",
             "topic",
             "languages",
             "task",
@@ -247,13 +287,13 @@ Remember that
             "user_frustration",
             "assistant_errors",
         }
-        
+
         # Extract known fields for direct mapping
         known_data = {k: v for k, v in response_dict.items() if k in known_fields}
-        
+
         # Put unknown fields in metadata (for extended GeneratedSummary subclasses)
         extra_fields = {k: v for k, v in response_dict.items() if k not in known_fields}
-        
+
         return ConversationSummary(
             chat_id=conversation.chat_id,
             metadata={
@@ -273,9 +313,11 @@ Remember that
         prompt_template: str,
         temperature: float,
         **kwargs,
-    ) -> list[T]:
+    ) -> list[ConversationSummary]:
         """
         Summarise conversations with full-screen Rich console display showing progress and latest 3 results.
+
+        Returns ConversationSummary objects with automatic field mapping from response_schema.
         """
         from rich.live import Live
         from rich.layout import Layout
@@ -380,9 +422,6 @@ Remember that
         return summaries
 
 
-
-
-
 async def summarise_conversations(
     conversations: list[Conversation],
     *,
@@ -393,32 +432,54 @@ async def summarise_conversations(
     checkpoint_manager: Optional[CheckpointManager] = None,
     **kwargs,
 ) -> list[ConversationSummary]:
-    """Generate summaries for a list of conversations.
+    """Generate summaries for a list of conversations using the CLIO framework.
 
     This is a pure function that takes conversations and a summary model,
-    and returns conversation summaries. Optionally uses checkpointing.
+    and returns conversation summaries with automatic extensibility.
+    Optionally uses checkpointing for efficient re-runs.
 
     The function works with any model that implements BaseSummaryModel,
     supporting heterogeneous backends (OpenAI, vLLM, Hugging Face, etc.)
     through polymorphism.
 
+    Extensibility Features:
+    - **Custom Fields**: Extend GeneratedSummary to add custom analysis fields
+    - **Prompt Modification**: Use additional_prompt to extend CLIO analysis
+    - **Automatic Mapping**: Extended fields are automatically placed in metadata
+
     Args:
         conversations: List of conversations to summarize
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
-        response_schema: Pydantic model class for the LLM's raw output
+        response_schema: Pydantic model class for LLM output. Extend GeneratedSummary
+                        to add custom fields that will appear in metadata
+        additional_prompt: Additional text to append to the CLIO prompt template
+        temperature: LLM temperature for generation
         checkpoint_manager: Optional checkpoint manager for caching
 
     Returns:
-        List of ConversationSummary objects
+        List of ConversationSummary objects with core CLIO fields and any
+        additional fields from extended schemas in metadata
 
-    Example:
-        >>> model = SummaryModel(api_key="sk-...")
-        >>> checkpoint_mgr = CheckpointManager("./checkpoints")
+    Example - Basic Usage:
+        >>> model = SummaryModel()
         >>> summaries = await summarise_conversations(
         ...     conversations=my_conversations,
-        ...     model=openai_model,
-        ...     checkpoint_manager=checkpoint_mgr
+        ...     model=model
         ... )
+
+    Example - Custom Analysis:
+        >>> class DetailedSummary(GeneratedSummary):
+        ...     sentiment: str
+        ...     technical_depth: int
+        >>>
+        >>> summaries = await summarise_conversations(
+        ...     conversations=my_conversations,
+        ...     model=model,
+        ...     response_schema=DetailedSummary,
+        ...     additional_prompt="Analyze sentiment and rate technical depth 1-10"
+        ... )
+        >>> # Custom fields available in metadata
+        >>> print(summaries[0].metadata["sentiment"])
     """
     logger.info(
         f"Starting summarization of {len(conversations)} conversations using {type(model).__name__}"

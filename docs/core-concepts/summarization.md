@@ -1,6 +1,10 @@
 # Summarization
 
-Kura transforms conversations into structured, privacy-preserving summaries that capture user intent, task details, and interaction quality. This enables downstream analysis like clustering and visualization.
+Kura transforms conversations into structured, privacy-preserving summaries using the CLIO framework. It captures user intent, task details, and interaction quality while providing automatic extensibility for custom analysis fields. This enables downstream analysis like clustering and visualization.
+
+The summarization process extracts multiple "facets" from each conversation - specific attributes like the high-level topic, number of turns, languages used, and more. Some facets are computed directly (e.g., conversation length), while others are extracted using AI models (e.g., conversation topic). The summaries are designed to preserve user privacy by avoiding specific identifying details while still capturing the key patterns and trends across conversations.
+
+These structured summaries power Kura's ability to identify broad usage patterns and potential risks, without requiring analysts to know exactly what to look for in advance. The hierarchical organization of summaries allows exploring patterns at different levels of granularity - from high-level categories down to specific conversation types.
 
 ---
 
@@ -74,32 +78,42 @@ This extracts structured information including the conversation summary, user re
 
 ## How It Works
 
-Kura uses LLMs with structured output via Instructor to extract consistent information from conversations. This provides flexibility in model choice while maintaining consistent structured outputs.
+Kura uses the CLIO framework with LLMs and structured output via Instructor to extract consistent information from conversations. This provides flexibility in model choice while maintaining consistent structured outputs and automatic extensibility.
 
 Key features:
 
 - **Input:** `Conversation` objects with messages and metadata
 - **Output:** `ConversationSummary` objects with structured fields
-- **Privacy:** Removes PII and proper nouns automatically\*
+- **Privacy:** Removes PII and proper nouns automatically (based on CLIO framework)
+- **Extensibility:** Automatic field mapping from extended schemas to metadata
 - **Concurrency:** Processes multiple conversations in parallel for efficiency
 - **Checkpointing:** Caches results to avoid recomputation
-- **Hooks/Extractors:** Optional extractors can add custom metadata to each summary
 
 ---
 
 ## Summarization Prompt and Output
 
-At the heart of Kura's summarization process is a carefully engineered prompt that extracts structured information from conversations. The prompt is designed to capture key aspects while maintaining privacy and clarity. It instructs the model to avoid personally identifiable information (PII) and proper nouns, while still preserving important context about the interaction.
+!!! info "CLIO Framework"
 
-For each conversation, the model extracts multiple fields that provide a comprehensive view of the interaction. The core summary field provides a clear, concise description in no more than two sentences. The request field captures the user's overall intent, while the task field describes the specific action being performed.
+    At the heart of Kura's summarization process is the CLIO framework - a carefully engineered prompt system developed by Anthropic for privacy-preserving conversation analysis. The prompt is designed to capture key aspects while maintaining privacy and clarity, instructing the model to avoid personally identifiable information (PII) and proper nouns while preserving important context.
 
-To track the quality and nature of interactions, the model also assesses user frustration and safety concerns on a 1-5 scale, and identifies any errors made by the assistant.
+    **Reference:** [Clio: Privacy-Preserving Insights into Real-World AI Use](https://www.anthropic.com/research/clio)
+
+For each conversation, the model extracts multiple fields that provide a comprehensive view of the interaction:
+
+- **Summary**: Clear, concise description in no more than two sentences
+- **Request**: User's overall intent starting with "The user's overall request..."
+- **Task**: Specific action being performed starting with "The task is to..."
+- **Languages**: Both human and programming languages mentioned
+- **Concerning Score**: Safety assessment on 1-5 scale
+- **User Frustration**: Frustration level on 1-5 scale
+- **Assistant Errors**: Specific errors made by the assistant
 
 This structured output enables downstream analysis while maintaining consistency across large datasets. The summary object serves as the foundation for Kura's clustering and visualization capabilities, allowing patterns and insights to emerge from the aggregated data.
 
 ## Customising Summarisation
 
-Kura's summarization follows a procedural, configurable design where you control behavior through function parameters rather than hidden class configuration. You can customize four key aspects:
+Kura's summarization follows a procedural, configurable design where you control behavior through function parameters rather than hidden class configuration. The system provides automatic extensibility through schema inheritance and prompt modification. You can customize three key aspects:
 
 ### 1. Modify the Model
 
@@ -113,7 +127,6 @@ from kura.summarisation import SummaryModel
 model = SummaryModel(
     model="anthropic/claude-3-5-sonnet-20241022",
     max_concurrent_requests=10,  # Lower for rate limits
-    checkpoint_filename="claude_summaries.jsonl"
 )
 
 summaries = await summarise_conversations(
@@ -122,98 +135,113 @@ summaries = await summarise_conversations(
 )
 ```
 
-### 2. Modify the Prompt
+### 2. Extend the CLIO Prompt
 
-Custom prompts let you focus extraction on domain-specific aspects like technical complexity, emotional tone, or business requirements. This is especially useful when analyzing specialized conversations where the default prompt misses important context.
-
-For each summary you generate, we provide each [Conversation](../api/index.md#core-classes) object which you pass into the main `summarise_conversations` function. This makes it easy to write and customise your prompts to focus on the specific issues or domain that you're dealing with.
-
-This Conversation object has the following properties
-
-`messages`: A list of message objects, each containing:
-
-- `role`: Either "user" or "assistant"
-- `content`: The message text
-- `created_at`: Timestamp of when the message was created
-
-`metadata`: A dictionary containing any additional metadata associated with the conversation
+You can extend the default CLIO prompt to focus on domain-specific aspects while preserving the core privacy-preserving analysis framework. Use the `additional_prompt` parameter to append custom analysis requirements without replacing the proven CLIO foundation.
 
 ```python
-TECHNICAL_PROMPT = """
-Analyze this technical support conversation, focusing on:
-- Problem complexity and resolution approach
-- User's technical expertise level
-- Whether the solution was effective
-
-<messages>
-{% for message in conversation.messages %}
-<message>{{message.role}}: {{message.content}}</message>
-{% endfor %}
-</messages>
-
-Extract structured information about the technical interaction...
+# Extend CLIO prompt for technical analysis
+technical_analysis = """
+Additionally, analyze these technical aspects:
+- Rate the technical complexity on a scale of 1-10
+- Identify specific programming frameworks or libraries mentioned
+- Assess whether the user's problem was fully resolved
 """
 
 summaries = await summarise_conversations(
     conversations,
     model=model,
-    prompt_template=TECHNICAL_PROMPT
+    additional_prompt=technical_analysis
 )
 ```
 
-### 3. Modify the Structured Output
+### 3. Extend with Custom Fields (Automatic Schema Extension)
 
-Custom response schemas capture domain-specific metadata that the default ConversationSummary doesn't include. This enables specialized analysis workflows like technical debt assessment, customer satisfaction tracking, or compliance monitoring.
+Kura provides automatic extensibility through schema inheritance. Simply extend `GeneratedSummary` with custom fields, and they'll automatically be included in the `ConversationSummary.metadata` without any additional mapping code.
 
 ```python
 from pydantic import BaseModel, Field
 from kura.types.summarisation import GeneratedSummary
 
 class TechnicalSummary(GeneratedSummary):
+    """Extended schema with automatic metadata mapping."""
     frameworks_mentioned: list[str] = Field(description="Programming frameworks discussed")
     complexity_level: str = Field(description="Technical complexity: beginner/intermediate/advanced")
     code_quality_issues: list[str] = Field(description="Code quality problems identified")
-
-summaries = await summarise_conversations(
-    conversations,
-    model=model,
-    response_schema=TechnicalSummary
-)
-```
-
-### 4. Add Custom Summary Converters
-
-Summary converters transform the raw LLM output into your final data structure, adding computed fields or reformatting data. This is where you merge conversation metadata with extracted content and apply business logic.
-
-This is then cached in the directory you specify if you've defined a checkpoint manager, allowing you to store and leverage this data in our interactive visualiser UI.
-
-```python
-from kura.types import ConversationSummary
-
-def technical_summary_converter(
-    summary: TechnicalSummary,
-    conversation: Conversation
-) -> ConversationSummary:
-    """Convert technical summary with additional computed fields."""
-    return ConversationSummary(
-        chat_id=conversation.chat_id,
-        metadata={
-            "conversation_turns": len(conversation.messages),
-            "has_code": len(summary.frameworks_mentioned) > 0,
-            "complexity_score": {"beginner": 1, "intermediate": 2, "advanced": 3}.get(
-                summary.complexity_level, 0
-            ),
-            **conversation.metadata,
-        },
-        **summary.model_dump(),
-    )
+    technical_depth: int = Field(description="Technical depth rating 1-10")
 
 summaries = await summarise_conversations(
     conversations,
     model=model,
     response_schema=TechnicalSummary,
-    summary_converter=technical_summary_converter
+    additional_prompt="Rate technical depth 1-10 and identify frameworks mentioned"
 )
+
+# Access core CLIO fields directly
+print(summaries[0].summary)
+print(summaries[0].concerning_score)
+
+# Access custom fields automatically in metadata
+print(summaries[0].metadata["frameworks_mentioned"])
+print(summaries[0].metadata["technical_depth"])
 ```
 
-All these parameters can be combined for complete customization while maintaining Kura's procedural, composable design. The key insight is that configuration happens through explicit function parameters, not hidden class state.
+**Key Benefits:**
+
+- **Zero Boilerplate**: Custom fields automatically appear in metadata
+- **Type Safety**: Full Pydantic validation for custom fields
+- **Backward Compatibility**: Core CLIO fields always available
+- **Extensible**: Add any number of custom analysis dimensions
+
+## Complete Example: Custom Technical Analysis
+
+Here's a complete example combining all customization features for technical conversation analysis:
+
+```python
+from kura import summarise_conversations
+from kura.summarisation import SummaryModel
+from kura.types.summarisation import GeneratedSummary
+from pydantic import Field
+
+# 1. Define custom schema with automatic metadata mapping
+class TechnicalSummary(GeneratedSummary):
+    """Extended CLIO analysis for technical conversations."""
+    frameworks_mentioned: list[str] = Field(description="Programming frameworks/libraries discussed")
+    technical_depth: int = Field(description="Technical complexity rating 1-10")
+    solution_effectiveness: str = Field(description="Was the solution effective: yes/no/partial")
+    code_snippets_present: bool = Field(description="Were code examples provided?")
+
+# 2. Initialize model with custom configuration
+model = SummaryModel(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    max_concurrent_requests=10
+)
+
+# 3. Run analysis with extended prompt and custom schema
+summaries = await summarise_conversations(
+    conversations,
+    model=model,
+    response_schema=TechnicalSummary,
+    additional_prompt="""
+    Additionally analyze:
+    - Rate technical depth 1-10 (1=basic concepts, 10=advanced architecture)
+    - List specific frameworks/libraries mentioned
+    - Assess if the provided solution was effective
+    - Note if code examples were included
+    """,
+)
+
+# 4. Access both CLIO fields and custom technical analysis
+for summary in summaries:
+    # Core CLIO fields
+    print(f"Summary: {summary.summary}")
+    print(f"User Frustration: {summary.user_frustration}/5")
+    print(f"Languages: {summary.languages}")
+
+    # Custom fields automatically in metadata
+    print(f"Technical Depth: {summary.metadata['technical_depth']}/10")
+    print(f"Frameworks: {summary.metadata['frameworks_mentioned']}")
+    print(f"Solution Effective: {summary.metadata['solution_effectiveness']}")
+```
+
+The results can be cached with checkpoint managers and visualized in Kura's interactive UI, providing comprehensive technical conversation insights built on the solid CLIO framework.
