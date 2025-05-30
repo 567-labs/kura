@@ -157,5 +157,5 @@ This metadata can later be used to:
 Now that you understand how conversations are structured in Kura, you can:
 
 - Learn about the [summarization process](summarization.md)
-- See how to load different data formats in the [Quickstart Guide](../getting-started/quickstart.md)
+- See how to load different data formats in the [Procedural API quickstart](../getting-started/tutorial-procedural-api.md)
 - Explore configuration options in the [Configuration Guide](../getting-started/configuration.md)

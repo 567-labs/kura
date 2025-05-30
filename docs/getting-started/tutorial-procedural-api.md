@@ -239,4 +239,3 @@ if __name__ == "__main__":
 
 - Explore the [API Reference](../api/index.md) for detailed documentation
 - Learn about [core concepts](../core-concepts/overview.md)
-- Try the [class-based API](./quickstart.md) for a simpler interface

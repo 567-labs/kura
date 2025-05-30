@@ -78,12 +78,9 @@ kura start-app --dir ./my-checkpoints
 
 Kura is a tool for analyzing and visualizing chat data, built on the same ideas as Anthropic's CLIO. It uses machine learning techniques to understand user conversations by clustering them into meaningful groups.
 
-### Two API Approaches
+### API Overview
 
-Kura offers two APIs for different use cases:
-
-1. **Class-Based API** (`kura/kura.py`): The original API with a single `Kura` class that orchestrates the entire pipeline
-2. **Procedural API** (`kura/v1/`): A functional approach with composable functions for maximum flexibility
+Kura provides a functional, composable API located in `kura/v1/`.
 
 ### Core Components
 
@@ -102,9 +99,7 @@ Kura offers two APIs for different use cases:
 5. Dimensionality reduction is applied for visualization
 6. Results are saved as checkpoints for persistence
 
-### Key Classes
-
-- `Kura` (`kura/kura.py`): Main class that orchestrates the entire pipeline
+### Key Modules
 - `BaseEmbeddingModel` / `OpenAIEmbeddingModel` (`kura/embedding.py`): Handle text embedding
 - `BaseSummaryModel` / `SummaryModel` (`kura/summarisation.py`): Summarize conversations
 - `BaseClusterModel` / `ClusterModel` (`kura/cluster.py`): Create initial clusters

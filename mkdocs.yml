@@ -83,9 +83,8 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: getting-started/installation.md
-    - Quickstart: getting-started/quickstart.md
+    - Quickstart: getting-started/tutorial-procedural-api.md
     - Configuration: getting-started/configuration.md
-    - Procedural API Tutorial: getting-started/tutorial-procedural-api.md
   - Core Concepts:
     - Overview: core-concepts/overview.md
     - Conversations: core-concepts/conversations.md

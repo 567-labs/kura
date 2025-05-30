@@ -30,32 +30,22 @@ To quickly test the full Kura pipeline and UI:
    uv run python scripts/tutorial_procedural_api.py
    ```
 
-   For the class-based API (simpler to use):
-   ```bash
-   uv run python scripts/tutorial_class_api.py
-   ```
-
-   Either tutorial will:
+  This tutorial will:
    - Import all Kura modules
    - Load 190 sample conversations from Hugging Face
    - Process and cluster the conversations
    - Generate 29 hierarchical clusters organized into 10 root categories
    - Generate visualization data
-   - Save results to `./tutorial_checkpoints/` (procedural) or `./tutorial_checkpoints_class/` (class-based)
+  - Save results to `./tutorial_checkpoints/`
 
    Note: This process may take a few minutes depending on your system and API rate limits.
 
 2. **Test the UI** after running the tutorial:
 
-   For procedural API results:
-   ```bash
-   kura start-app --dir ./tutorial_checkpoints
-   ```
-
-   For class-based API results:
-   ```bash
-   kura start-app --dir ./tutorial_checkpoints_class
-   ```
+  Run the UI to visualize results:
+  ```bash
+  kura start-app --dir ./tutorial_checkpoints
+  ```
 
    This will:
    - Start the backend API and frontend on http://localhost:8000
@@ -93,7 +83,7 @@ When adding new features or fixing bugs, please include appropriate tests. Follo
 2. Write test functions with descriptive names and docstrings
 3. Use pytest fixtures when appropriate
 4. Use assertions to verify expected behavior
-5. Test both the class-based API and procedural API where applicable
+5. Test the procedural API where applicable
 
 ### Example: Testing with the Procedural API
 

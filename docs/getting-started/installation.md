@@ -111,4 +111,4 @@ You should see a confirmation message with no errors.
 
 ## Next Steps
 
-Now that you have Kura installed, proceed to the [Quickstart guide](quickstart.md) to begin analyzing your first dataset.
+Now that you have Kura installed, continue with the [Procedural API quickstart](tutorial-procedural-api.md) to analyze your first dataset.

@@ -4,7 +4,7 @@ Procedural implementation of the Kura conversation analysis pipeline.
 This module provides a functional approach to conversation analysis, breaking down
 the pipeline into composable functions that can be used independently or together.
 
-Key benefits over the class-based approach:
+Key benefits of this design:
 - Better composability and flexibility
 - Easier testing of individual steps
 - Clearer data flow and dependencies
