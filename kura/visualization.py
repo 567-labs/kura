@@ -5,10 +5,12 @@ in the terminal, including basic tree views, enhanced visualizations with statis
 and rich-formatted output using the Rich library when available.
 """
 
-from typing import TYPE_CHECKING, List, Optional, Union, Any
+from typing import TYPE_CHECKING, List, Optional, Union, Any, cast
 from pathlib import Path
 from kura.types import Cluster, ClusterTreeNode
 from kura.base_classes.visualization import BaseVisualizationModel
+
+RICH_AVAILABLE = False
 
 # Try to import Rich, fall back gracefully if not available
 try:
@@ -22,18 +24,59 @@ try:
 
     RICH_AVAILABLE = True
 except ImportError:
-    Console = None
-    Tree = None
-    Table = None
-    Panel = None
-    Text = None
-    Align = None
-    ROUNDED = None
-    RICH_AVAILABLE = False
+    pass
 
 if TYPE_CHECKING:
+    from rich.console import Console
+    from rich.tree import Tree
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.text import Text
+    from rich.align import Align
+    from rich.box import Box
     from rich.console import Console as ConsoleType
 else:
+    # These will only be used at runtime when Rich is not available
+    if not RICH_AVAILABLE:
+        # Define minimal classes for runtime use when Rich is not available
+        class Console:
+            def print(self, *args, **kwargs):
+                pass
+        
+        class Tree:
+            def __init__(self, *args, **kwargs):
+                pass
+            
+            def add(self, *args, **kwargs):
+                return self
+        
+        class Table:
+            def __init__(self, *args, **kwargs):
+                pass
+            
+            def add_column(self, *args, **kwargs):
+                pass
+            
+            def add_row(self, *args, **kwargs):
+                pass
+        
+        class Panel:
+            def __init__(self, *args, **kwargs):
+                pass
+        
+        class Text:
+            def __init__(self, *args, **kwargs):
+                pass
+        
+        class Align:
+            def __init__(self, *args, **kwargs):
+                pass
+        
+        class Box:
+            pass
+        
+        ROUNDED = Box()
+    
     ConsoleType = Any
 
 
@@ -46,7 +89,7 @@ class ClusterVisualizer(BaseVisualizationModel):
         Args:
             console: Optional Rich Console instance for enhanced output
         """
-        self.console = console or (Console() if RICH_AVAILABLE and Console else None)
+        self.console = console or (Console() if RICH_AVAILABLE else None)
     
     @property
     def checkpoint_filename(self) -> str:
