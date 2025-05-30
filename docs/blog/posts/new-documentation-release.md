@@ -21,6 +21,9 @@ Our documentation has been completely reorganized and expanded to provide a bett
 - **Core Concepts Explained**: Detailed explanations of Kura's architecture and components
 - **Improved Code Examples**: Concise, practical examples throughout
 
+<!-- more -->
+
+
 ## Getting Started
 
 If you're new to Kura, we recommend starting with:

@@ -16,6 +16,9 @@ In this article, we'll walk through the process of how we generated a diverse da
 
 I carefully constructed a dataset of 190 user conversations by using a multi-step process. You can access the dataset of these conversations on hugging face [here](https://huggingface.co/datasets/ivanleomk/synthetic-gemini-conversations). To do so, we introduced controlle variation at each level through a systematic approach that involved 3 steps.
 
+<!-- more -->
+
+
 After defining broad categories of user conversations to form an initial distribution, we then:
 
 1. Used a language model to generate more nuanced subcategories within each category. These subcategories were manually annotated to make sure that they were distinct and meaningful.
