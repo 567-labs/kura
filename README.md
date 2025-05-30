@@ -25,212 +25,128 @@ Kura addresses this challenge by:
 
 By clustering similar conversations and providing intuitive visualizations, Kura transforms raw chat data into actionable insights without compromising user privacy.
 
-## Real-World Use Cases
-
-- **Product Teams**: Understand how users engage with your AI assistant to identify opportunities for improvement
-- **AI Research**: Analyze how different models respond to similar queries and detect systematic biases
-- **Customer Support**: Identify common support themes and optimize response strategies
-- **Content Creation**: Discover topics users are interested in to guide content development
-- **Education**: Analyze student interactions with educational AI to improve learning experiences
-- **UX Research**: Gain insights into user mental models and friction points
-
-## Features
-
-- **Conversation Summarization**: Automatically generate concise task descriptions from conversations
-- **Hierarchical Clustering**: Group similar conversations at multiple levels of granularity
-- **Metadata Extraction**: Extract valuable context from conversations using LLMs
-- **Custom Models**: Use your preferred embedding, summarization, and clustering methods
-- **Checkpoint System**: Save and resume analysis sessions
-- **Procedural API**: Functional approach with composable functions for maximum flexibility
-
 ## Installation
 
 ```bash
-# Install from PyPI
-pip install kura
-
-# Or use uv for faster installation
 uv pip install kura
 ```
 
 ## Quick Start
 
 ```python
-from kura.v1 import (
+import asyncio
+from rich.console import Console
+from kura import (
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    CheckpointManager
+    CheckpointManager,
 )
+from kura.visualization import visualise_pipeline_results
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
 from kura.cluster import ClusterModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
-import asyncio
 
-# Load conversations
-conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations",
-    split="train"
-)
+async def main():
+    # Initialize models
+    console = Console()
+    summary_model = SummaryModel(console=console)
+    cluster_model = ClusterModel(console=console)
+    meta_cluster_model = MetaClusterModel(console=console)
+    dimensionality_model = HDBUMAP()
 
-# Set up models
-summary_model = SummaryModel()
-cluster_model = ClusterModel()
-meta_cluster_model = MetaClusterModel(max_clusters=10)
-dimensionality_model = HDBUMAP()
+    # Set up checkpointing to save intermediate results
+    checkpoint_manager = CheckpointManager("./checkpoints", enabled=True)
 
-# Set up checkpoint manager
-checkpoint_mgr = CheckpointManager("./checkpoints", enabled=True)
+    # Load conversations from Hugging Face dataset
+    conversations = Conversation.from_hf_dataset(
+        "ivanleomk/synthetic-gemini-conversations",
+        split="train"
+    )
 
-# Run pipeline with explicit steps
-async def process_conversations():
-    # Step 1: Generate summaries
+    # Process through the pipeline step by step
     summaries = await summarise_conversations(
         conversations,
         model=summary_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_manager
     )
 
-    # Step 2: Create base clusters
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_manager
     )
 
-    # Step 3: Build hierarchy
-    meta_clusters = await reduce_clusters_from_base_clusters(
+    reduced_clusters = await reduce_clusters_from_base_clusters(
         clusters,
         model=meta_cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_manager
     )
 
-    # Step 4: Project to 2D
-    projected = await reduce_dimensionality_from_clusters(
-        meta_clusters,
+    projected_clusters = await reduce_dimensionality_from_clusters(
+        reduced_clusters,
         model=dimensionality_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_manager,
     )
 
-    return projected
+    # Visualize results
+    visualise_pipeline_results(reduced_clusters, style="enhanced")
 
-# Execute the pipeline
-results = asyncio.run(process_conversations())
+    print(f"\nProcessed {len(conversations)} conversations")
+    print(f"Created {len(reduced_clusters)} meta clusters")
+    print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+This example will:
+
+1. Load 190 synthetic programming conversations from Hugging Face
+2. Process them through the complete analysis pipeline step by step
+3. Generate hierarchical clusters organized into categories
+4. Display the results with enhanced visualization
 
 ## Key Design Principles
 
-### Function-Based Architecture
-The procedural API follows the principle of **functions orchestrate, models execute**:
-- Each pipeline step is a pure function with explicit inputs/outputs
-- No hidden state or side effects
-- Works with any model implementing the required interface
+Kura follows a function-based architecture where pipeline functions orchestrate the execution while models handle the core logic. Each function is designed with explicit inputs/outputs and no hidden state, working with any model that implements the required interface. The system supports various model types through polymorphic interfaces - from OpenAI to local models for summarization, different clustering algorithms, and various dimensionality reduction techniques.
 
-### Polymorphism Through Interfaces
-All functions work with heterogeneous models:
-- `BaseSummaryModel` - OpenAI, vLLM, Hugging Face, local models
-- `BaseClusterModel` - HDBSCAN, KMeans, custom algorithms
-- `BaseMetaClusterModel` - Different hierarchical strategies
-- `BaseDimensionalityReduction` - UMAP, t-SNE, PCA
+Data can be loaded from multiple sources including Claude conversation history (`Conversation.from_claude_conversation_dump()`) and Hugging Face datasets (`Conversation.from_hf_dataset()`). The example uses a dataset of 190 synthetic programming conversations that form natural clusters across technical topics.
 
-### Keyword-Only Arguments
-All functions use keyword-only arguments for clarity and maintainability.
-
-## Loading Data
-
-Kura supports multiple data sources:
-
-### Claude Conversation History
-
-```python
-from kura.types import Conversation
-conversations = Conversation.from_claude_conversation_dump("conversations.json")
-```
-
-### Hugging Face Datasets
-
-```python
-from kura.types import Conversation
-conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations",
-    split="train"
-)
-```
-
-> 💡 **Note:** This example uses a dataset of ~190 synthetic programming conversations that's structured for Kura. It contains technical discussions about web development frameworks, coding patterns, and software engineering that form natural clusters. The example loads and processes these conversations to create 29 hierarchical clusters across 10 root categories.
-
-## Architecture
-
-Kura follows a modular, pipeline-based architecture:
-
-1. **Data Loading**: Import conversations from various sources
-2. **Summarization**: Generate concise descriptions of each conversation
-3. **Embedding**: Convert text into vector representations
-4. **Base Clustering**: Group similar summaries into initial clusters
-5. **Meta-Clustering**: Create a hierarchical structure of clusters
-6. **Dimensionality Reduction**: Project high-dimensional data for visualization
-
-### Core Components
-
-- **`summarise_conversations`**: Generate conversation summaries using LLMs
-- **`generate_base_clusters_from_conversation_summaries`**: Create initial clusters from embeddings
-- **`reduce_clusters_from_base_clusters`**: Build hierarchical structure from base clusters
-- **`reduce_dimensionality_from_clusters`**: Project data to 2D for visualization
-- **`CheckpointManager`**: Save and resume analysis sessions
-- **`Conversation`**: Core data model for chat interactions
-
-## Checkpoints
-
-Kura saves state between runs using checkpoint files:
-
-- `conversations.json`: Raw conversation data
-- `summaries.jsonl`: Summarized conversations
-- `clusters.jsonl`: Base cluster data
-- `meta_clusters.jsonl`: Hierarchical cluster data
-- `dimensionality.jsonl`: Projected cluster data
-
-Checkpoints are stored in the directory specified by `checkpoint_dir` (default: `./checkpoints`).
-
-## Extending Kura
-
-Kura is designed to be modular and extensible. You can create custom implementations of:
-
-- Embedding models by extending `BaseEmbeddingModel`
-- Summarization models by extending `BaseSummaryModel`
-- Clustering algorithms by extending `BaseClusterModel`
-- Meta-clustering methods by extending `BaseMetaClusterModel`
-- Dimensionality reduction techniques by extending `BaseDimensionalityReduction`
+The pipeline architecture processes data through sequential stages: loading, summarization, embedding, base clustering, meta-clustering, and dimensionality reduction. All progress is automatically saved using checkpoints, and the system can be extended by implementing custom versions of any component model.
 
 ## Documentation
 
 - **Getting Started**
-  - [Installation Guide](getting-started/installation.md)
-  - [Tutorial: Procedural API](getting-started/tutorial-procedural-api.md)
+
+  - [Installation Guide](https://567-labs.github.io/kura/getting-started/installation/)
+  - [Quickstart Guide](https://567-labs.github.io/kura/getting-started/quickstart/)
 
 - **Core Concepts**
-  - [Conversations](core-concepts/conversations.md)
-  - [Embedding](core-concepts/embedding.md)
-  - [Clustering](core-concepts/clustering.md)
-  - [Summarization](core-concepts/summarization.md)
-  - [Meta-Clustering](core-concepts/meta-clustering.md)
-  - [Dimensionality Reduction](core-concepts/dimensionality-reduction.md)
+
+  - [Conversations](https://567-labs.github.io/kura/core-concepts/conversations/)
+  - [Embedding](https://567-labs.github.io/kura/core-concepts/embedding/)
+  - [Clustering](https://567-labs.github.io/kura/core-concepts/clustering/)
+  - [Summarization](https://567-labs.github.io/kura/core-concepts/summarization/)
+  - [Meta-Clustering](https://567-labs.github.io/kura/core-concepts/meta-clustering/)
+  - [Dimensionality Reduction](https://567-labs.github.io/kura/core-concepts/dimensionality-reduction/)
 
 - **API Reference**
-  - [Procedural API Documentation](api/index.md)
+  - [Procedural API Documentation](https://567-labs.github.io/kura/api/)
 
 ## Comparison with Similar Tools
 
-| Feature | Kura | Traditional Analytics | Manual Review | Generic Clustering |
-|---------|------|----------------------|--------------|-------------------|
-| Semantic Understanding | ✅ Uses LLMs for deep understanding | ❌ Limited to keywords | ✅ Human understanding | ⚠️ Basic similarity only |
-| Scalability | ✅ Handles thousands of conversations | ✅ Highly scalable | ❌ Time intensive | ✅ Works at scale |
-| Visualization | ✅ Interactive UI | ⚠️ Basic charts | ❌ Manual effort | ⚠️ Generic plots |
-| Hierarchy Discovery | ✅ Meta-clustering feature | ❌ Flat categories | ⚠️ Subjective grouping | ❌ Typically flat |
-| Extensibility | ✅ Custom models and extractors | ⚠️ Limited customization | ✅ Flexible but manual | ⚠️ Some algorithms |
-| Privacy | ✅ Self-hosted option | ⚠️ Often requires data sharing | ✅ Can be private | ✅ Can be private |
+| Feature                | Kura                                  | Traditional Analytics          | Manual Review          | Generic Clustering       |
+| ---------------------- | ------------------------------------- | ------------------------------ | ---------------------- | ------------------------ |
+| Semantic Understanding | ✅ Uses LLMs for deep understanding   | ❌ Limited to keywords         | ✅ Human understanding | ⚠️ Basic similarity only |
+| Scalability            | ✅ Handles thousands of conversations | ✅ Highly scalable             | ❌ Time intensive      | ✅ Works at scale        |
+| Visualization          | ✅ Interactive UI                     | ⚠️ Basic charts                | ❌ Manual effort       | ⚠️ Generic plots         |
+| Hierarchy Discovery    | ✅ Meta-clustering feature            | ❌ Flat categories             | ⚠️ Subjective grouping | ❌ Typically flat        |
+| Extensibility          | ✅ Custom models and extractors       | ⚠️ Limited customization       | ✅ Flexible but manual | ⚠️ Some algorithms       |
+| Privacy                | ✅ Self-hosted option                 | ⚠️ Often requires data sharing | ✅ Can be private      | ✅ Can be private        |
 
 ## Future Roadmap
 
@@ -252,6 +168,7 @@ uv run python scripts/tutorial_procedural_api.py
 ```
 
 Expected output:
+
 ```text
 Loaded 190 conversations successfully!
 
@@ -279,6 +196,7 @@ Processing Summary:
 ```
 
 This will:
+
 - Load 190 sample conversations from Hugging Face
 - Process them through the complete pipeline
 - Generate 29 hierarchical clusters organized into 10 root categories
