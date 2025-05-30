@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type, TypeVar
 
-from kura.types import (
-    Conversation,
-    GeneratedSummary,
-)
+from kura.types import Conversation, GeneratedSummary, ConversationSummary
 
 
 T = TypeVar("T", bound=GeneratedSummary)
@@ -34,7 +31,7 @@ class BaseSummaryModel(ABC):
         prompt_template: Optional[str] = None,
         temperature: float = 0.2,
         **kwargs,
-    ) -> list[T]:
+    ) -> list[ConversationSummary]:
         """
         Summarise conversations with configurable parameters.
 
