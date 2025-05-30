@@ -1,4 +1,4 @@
-from typing import Optional, Type, Callable, TypeVar, Union
+from typing import Optional, Type, TypeVar, Union
 import asyncio
 import logging
 
@@ -6,7 +6,7 @@ import instructor
 from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
-from pydantic import BaseModel
+
 
 from kura.base_classes import BaseSummaryModel
 from kura.checkpoint import CheckpointManager
@@ -14,7 +14,6 @@ from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
 T = TypeVar("T", bound=GeneratedSummary)
-U = TypeVar("U", bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 
@@ -65,17 +64,17 @@ class SummaryModel(BaseSummaryModel):
         conversations: list[Conversation],
         *,
         response_schema: Type[T] = GeneratedSummary,
-        prompt_template: Optional[str] = None,
+        additional_prompt: Optional[str] = None,
         temperature: float = 0.2,
         **kwargs,
-    ) -> list[T]:
+    ) -> list[ConversationSummary]:
         """
         Summarise conversations with configurable parameters.
 
         Args:
             conversations: List of conversations to summarize
             response_schema: Pydantic model class for structured LLM output
-            prompt_template: prompt_template which will be used to summarise the conversations
+            additional_prompt: Additional text to append to the default prompt
             temperature: LLM temperature for generation
             **kwargs: Additional model-specific parameters (max_tokens, etc.)
 
@@ -89,8 +88,9 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
 
-        if prompt_template is None:
-            prompt_template = self._get_default_prompt_template()
+        prompt_template = self._get_default_prompt_template()
+        if additional_prompt:
+            prompt_template += f"\n\n{additional_prompt}"
 
         client = instructor.from_provider(self.model, async_client=True)
 
@@ -232,7 +232,37 @@ Remember that
         logger.debug(
             f"Completed summarization of conversation {conversation.chat_id} - concerning_score: {getattr(resp, 'concerning_score', None)}, user_frustration: {getattr(resp, 'user_frustration', None)}"
         )
-        return resp
+        
+        # Extract response data
+        response_dict = resp.model_dump()
+        
+        # Known GeneratedSummary fields that map directly to ConversationSummary
+        known_fields = {
+            "summary",
+            "request", 
+            "topic",
+            "languages",
+            "task",
+            "concerning_score",
+            "user_frustration",
+            "assistant_errors",
+        }
+        
+        # Extract known fields for direct mapping
+        known_data = {k: v for k, v in response_dict.items() if k in known_fields}
+        
+        # Put unknown fields in metadata (for extended GeneratedSummary subclasses)
+        extra_fields = {k: v for k, v in response_dict.items() if k not in known_fields}
+        
+        return ConversationSummary(
+            chat_id=conversation.chat_id,
+            metadata={
+                "conversation_turns": len(conversation.messages),
+                **conversation.metadata,
+                **extra_fields,  # Additional fields from extended schemas
+            },
+            **known_data,
+        )
 
     async def _summarise_with_console(
         self,
@@ -350,18 +380,7 @@ Remember that
         return summaries
 
 
-def default_summary_mapper(
-    summary: GeneratedSummary, conversation: Conversation
-) -> ConversationSummary:
-    """Default mapper from GeneratedSummary to ConversationSummary."""
-    return ConversationSummary(
-        chat_id=conversation.chat_id,
-        metadata={
-            "conversation_turns": len(conversation.messages),
-            **conversation.metadata,
-        },
-        **summary.model_dump(),
-    )
+
 
 
 async def summarise_conversations(
@@ -369,13 +388,11 @@ async def summarise_conversations(
     *,
     model: BaseSummaryModel,
     response_schema: Type[T] = GeneratedSummary,
-    output_schema: Type[U] = ConversationSummary,
-    prompt_template: Optional[str] = None,
+    additional_prompt: Optional[str] = None,
     temperature: float = 0.2,
-    summary_converter: Callable[[T, Conversation], U] = default_summary_mapper,
     checkpoint_manager: Optional[CheckpointManager] = None,
     **kwargs,
-) -> list[U]:
+) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations.
 
     This is a pure function that takes conversations and a summary model,
@@ -389,11 +406,10 @@ async def summarise_conversations(
         conversations: List of conversations to summarize
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
         response_schema: Pydantic model class for the LLM's raw output
-        output_schema: Pydantic model class for the final output/checkpoint format
         checkpoint_manager: Optional checkpoint manager for caching
 
     Returns:
-        List of final output objects (typically ConversationSummary)
+        List of ConversationSummary objects
 
     Example:
         >>> model = SummaryModel(api_key="sk-...")
@@ -411,7 +427,7 @@ async def summarise_conversations(
     # Try to load from checkpoint
     if checkpoint_manager:
         cached = checkpoint_manager.load_checkpoint(
-            model.checkpoint_filename, output_schema
+            model.checkpoint_filename, ConversationSummary
         )
         if cached:
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
@@ -422,18 +438,15 @@ async def summarise_conversations(
     raw_summaries = await model.summarise(
         conversations,
         response_schema=response_schema,
-        prompt_template=prompt_template,
+        additional_prompt=additional_prompt,
         temperature=temperature,
         **kwargs,
     )
     logger.info(f"Generated {len(raw_summaries)} raw summaries")
 
-    # Map to ConversationSummary objects
-    summaries = [
-        summary_converter(summary, conversation)
-        for summary, conversation in zip(raw_summaries, conversations)
-    ]
-    logger.info(f"Mapped to {len(summaries)} conversation summaries")
+    # Summaries are already ConversationSummary objects from _summarise_single_conversation
+    summaries = raw_summaries
+    logger.info(f"Generated {len(summaries)} conversation summaries")
 
     # Save to checkpoint
     if checkpoint_manager:

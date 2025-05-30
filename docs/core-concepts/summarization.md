@@ -80,7 +80,7 @@ Key features:
 
 - **Input:** `Conversation` objects with messages and metadata
 - **Output:** `ConversationSummary` objects with structured fields
-- **Privacy:** Removes PII and proper nouns automatically
+- **Privacy:** Removes PII and proper nouns automatically\*
 - **Concurrency:** Processes multiple conversations in parallel for efficiency
 - **Checkpointing:** Caches results to avoid recomputation
 - **Hooks/Extractors:** Optional extractors can add custom metadata to each summary
