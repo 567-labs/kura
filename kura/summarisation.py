@@ -1,12 +1,12 @@
-from typing import Optional, Type, Callable, TypeVar
+from typing import Optional, Type, Callable, TypeVar, Union
 import asyncio
 import logging
 
 import instructor
+from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 from pydantic import BaseModel
-
 
 from kura.base_classes import BaseSummaryModel
 from kura.checkpoint import CheckpointManager
@@ -31,7 +31,7 @@ class SummaryModel(BaseSummaryModel):
 
     def __init__(
         self,
-        model: str = "openai/gpt-4o-mini",
+        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries.jsonl",
         console: Optional[Console] = None,
@@ -214,7 +214,9 @@ Remember that
                             "content": prompt_template,
                         },
                     ],
-                    context={"messages": conversation.messages},
+                    context={
+                        "conversation": conversation,
+                    },
                     response_model=response_schema,
                     **kwargs,
                 )
