@@ -6,6 +6,72 @@ repo_name: kura
 repo_url: https://github.com/567-labs/kura
 edit_uri: edit/main/docs/
 
+copyright: Copyright &copy; 2025 Ivan Leo # Replace with your actual name or organization name
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - content.social.cards # Enables social cards
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/favicon.png # Example path, replace with your actual favicon path
+  logo: assets/logo.svg # Example path, replace with your actual logo path
+
 extra:
   social:
     - icon: fontawesome/brands/github
@@ -30,54 +96,6 @@ extra:
             Thanks for your feedback! Help us improve this page by
             using our <a href="https://github.com/567-labs/kura/issues" target="_blank" rel="noopener">GitHub issues</a>.
 
-theme:
-  name: material
-  icon:
-    repo: fontawesome/brands/github
-    edit: material/pencil
-    view: material/eye
-  features:
-    - content.action.edit
-    - content.action.view
-    - content.code.select
-    - content.code.annotate
-    - content.code.copy
-    - content.tabs.link
-    - content.tooltips
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.footer
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.instant.progress
-    - navigation.top
-    - navigation.tracking
-    - search.highlight
-    - search.share
-    - search.suggest
-    - toc.follow
-    - content.social.cards
-  palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  font:
-    text: Roboto
-    code: Roboto Mono
-  favicon: assets/favicon.png
-
-copyright: Copyright &copy; 2025 Ivan Leo
-
 nav:
   - Home: index.md
   - Getting Started:
@@ -97,11 +115,6 @@ nav:
       - blog/index.md
 
 plugins:
-  - social
-  - search:
-      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\b)(?=[A-Z][a-z])'
-  - minify:
-      minify_html: true
   - blog
   - rss:
       match_path: blog/posts/.*
@@ -111,6 +124,15 @@ plugins:
         - categories
         - tags
       use_git: false
+  # Social cards are enabled via theme.features instead of a separate plugin
+  # - social:
+  #     cards_layout_options:
+  #       background_color: "#3f51b5"
+  #       color: "#ffffff"
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -135,10 +157,14 @@ markdown_extensions:
   - md_in_html
   - toc:
       permalink: true
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.betterem:
       smart_enable: all
   - pymdownx.caret
-  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -153,8 +179,21 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
       combine_header_slug: true
   - pymdownx.tasklist:
       custom_checkbox: true
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css

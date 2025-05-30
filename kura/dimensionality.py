@@ -76,6 +76,7 @@ class HDBUMAP(BaseDimensionalityReduction):
                 metric=self.metric,
             )
             reduced_embeddings = umap_reducer.fit_transform(embeddings)
+            reduced_embeddings = np.asarray(reduced_embeddings)  # Ensure it's an NDArray
             logger.info(
                 f"UMAP dimensionality reduction completed: {embeddings.shape} -> {reduced_embeddings.shape}"  # type: ignore
             )
