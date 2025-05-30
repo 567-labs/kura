@@ -5,7 +5,7 @@ in the terminal, including basic tree views, enhanced visualizations with statis
 and rich-formatted output using the Rich library when available.
 """
 
-from typing import TYPE_CHECKING, List, Optional, Union, Any, cast
+from typing import TYPE_CHECKING, List, Optional, Union, Any
 from pathlib import Path
 from kura.types import Cluster, ClusterTreeNode
 from kura.base_classes.visualization import BaseVisualizationModel
