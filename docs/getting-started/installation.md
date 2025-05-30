@@ -6,105 +6,63 @@ This guide will walk you through the installation process for Kura.
 
 Kura has the following requirements:
 
-* Python 3.9+ (Python 3.9 is specifically recommended due to UMAP dependency)
-* pip or uv package manager
-* Google API key for Gemini model access (default summarization model)
+- Python 3.9+ (Python 3.9 is specifically recommended due to UMAP dependency)
+- uv package manager
+- OpenAI API key for model access
 
-## Installation Methods
+## Installation
 
-=== "Using uv (Recommended)"
-
-    ```bash
-    # Install using uv for better performance
-    uv pip install kura
-    ```
-
-=== "Using pip"
-
-    ```bash
-    # Install using standard pip
-    pip install kura
-    ```
+```bash
+# Install using uv
+uv pip install kura
+```
 
 ### Development Installation
 
 If you want to contribute to Kura or modify the source code, install it in development mode:
 
-=== "Using uv (Recommended)"
+```bash
+# Clone the repository
+git clone https://github.com/567-labs/kura.git
+cd kura
 
-    ```bash
-    # Clone the repository
-    git clone https://github.com/567-labs/kura.git
-    cd kura
-    
-    # Create and activate a virtual environment
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    
-    # Install in development mode with dev dependencies
-    uv pip install -e ".[dev]"
-    ```
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-=== "Using pip"
-
-    ```bash
-    # Clone the repository
-    git clone https://github.com/567-labs/kura.git
-    cd kura
-    
-    # Create and activate a virtual environment
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    
-    # Install in development mode with dev dependencies
-    pip install -e ".[dev]"
-    ```
+# Install in development mode with dev dependencies
+uv pip install -e . --group dev
+```
 
 ## Setting up API Keys
 
-Kura uses the Gemini model from Google for summarization by default. You'll need to set up an API key:
+Kura uses OpenAI models for processing. You'll need to set up an API key:
 
-1. Get a Google API key from [Google AI Studio](https://aistudio.google.com/prompts/new_chat)
+1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
 2. Set the environment variable:
 
 ```bash
 # On Linux/macOS
-export GOOGLE_API_KEY=your_api_key_here
+export OPENAI_API_KEY=your_api_key_here
 
 # On Windows
-set GOOGLE_API_KEY=your_api_key_here
+set OPENAI_API_KEY=your_api_key_here
 ```
 
 ## Installing Optional Dependencies
 
 Kura supports additional features with optional dependencies:
 
-=== "Using uv (Recommended)"
-
-    ```bash
-    # For documentation development
-    uv pip install -e ".[docs]"
-    
-    # For running tests
-    uv pip install -e ".[dev]"
-    ```
-
-=== "Using pip"
-
-    ```bash
-    # For documentation development
-    pip install -e ".[docs]"
-    
-    # For running tests
-    pip install -e ".[dev]"
-    ```
+```bash
+uv sync --all-extras --group dev --group docs
+```
 
 ## Verifying Your Installation
 
 To verify that Kura is installed correctly, run:
 
 ```bash
-python -c "from kura import Kura; print('Kura installed successfully')"
+python -c "from kura import summarise_conversations; print('Kura installed successfully')"
 ```
 
 You should see a confirmation message with no errors.

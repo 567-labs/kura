@@ -1,6 +1,6 @@
 site_name: Kura
 site_url: https://usekura.xyz
-site_author: Ivan Leo # Replace with your actual name or organization name
+site_author: Ivan Leo
 site_description: A tool for analysing and visualising chat data
 repo_name: kura
 repo_url: https://github.com/567-labs/kura
@@ -75,9 +75,9 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/567-labs/kura # Replace with your GitHub repo link
+      link: https://github.com/567-labs/kura
     - icon: fontawesome/brands/twitter
-      link: https://twitter.com/ivanleomk # Replace with your Twitter handle
+      link: https://twitter.com/ivanleomk
   analytics:
     provider: google
     property: G-5ZYBS2C5VF
@@ -94,26 +94,25 @@ extra:
           data: 0
           note: >-
             Thanks for your feedback! Help us improve this page by
-            using our <a href="https://github.com/567-labs/kura/issues/new" target="_blank" rel="noopener">feedback form</a>.
+            using our <a href="https://github.com/567-labs/kura/issues" target="_blank" rel="noopener">GitHub issues</a>.
 
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: getting-started/installation.md
-    - Quickstart: getting-started/quickstart.md
-    - Configuration: getting-started/configuration.md
-    - Procedural API Tutorial: getting-started/tutorial-procedural-api.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
   - Core Concepts:
-    - Overview: core-concepts/overview.md
-    - Conversations: core-concepts/conversations.md
-    - Summarization: core-concepts/summarization.md
-    - Embedding: core-concepts/embedding.md
-    - Clustering: core-concepts/clustering.md
-    - Meta-Clustering: core-concepts/meta-clustering.md
-    - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
+      - Overview: core-concepts/overview.md
+      - Conversations: core-concepts/conversations.md
+      - Summarization: core-concepts/summarization.md
+      - Embedding: core-concepts/embedding.md
+      - Clustering: core-concepts/clustering.md
+      - Meta-Clustering: core-concepts/meta-clustering.md
+      - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
   - API Reference: api/index.md
   - Blog:
-    - blog/index.md
+      - blog/index.md
 
 plugins:
   - blog
@@ -144,7 +143,7 @@ plugins:
             show_root_heading: true
             show_if_no_docstring: true
             show_signature_annotations: true
-            members_order: source
+            members_order: alphabetical
             allow_inspection: true
             show_bases: true
 
@@ -185,11 +184,11 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tasklist:
-      custom_checkbox: true
   - pymdownx.tabbed:
       alternate_style: true
       combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
 extra_javascript:
   - javascripts/katex.js
