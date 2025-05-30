@@ -5,8 +5,10 @@ in the terminal, including basic tree views, enhanced visualizations with statis
 and rich-formatted output using the Rich library when available.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Union, Any
+from pathlib import Path
 from kura.types import Cluster, ClusterTreeNode
+from kura.base_classes.visualization import BaseVisualizationModel
 
 # Try to import Rich, fall back gracefully if not available
 try:
@@ -30,21 +32,109 @@ except ImportError:
     RICH_AVAILABLE = False
 
 if TYPE_CHECKING:
-    from kura.kura import Kura
+    from rich.console import Console as ConsoleType
+else:
+    ConsoleType = Any
 
 
-class ClusterVisualizer:
+class ClusterVisualizer(BaseVisualizationModel):
     """Handles visualization of hierarchical cluster structures."""
 
-    def __init__(self, kura_instance: "Kura"):
-        """Initialize the visualizer with a Kura instance.
+    def __init__(self, console: Optional["ConsoleType"] = None):
+        """Initialize the visualizer.
 
         Args:
-            kura_instance: The Kura instance containing cluster data and configuration
+            console: Optional Rich Console instance for enhanced output
         """
-        self.kura = kura_instance
-        self.console = kura_instance.console
-        self.meta_cluster_model = kura_instance.meta_cluster_model
+        self.console = console or (Console() if RICH_AVAILABLE and Console else None)
+    
+    @property
+    def checkpoint_filename(self) -> str:
+        """The filename used for cluster checkpoints."""
+        return "meta_clusters.jsonl"
+        
+    def _load_clusters_from_checkpoint(self, checkpoint_path: Union[str, Path]) -> List[Cluster]:
+        """Load clusters from a checkpoint file.
+
+        Args:
+            checkpoint_path: Path to the checkpoint file
+
+        Returns:
+            List of clusters loaded from the checkpoint
+
+        Raises:
+            FileNotFoundError: If checkpoint file doesn't exist
+            ValueError: If checkpoint file is malformed
+        """
+        checkpoint_path = Path(checkpoint_path)
+
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
+
+        try:
+            with open(checkpoint_path) as f:
+                clusters = [Cluster.model_validate_json(line) for line in f]
+            return clusters
+        except Exception as e:
+            raise ValueError(f"Failed to load clusters from {checkpoint_path}: {e}")
+
+    def _build_cluster_tree(self, clusters: List[Cluster]) -> dict[str, ClusterTreeNode]:
+        """Build a tree structure from a list of clusters.
+
+        Args:
+            clusters: List of clusters to build tree from
+
+        Returns:
+            Dictionary mapping cluster IDs to tree nodes
+        """
+        node_id_to_cluster = {}
+
+        for cluster in clusters:
+            node_id_to_cluster[cluster.id] = ClusterTreeNode(
+                id=cluster.id,
+                name=cluster.name,
+                description=cluster.description,
+                slug=cluster.slug,
+                count=len(cluster.chat_ids),
+                children=[],
+            )
+
+        for cluster in clusters:
+            if cluster.parent_id:
+                node_id_to_cluster[cluster.parent_id].children.append(cluster.id)
+
+        return node_id_to_cluster
+        
+    def visualize_clusters(
+        self,
+        clusters: Optional[List[Cluster]] = None,
+        *,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+        style: str = "basic",
+        console: Optional["ConsoleType"] = None,
+    ) -> None:
+        """Visualize a list of clusters.
+        
+        Args:
+            clusters: List of clusters to visualize. If None, loads from checkpoint_path
+            checkpoint_path: Path to checkpoint file to load clusters from
+            style: Visualization style ("basic", "enhanced", or "rich")
+            console: Console instance for rich output (overrides instance console)
+            
+        Raises:
+            ValueError: If neither clusters nor checkpoint_path is provided
+            FileNotFoundError: If checkpoint file doesn't exist
+        """
+        output_console = console or self.console
+        
+        if style == "basic":
+            self.visualise_clusters(clusters=clusters, checkpoint_path=checkpoint_path)
+        elif style == "enhanced":
+            self.visualise_clusters_enhanced(clusters=clusters, checkpoint_path=checkpoint_path)
+        elif style == "rich":
+            self.visualise_clusters_rich(clusters=clusters, checkpoint_path=checkpoint_path, console=output_console)
+        else:
+            raise ValueError(f"Invalid style '{style}'. Must be one of: basic, enhanced, rich")
 
     def _build_tree_structure(
         self,
@@ -106,13 +196,25 @@ class ClusterVisualizer:
 
         return result
 
-    def visualise_clusters(self):
+    def visualise_clusters(
+        self,
+        clusters: Optional[List[Cluster]] = None,
+        *,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+    ) -> None:
         """Print a hierarchical visualization of clusters to the terminal.
 
-        This method loads clusters from the meta_cluster_checkpoint file,
-        builds a tree representation, and prints it to the console.
+        This method builds a tree representation and prints it to the console.
         The visualization shows the hierarchical relationship between clusters
         with indentation and tree structure symbols.
+
+        Args:
+            clusters: List of clusters to visualize. If None, loads from checkpoint_path
+            checkpoint_path: Path to checkpoint file to load clusters from
+
+        Raises:
+            ValueError: If neither clusters nor checkpoint_path is provided
+            FileNotFoundError: If checkpoint file doesn't exist
 
         Example output:
         ╠══ Compare and improve Flutter and React state management (45 conversations)
@@ -121,41 +223,30 @@ class ClusterVisualizer:
         ║       ╚══ Compare and select Flutter state management solutions (17 conversations)
         ╠══ Optimize blog posts for SEO and improved user engagement (28 conversations)
         """
-        with open(self.kura.meta_cluster_checkpoint_path) as f:
-            clusters = [Cluster.model_validate_json(line) for line in f]
+        if clusters is None:
+            if checkpoint_path is None:
+                raise ValueError("Either clusters or checkpoint_path must be provided")
+            clusters = self._load_clusters_from_checkpoint(checkpoint_path)
 
-        node_id_to_cluster = {}
-
-        for node in clusters:
-            node_id_to_cluster[node.id] = ClusterTreeNode(
-                id=node.id,
-                name=node.name,
-                description=node.description,
-                slug=node.slug,
-                count=len(node.chat_ids),  # Access the actual count value
-                children=[],
-            )
-
-        for node in clusters:
-            if node.parent_id:
-                node_id_to_cluster[node.parent_id].children.append(node.id)
+        # Build tree structure
+        node_id_to_cluster = self._build_cluster_tree(clusters)
 
         # Find root nodes and build the tree
-        tree_output = ""
         root_nodes = [
-            node_id_to_cluster[node.id] for node in clusters if not node.parent_id
+            node_id_to_cluster[cluster.id] for cluster in clusters if not cluster.parent_id
         ]
 
+        total_conversations = sum(node.count for node in root_nodes)
         fake_root = ClusterTreeNode(
             id="root",
             name="Clusters",
             description="All clusters",
             slug="all_clusters",
-            count=sum(node.count for node in root_nodes),
+            count=total_conversations,
             children=[node.id for node in root_nodes],
         )
 
-        tree_output += self._build_tree_structure(
+        tree_output = self._build_tree_structure(
             fake_root, node_id_to_cluster, 0, False
         )
 
@@ -255,42 +346,43 @@ class ClusterVisualizer:
 
         return result
 
-    def visualise_clusters_enhanced(self):
+    def visualise_clusters_enhanced(
+        self,
+        clusters: Optional[List[Cluster]] = None,
+        *,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+    ) -> None:
         """Print an enhanced hierarchical visualization of clusters with colors and statistics.
 
         This method provides a more detailed visualization than visualise_clusters(),
         including conversation counts, percentages, progress bars, and descriptions.
+        
+        Args:
+            clusters: List of clusters to visualize. If None, loads from checkpoint_path
+            checkpoint_path: Path to checkpoint file to load clusters from
+            
+        Raises:
+            ValueError: If neither clusters nor checkpoint_path is provided
+            FileNotFoundError: If checkpoint file doesn't exist
         """
         print("\n" + "=" * 80)
         print("🎯 ENHANCED CLUSTER VISUALIZATION")
         print("=" * 80)
 
-        with open(self.kura.meta_cluster_checkpoint_path) as f:
-            clusters = [Cluster.model_validate_json(line) for line in f]
+        if clusters is None:
+            if checkpoint_path is None:
+                raise ValueError("Either clusters or checkpoint_path must be provided")
+            clusters = self._load_clusters_from_checkpoint(checkpoint_path)
 
-        node_id_to_cluster = {}
-        total_conversations = sum(
-            len(node.chat_ids) for node in clusters if not node.parent_id
-        )
+        # Build tree structure
+        node_id_to_cluster = self._build_cluster_tree(clusters)
 
-        for node in clusters:
-            node_id_to_cluster[node.id] = ClusterTreeNode(
-                id=node.id,
-                name=node.name,
-                description=node.description,
-                slug=node.slug,
-                count=len(node.chat_ids),  # Access the actual count value
-                children=[],
-            )
+        # Calculate total conversations from root clusters only
+        root_clusters = [cluster for cluster in clusters if not cluster.parent_id]
+        total_conversations = sum(len(cluster.chat_ids) for cluster in root_clusters)
 
-        for node in clusters:
-            if node.parent_id:
-                node_id_to_cluster[node.parent_id].children.append(node.id)
-
-        # Find root nodes and build the tree
-        root_nodes = [
-            node_id_to_cluster[node.id] for node in clusters if not node.parent_id
-        ]
+        # Find root nodes
+        root_nodes = [node_id_to_cluster[cluster.id] for cluster in root_clusters]
 
         fake_root = ClusterTreeNode(
             id="root",
@@ -319,49 +411,55 @@ class ClusterVisualizer:
         )
         print("=" * 80 + "\n")
 
-    def visualise_clusters_rich(self):
+    def visualise_clusters_rich(
+        self,
+        clusters: Optional[List[Cluster]] = None,
+        *,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+        console: Optional["ConsoleType"] = None,
+    ) -> None:
         """Print a rich-formatted hierarchical visualization using Rich library.
 
         This method provides the most visually appealing output with colors,
         interactive-style formatting, and comprehensive statistics when Rich is available.
         Falls back to enhanced visualization if Rich is not available.
+        
+        Args:
+            clusters: List of clusters to visualize. If None, loads from checkpoint_path
+            checkpoint_path: Path to checkpoint file to load clusters from
+            console: Rich Console instance for output. If None, uses instance console
+            
+        Raises:
+            ValueError: If neither clusters nor checkpoint_path is provided
+            FileNotFoundError: If checkpoint file doesn't exist
         """
-        if not RICH_AVAILABLE or not self.console:
+        output_console = console or self.console
+        
+        if not RICH_AVAILABLE or not output_console:
             print(
                 "⚠️  Rich library not available or console disabled. Using enhanced visualization..."
             )
-            self.visualise_clusters_enhanced()
+            self.visualise_clusters_enhanced(clusters, checkpoint_path=checkpoint_path)
             return
 
-        with open(self.kura.meta_cluster_checkpoint_path) as f:
-            clusters = [Cluster.model_validate_json(line) for line in f]
+        if clusters is None:
+            if checkpoint_path is None:
+                raise ValueError("Either clusters or checkpoint_path must be provided")
+            clusters = self._load_clusters_from_checkpoint(checkpoint_path)
 
         # Build cluster tree structure
-        node_id_to_cluster = {}
-        total_conversations = sum(
-            len(node.chat_ids) for node in clusters if not node.parent_id
-        )
+        node_id_to_cluster = self._build_cluster_tree(clusters)
 
-        for node in clusters:
-            node_id_to_cluster[node.id] = ClusterTreeNode(
-                id=node.id,
-                name=node.name,
-                description=node.description,
-                slug=node.slug,
-                count=len(node.chat_ids),  # Access the actual count value
-                children=[],
-            )
-
-        for node in clusters:
-            if node.parent_id:
-                node_id_to_cluster[node.parent_id].children.append(node.id)
+        # Calculate total conversations from root clusters only
+        root_clusters = [cluster for cluster in clusters if not cluster.parent_id]
+        total_conversations = sum(len(cluster.chat_ids) for cluster in root_clusters)
 
         # Create Rich Tree
         if Tree is None:
             print(
                 "⚠️  Rich Tree component not available. Using enhanced visualization..."
             )
-            self.visualise_clusters_enhanced()
+            self.visualise_clusters_enhanced(clusters, checkpoint_path=checkpoint_path)
             return
 
         tree = Tree(
@@ -370,9 +468,7 @@ class ClusterVisualizer:
         )
 
         # Add root clusters to tree
-        root_nodes = [
-            node_id_to_cluster[node.id] for node in clusters if not node.parent_id
-        ]
+        root_nodes = [node_id_to_cluster[cluster.id] for cluster in root_clusters]
 
         def add_node_to_tree(rich_tree, cluster_node, level=0):
             """Recursively add nodes to Rich tree with formatting."""
@@ -426,8 +522,8 @@ class ClusterVisualizer:
 
         # Only create tables if Rich components are available
         if Table is None or ROUNDED is None:
-            if self.console:
-                self.console.print(tree)
+            if output_console:
+                output_console.print(tree)
             return
 
         # Create statistics table
@@ -469,12 +565,12 @@ class ClusterVisualizer:
             size_table.add_row(range_name, f"{count}", f"{percentage:.1f}%")
 
         # Display everything
-        if self.console:
-            self.console.print("\n")
+        if output_console:
+            output_console.print("\n")
 
             # Only use Panel and Align if they're available
             if Panel is not None and Align is not None and Text is not None:
-                self.console.print(
+                output_console.print(
                     Panel(
                         Align.center(
                             Text(
@@ -487,11 +583,11 @@ class ClusterVisualizer:
                     )
                 )
             else:
-                self.console.print("[bold bright_cyan]🎯 RICH CLUSTER VISUALIZATION[/]")
+                output_console.print("[bold bright_cyan]🎯 RICH CLUSTER VISUALIZATION[/]")
 
-            self.console.print("\n")
-            self.console.print(tree)
-            self.console.print("\n")
+            output_console.print("\n")
+            output_console.print(tree)
+            output_console.print("\n")
 
             # Display tables side by side if Table.grid is available
             if hasattr(Table, "grid"):
@@ -499,10 +595,10 @@ class ClusterVisualizer:
                 layout.add_column()
                 layout.add_column()
                 layout.add_row(stats_table, size_table)
-                self.console.print(layout)
+                output_console.print(layout)
             else:
                 # Fallback to printing tables separately
-                self.console.print(stats_table)
-                self.console.print(size_table)
+                output_console.print(stats_table)
+                output_console.print(size_table)
 
-            self.console.print("\n")
+            output_console.print("\n")
