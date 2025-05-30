@@ -5,6 +5,7 @@ import logging
 import instructor
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
+from pydantic import BaseModel
 
 from kura.base_classes import BaseSummaryModel
 from kura.checkpoint import CheckpointManager
@@ -12,7 +13,7 @@ from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
 T = TypeVar("T", bound=GeneratedSummary)
-U = TypeVar("U")
+U = TypeVar("U", bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 
