@@ -10,12 +10,13 @@ from .kura import (
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    # Checkpoint management
-    CheckpointManager,
 )
+from kura.checkpoint import CheckpointManager
+from kura.summarisation import summarise_conversations
 
 __all__ = [
     # Core functions
+    "summarise_conversations",
     "generate_base_clusters_from_conversation_summaries",
     "reduce_clusters_from_base_clusters",
     "reduce_dimensionality_from_clusters",
