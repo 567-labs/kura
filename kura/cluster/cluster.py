@@ -69,21 +69,29 @@ class ClusterModel:
         self.sem = Semaphore(self.max_concurrent_requests)
         self.client = instructor.from_provider(self.model, async_client=True)
 
-        return await asyncio.gather(
-            *[
-                self.generate_cluster_description(
-                    summaries,
-                    get_contrastive_examples(
-                        cluster_id,
-                        cluster_id_to_summaries=cluster_id_to_summaries,
-                        max_contrastive_examples=max_contrastive_examples,
-                    ),
-                    self.sem,
-                    self.client,
-                    prompt,
-                )
-                for cluster_id, summaries in cluster_id_to_summaries.items()
-            ]
+        if not self.console:
+            # Simple processing without rich display
+            return await asyncio.gather(
+                *[
+                    self.generate_cluster_description(
+                        summaries,
+                        get_contrastive_examples(
+                            cluster_id,
+                            cluster_id_to_summaries=cluster_id_to_summaries,
+                            max_contrastive_examples=max_contrastive_examples,
+                        ),
+                        self.sem,
+                        self.client,
+                        prompt,
+                    )
+                    for cluster_id, summaries in cluster_id_to_summaries.items()
+                ]
+            )
+
+        return await self._generate_clusters_with_console(
+            cluster_id_to_summaries,
+            max_contrastive_examples,
+            prompt,
         )
 
     async def generate_cluster_description(
@@ -142,6 +150,119 @@ class ClusterModel:
                     f"Failed to generate cluster from {len(summaries)} summaries: {e}"
                 )
                 raise
+
+    async def _generate_clusters_with_console(
+        self,
+        cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
+        max_contrastive_examples: int,
+        prompt: str,
+    ) -> List[Cluster]:
+        """
+        Generate clusters with full-screen Rich console display showing progress and latest results.
+        """
+        from rich.live import Live
+        from rich.layout import Layout
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich.progress import (
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            TaskProgressColumn,
+            TimeRemainingColumn,
+        )
+
+        clusters = []
+        completed_clusters = []
+        max_preview_items = 3
+        total_clusters = len(cluster_id_to_summaries)
+
+        # Create full-screen layout
+        layout = Layout()
+        layout.split_column(Layout(name="progress", size=3), Layout(name="preview"))
+
+        # Create progress bar
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+            console=self.console,
+        )
+        task_id = progress.add_task("", total=total_clusters)
+        layout["progress"].update(progress)
+
+        def update_preview_display():
+            if completed_clusters:
+                preview_text = Text()
+
+                for cluster in completed_clusters[-max_preview_items:]:  # Show latest 3
+                    preview_text.append(f"Name: {cluster.name}\n", style="bold green")
+                    preview_text.append(
+                        f"Description: {cluster.description[:100]}{'...' if len(cluster.description) > 100 else ''}\n",
+                        style="white",
+                    )
+                    preview_text.append(
+                        f"Conversations: {len(cluster.chat_ids)}\n\n",
+                        style="yellow",
+                    )
+
+                layout["preview"].update(
+                    Panel(
+                        preview_text,
+                        title=f"[green]Generated Clusters ({len(completed_clusters)}/{total_clusters})",
+                        border_style="green",
+                    )
+                )
+            else:
+                layout["preview"].update(
+                    Panel(
+                        Text("Waiting for clusters...", style="dim"),
+                        title="[yellow]Generated Clusters (0/0)",
+                        border_style="yellow",
+                    )
+                )
+
+        # Initialize preview display
+        update_preview_display()
+
+        with Live(layout, console=self.console, refresh_per_second=4):
+            # Prepare tasks for each cluster
+            tasks = []
+            for cluster_id, summaries in cluster_id_to_summaries.items():
+                coro = self.generate_cluster_description(
+                    summaries,
+                    get_contrastive_examples(
+                        cluster_id,
+                        cluster_id_to_summaries=cluster_id_to_summaries,
+                        max_contrastive_examples=max_contrastive_examples,
+                    ),
+                    self.sem,
+                    self.client,
+                    prompt,
+                )
+                tasks.append(coro)
+
+            # Use asyncio.as_completed to show results as they finish
+            for i, coro in enumerate(asyncio.as_completed(tasks)):
+                try:
+                    cluster = await coro
+                    clusters.append(cluster)
+                    completed_clusters.append(cluster)
+
+                    # Update progress
+                    progress.update(task_id, completed=i + 1)
+
+                    # Update preview display
+                    update_preview_display()
+
+                except Exception as e:
+                    logger.error(f"Failed to generate cluster: {e}")
+                    # Still update progress on error
+                    progress.update(task_id, completed=i + 1)
+                    update_preview_display()
+
+        return clusters
 
 
 def get_contrastive_examples(
