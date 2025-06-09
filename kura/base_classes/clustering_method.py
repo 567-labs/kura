@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Union
-
-T = TypeVar("T")
+from kura.types.summarisation import ConversationSummary
 
 
 class BaseClusteringMethod(ABC):
     @abstractmethod
     def cluster(
-        self, items: list[dict[str, Union[T, list[float]]]]
-    ) -> dict[int, list[T]]:
+        self, items: list[ConversationSummary]
+    ) -> dict[int, list[ConversationSummary]]:
         pass
