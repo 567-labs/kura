@@ -94,6 +94,11 @@ nav:
     - Clustering: core-concepts/clustering.md
     - Meta-Clustering: core-concepts/meta-clustering.md
     - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
+  - Tutorials:
+    - Overview: tutorials/index.md
+    - Cluster Conversations: tutorials/1-cluster-conversations.ipynb
+    - Better Summaries: tutorials/2-better-summaries.ipynb
+    - Classifiers: tutorials/3-classifiers.ipynb
   - API Reference: api/index.md
   - Blog:
     - blog/index.md
@@ -126,6 +131,14 @@ plugins:
             members_order: alphabetical
             allow_inspection: true
             show_bases: true
+  - mkdocs-jupyter:
+      include_source: true
+      ignore:
+        - "*.py"
+      execute: false
+      allow_errors: false
+      include_requirejs: true
+      markdown_display: "tabbed"
 
 markdown_extensions:
   - abbr
@@ -160,3 +173,8 @@ markdown_extensions:
       combine_header_slug: true
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: "!!python/name:pymdownx.superfences.fence_code_format"
