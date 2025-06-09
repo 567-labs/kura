@@ -104,7 +104,7 @@ nav:
     - blog/index.md
 
 plugins:
-  # - social  # Temporarily disabled for testing
+  - social
   - search:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\b)(?=[A-Z][a-z])'
   - minify:
