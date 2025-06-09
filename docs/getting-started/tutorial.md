@@ -8,7 +8,7 @@ Learn how to analyze RAG system chat data through a three-part tutorial series. 
 - Set `GOOGLE_API_KEY` for Gemini
 - Download the tutorial dataset
 
-[**Download Dataset**](https://example.com/dataset.csv){ .md-button .md-button--primary }
+[**Download Dataset**](../assets/conversations.json){ .md-button .md-button--primary }
 
 ## Tutorial Series
 
