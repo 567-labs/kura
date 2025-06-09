@@ -17,159 +17,7 @@ T = TypeVar("T", bound=GeneratedSummary)
 
 logger = logging.getLogger(__name__)
 
-
-class SummaryModel(BaseSummaryModel):
-    """
-    Instructor-based summary model for conversation analysis.
-
-    Example - Custom Schema:
-        >>> class CustomSummary(GeneratedSummary):
-        ...     sentiment: str
-        ...     complexity: int
-        >>>
-        >>> summaries = await model.summarise(
-        ...     conversations,
-        ...     response_schema=CustomSummary
-        ... )
-        # sentiment & complexity will be in summaries[0].metadata
-
-    Example - Custom Prompt:
-        >>> summaries = await model.summarise(
-        ...     conversations,
-        ...     additional_prompt="Also assess the technical complexity on a scale of 1-10."
-        ... )
-    """
-
-    def __init__(
-        self,
-        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
-        max_concurrent_requests: int = 50,
-        checkpoint_filename: str = "summaries.jsonl",
-        console: Optional[Console] = None,
-    ):
-        """
-        Initialize SummaryModel with core configuration.
-
-        Per-use configuration (schemas, prompts, temperature) are method parameters.
-
-        Args:
-            model: model identifier (e.g., "openai/gpt-4o-mini")
-            max_concurrent_requests: Maximum concurrent API requests
-        """
-        self.model = model
-        self.max_concurrent_requests = max_concurrent_requests
-        self._checkpoint_filename = checkpoint_filename
-        self.console = console
-
-        logger.info(
-            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
-        )
-
-    @property
-    def checkpoint_filename(self) -> str:
-        """Return the filename to use for checkpointing this model's output."""
-        return self._checkpoint_filename
-
-    async def summarise(
-        self,
-        conversations: list[Conversation],
-        *,
-        response_schema: Type[T] = GeneratedSummary,
-        additional_prompt: Optional[str] = None,
-        temperature: float = 0.2,
-        **kwargs,
-    ) -> list[ConversationSummary]:
-        """
-        Summarise conversations with configurable parameters.
-
-        This method uses the CLIO conversation analysis framework, with automatic
-        extensibility for custom fields and prompt modifications.
-
-        Args:
-            conversations: List of conversations to summarize
-            response_schema: Pydantic model class for structured LLM output.
-                           Extend GeneratedSummary to add custom fields that will
-                           automatically be included in ConversationSummary.metadata
-            additional_prompt: Additional text to append to the default CLIO prompt.
-                             Use this to request custom analysis or fields
-            temperature: LLM temperature for generation
-
-        Returns:
-            List of ConversationSummary objects with core fields populated and
-            any additional fields from extended schemas in metadata
-
-        Example:
-            >>> class CustomSummary(GeneratedSummary):
-            ...     sentiment: str
-            ...     technical_complexity: int
-            >>>
-            >>> summaries = await model.summarise(
-            ...     conversations,
-            ...     response_schema=CustomSummary,
-            ...     additional_prompt="Rate sentiment and technical complexity 1-10"
-            ... )
-            >>> # Access core fields
-            >>> print(summaries[0].summary)
-            >>> # Access custom fields in metadata
-            >>> print(summaries[0].metadata["sentiment"])
-        """
-        # Initialize semaphore per-run to match event loop
-        self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
-
-        logger.info(
-            f"Starting summarization of {len(conversations)} conversations using model {self.model}"
-        )
-
-        prompt_template = self._get_default_prompt_template()
-        if additional_prompt:
-            prompt_template += f"\n\n{additional_prompt}"
-
-        client = instructor.from_provider(self.model, async_client=True)
-
-        if not self.console:
-            # Simple progress tracking with tqdm
-            summaries = await tqdm_asyncio.gather(
-                *[
-                    self._summarise_single_conversation(
-                        conversation,
-                        client=client,
-                        response_schema=response_schema,
-                        prompt_template=prompt_template,
-                        temperature=temperature,
-                        **kwargs,
-                    )
-                    for conversation in conversations
-                ],
-                desc=f"Summarising {len(conversations)} conversations",
-            )
-        else:
-            # Rich console progress tracking with live summary display
-            summaries = await self._summarise_with_console(
-                conversations,
-                client=client,
-                response_schema=response_schema,
-                prompt_template=prompt_template,
-                temperature=temperature,
-                **kwargs,
-            )
-
-        logger.info(
-            f"Completed summarization of {len(conversations)} conversations, produced {len(summaries)} summaries"
-        )
-        return summaries
-
-    def _get_default_prompt_template(self) -> str:
-        """
-        Get the default prompt template for conversation summarization.
-
-        Based on the CLIO framework described in:
-        "Clio: Privacy-Preserving Insights into Real-World AI Use"
-        https://www.anthropic.com/research/clio
-
-        This prompt can be extended using the additional_prompt parameter
-        in the summarise() method to add custom analysis requirements.
-        """
-        return """
+DEFAULT_SUMMARY_PROMPT = """
 The following is a conversation between an AI assistant and a user:
 
 <messages>
@@ -221,7 +69,143 @@ Remember that
 - Summaries should start with "The user's overall request for the assistant is to"
 - Make sure to omit any personally identifiable information (PII), like names, locations, phone numbers, email addressess, company names and so on.
 - Make sure to indicate specific details such as programming languages, frameworks, libraries and so on which are relevant to the task.
-        """.strip()
+"""
+
+
+class SummaryModel(BaseSummaryModel):
+    """
+    Instructor-based summary model for conversation analysis.
+
+    Example - Custom Schema:
+        >>> class CustomSummary(GeneratedSummary):
+        ...     sentiment: str
+        ...     complexity: int
+        >>>
+        >>> summaries = await model.summarise(
+        ...     conversations,
+        ...     response_schema=CustomSummary
+        ... )
+        # sentiment & complexity will be in summaries[0].metadata
+
+    Example - Custom Prompt:
+        >>> summaries = await model.summarise(
+        ...     conversations,
+        ...     prompt="Also assess the technical complexity on a scale of 1-10."
+        ... )
+    """
+
+    def __init__(
+        self,
+        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
+        max_concurrent_requests: int = 50,
+        checkpoint_filename: str = "summaries.jsonl",
+        console: Optional[Console] = None,
+    ):
+        """
+        Initialize SummaryModel with core configuration.
+
+        Per-use configuration (schemas, prompts, temperature) are method parameters.
+
+        Args:
+            model: model identifier (e.g., "openai/gpt-4o-mini")
+            max_concurrent_requests: Maximum concurrent API requests
+        """
+        self.model = model
+        self.max_concurrent_requests = max_concurrent_requests
+        self._checkpoint_filename = checkpoint_filename
+        self.console = console
+
+        logger.info(
+            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}"
+        )
+
+    @property
+    def checkpoint_filename(self) -> str:
+        """Return the filename to use for checkpointing this model's output."""
+        return self._checkpoint_filename
+
+    async def summarise(
+        self,
+        conversations: list[Conversation],
+        *,
+        prompt: str = DEFAULT_SUMMARY_PROMPT,
+        response_schema: Type[T] = GeneratedSummary,
+        temperature: float = 0.2,
+        **kwargs,
+    ) -> list[ConversationSummary]:
+        """
+        Summarise conversations with configurable parameters.
+
+        This method uses the CLIO conversation analysis framework, with automatic
+        extensibility for custom fields and prompt modifications.
+
+        Args:
+            conversations: List of conversations to summarize
+            response_schema: Pydantic model class for structured LLM output.
+                           Extend GeneratedSummary to add custom fields that will
+                           automatically be included in ConversationSummary.metadata
+            prompt: Custom prompt for CLIO analysis
+            temperature: LLM temperature for generation
+
+        Returns:
+            List of ConversationSummary objects with core fields populated and
+            any additional fields from extended schemas in metadata
+
+        Example:
+            >>> class CustomSummary(GeneratedSummary):
+            ...     sentiment: str
+            ...     technical_complexity: int
+            >>>
+            >>> summaries = await model.summarise(
+            ...     conversations,
+            ...     response_schema=CustomSummary,
+            ...     prompt="Rate sentiment and technical complexity 1-10"
+            ... )
+            >>> # Access core fields
+            >>> print(summaries[0].summary)
+            >>> # Access custom fields in metadata
+            >>> print(summaries[0].metadata["sentiment"])
+        """
+        # Initialize semaphore per-run to match event loop
+        self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
+
+        logger.info(
+            f"Starting summarization of {len(conversations)} conversations using model {self.model}"
+        )
+
+        client = instructor.from_provider(self.model, async_client=True)
+
+        if not self.console:
+            # Simple progress tracking with tqdm
+            summaries = await tqdm_asyncio.gather(
+                *[
+                    self._summarise_single_conversation(
+                        conversation,
+                        client=client,
+                        response_schema=response_schema,
+                        prompt=prompt,
+                        temperature=temperature,
+                        **kwargs,
+                    )
+                    for conversation in conversations
+                ],
+                desc=f"Summarising {len(conversations)} conversations",
+            )
+        else:
+            # Rich console progress tracking with live summary display
+            summaries = await self._summarise_with_console(
+                conversations,
+                client=client,
+                response_schema=response_schema,
+                prompt=prompt,
+                temperature=temperature,
+                **kwargs,
+            )
+
+        logger.info(
+            f"Completed summarization of {len(conversations)} conversations, produced {len(summaries)} summaries"
+        )
+        return summaries
 
     async def _summarise_single_conversation(
         self,
@@ -229,7 +213,7 @@ Remember that
         *,
         client,
         response_schema: Type[T],
-        prompt_template: str,
+        prompt: str,
         temperature: float,
         **kwargs,
     ) -> ConversationSummary:
@@ -251,7 +235,7 @@ Remember that
                     messages=[
                         {
                             "role": "user",
-                            "content": prompt_template,
+                            "content": prompt,
                         },
                     ],
                     context={
@@ -310,7 +294,7 @@ Remember that
         *,
         client,
         response_schema: Type[T],
-        prompt_template: str,
+        prompt: str,
         temperature: float,
         **kwargs,
     ) -> list[ConversationSummary]:
@@ -394,7 +378,7 @@ Remember that
                     conversation,
                     client=client,
                     response_schema=response_schema,
-                    prompt_template=prompt_template,
+                    prompt=prompt,
                     temperature=temperature,
                     **kwargs,
                 )
@@ -427,7 +411,7 @@ async def summarise_conversations(
     *,
     model: BaseSummaryModel,
     response_schema: Type[T] = GeneratedSummary,
-    additional_prompt: Optional[str] = None,
+    prompt: str = DEFAULT_SUMMARY_PROMPT,
     temperature: float = 0.2,
     checkpoint_manager: Optional[CheckpointManager] = None,
     **kwargs,
@@ -444,7 +428,7 @@ async def summarise_conversations(
 
     Extensibility Features:
     - **Custom Fields**: Extend GeneratedSummary to add custom analysis fields
-    - **Prompt Modification**: Use additional_prompt to extend CLIO analysis
+    - **Prompt Modification**: Use prompt to modify CLIO analysis
     - **Automatic Mapping**: Extended fields are automatically placed in metadata
 
     Args:
@@ -452,7 +436,7 @@ async def summarise_conversations(
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
         response_schema: Pydantic model class for LLM output. Extend GeneratedSummary
                         to add custom fields that will appear in metadata
-        additional_prompt: Additional text to append to the CLIO prompt template
+        prompt: Custom prompt to modify the CLIO analysis
         temperature: LLM temperature for generation
         checkpoint_manager: Optional checkpoint manager for caching
 
@@ -476,7 +460,7 @@ async def summarise_conversations(
         ...     conversations=my_conversations,
         ...     model=model,
         ...     response_schema=DetailedSummary,
-        ...     additional_prompt="Analyze sentiment and rate technical depth 1-10"
+        ...     prompt="Analyze sentiment and rate technical depth 1-10"
         ... )
         >>> # Custom fields available in metadata
         >>> print(summaries[0].metadata["sentiment"])
@@ -499,8 +483,8 @@ async def summarise_conversations(
     raw_summaries = await model.summarise(
         conversations,
         response_schema=response_schema,
-        additional_prompt=additional_prompt,
         temperature=temperature,
+        prompt=prompt,
         **kwargs,
     )
     logger.info(f"Generated {len(raw_summaries)} raw summaries")

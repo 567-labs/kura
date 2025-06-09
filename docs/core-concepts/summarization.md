@@ -137,21 +137,39 @@ summaries = await summarise_conversations(
 
 ### 2. Extend the CLIO Prompt
 
-You can extend the default CLIO prompt to focus on domain-specific aspects while preserving the core privacy-preserving analysis framework. Use the `additional_prompt` parameter to append custom analysis requirements without replacing the proven CLIO foundation.
+You can extend the default CLIO prompt to focus on domain-specific aspects while preserving the core privacy-preserving analysis framework. Use the `prompt` parameter if you'd like to modify the default summarisation prompt.
 
 ```python
 # Extend CLIO prompt for technical analysis
-technical_analysis = """
-Additionally, analyze these technical aspects:
-- Rate the technical complexity on a scale of 1-10
-- Identify specific programming frameworks or libraries mentioned
-- Assess whether the user's problem was fully resolved
-"""
+summaries = await summarise_conversations(
+        conversations,
+        model=summary_model,
+        checkpoint_manager=checkpoint_mgr,
+        prompt="""
+        Summarise if the conversation is about alpacas and their management.
+        If it is, return "Alpacas" in the summary.
+        If it is not, return "Not alpacas but about x" in the summary where x here is the topic of the conversation.
+
+        Here is the conversation:
+        <messages>
+        {% for message in conversation.messages %}
+        <message>{{message.role}}: {{message.content}}</message>
+        {% endfor %}
+        </messages>
+        """,
+)
+```
+
+You can also extend from the default prompt as seen below
+
+```python
+from kura.summarisation import DEFAULT_SUMMARY_PROMPT
 
 summaries = await summarise_conversations(
     conversations,
-    model=model,
-    additional_prompt=technical_analysis
+    model=summary_model,
+    checkpoint_manager=checkpoint_mgr,
+    prompt=DEFAULT_SUMMARY_PROMPT + "Make it long and verbose please!",
 )
 ```
 
@@ -174,7 +192,6 @@ summaries = await summarise_conversations(
     conversations,
     model=model,
     response_schema=TechnicalSummary,
-    additional_prompt="Rate technical depth 1-10 and identify frameworks mentioned"
 )
 
 # Access core CLIO fields directly
@@ -222,7 +239,7 @@ summaries = await summarise_conversations(
     conversations,
     model=model,
     response_schema=TechnicalSummary,
-    additional_prompt="""
+    prompt="""
     Additionally analyze:
     - Rate technical depth 1-10 (1=basic concepts, 10=advanced architecture)
     - List specific frameworks/libraries mentioned
