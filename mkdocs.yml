@@ -104,12 +104,13 @@ nav:
     - blog/index.md
 
 plugins:
-  - social
+  # - social  # Temporarily disabled for testing
   - search:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\b)(?=[A-Z][a-z])'
   - minify:
       minify_html: true
   - blog
+  - glightbox
   - rss:
       match_path: blog/posts/.*
       date_from_meta:
@@ -138,7 +139,6 @@ plugins:
       execute: false
       allow_errors: false
       include_requirejs: true
-      markdown_display: "tabbed"
 
 markdown_extensions:
   - abbr
@@ -173,8 +173,4 @@ markdown_extensions:
       combine_header_slug: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: "!!python/name:pymdownx.superfences.fence_code_format"
+  - pymdownx.superfences
