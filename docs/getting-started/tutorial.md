@@ -5,7 +5,7 @@ Learn how to analyze RAG system chat data through a three-part tutorial series. 
 ## Prerequisites
 
 - Install dependencies from `pyproject.toml`
-- Set `GOOGLE_API_KEY` for Gemini
+- Set `OPENAI_API_KEY` to use OpenAI's GPT-4o-mini model
 - Download the tutorial dataset
 
 [**Download Dataset**](../assets/conversations.json){ .md-button .md-button--primary }
@@ -13,12 +13,15 @@ Learn how to analyze RAG system chat data through a three-part tutorial series. 
 ## Tutorial Series
 
 ### 1. Cluster Conversations
+
 Discover user query patterns through topic modeling and clustering. Learn to identify that three major topics account for 67% of queries, with artifact management appearing in 61% of conversations.
 
-### 2. Better Summaries  
+### 2. Better Summaries
+
 Transform generic summaries into domain-specific insights. Build custom summarization models that turn seven vague clusters into three actionable categories: Access Controls, Deployment, and Experiment Management.
 
 ### 3. Building Classifiers
+
 Convert clustering insights into production classifiers. Build real-time systems that automatically categorize new queries and scale your insights.
 
 ## What You'll Learn
