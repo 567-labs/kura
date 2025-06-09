@@ -12,15 +12,15 @@ Learn how to analyze RAG system chat data through a three-part tutorial series. 
 
 ## Tutorial Series
 
-### 1. Cluster Conversations
+### Step 1. Cluster Conversations
 
 Discover user query patterns through topic modeling and clustering. Learn to identify that three major topics account for 67% of queries, with artifact management appearing in 61% of conversations.
 
-### 2. Better Summaries
+### Step 2. Better Summaries
 
 Transform generic summaries into domain-specific insights. Build custom summarization models that turn seven vague clusters into three actionable categories: Access Controls, Deployment, and Experiment Management.
 
-### 3. Building Classifiers
+### Step 3. Building Classifiers
 
 Convert clustering insights into production classifiers. Build real-time systems that automatically categorize new queries and scale your insights.
 
