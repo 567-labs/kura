@@ -29,7 +29,6 @@ class BaseSummaryModel(ABC):
         *,
         # All configuration exposed as parameters (not buried in class)
         response_schema: Type[T] = GeneratedSummary,
-        prompt_template: Optional[str] = None,
         temperature: float = 0.2,
         **kwargs,
     ) -> list[ConversationSummary]:

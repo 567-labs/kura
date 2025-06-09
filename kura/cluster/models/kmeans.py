@@ -1,13 +1,12 @@
 from kura.base_classes import BaseClusteringMethod
+from kura.types.summarisation import ConversationSummary
 from sklearn.cluster import KMeans
 import math
-from typing import TypeVar
+from typing import Union
 import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class KmeansClusteringModel(BaseClusteringMethod):
@@ -17,7 +16,9 @@ class KmeansClusteringModel(BaseClusteringMethod):
             f"Initialized KmeansClusteringModel with clusters_per_group={clusters_per_group}"
         )
 
-    def cluster(self, items: list[T]) -> dict[int, list[T]]:
+    def cluster(
+        self, items: list[dict[str, Union[ConversationSummary, list[float]]]]
+    ) -> dict[int, list[ConversationSummary]]:
         """
         We perform a clustering here using an embedding defined on each individual item.
 

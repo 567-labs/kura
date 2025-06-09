@@ -19,6 +19,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
         )
         try:
             self.model = SentenceTransformer(model_name)
+            self.model_name = model_name
             self._model_batch_size = model_batch_size
             logger.info(f"Successfully loaded SentenceTransformer model: {model_name}")
         except Exception as e:

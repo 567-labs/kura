@@ -15,7 +15,7 @@ class BaseClusterModel(ABC):
     async def generate_clusters(
         self,
         cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
+        prompt: str,
         max_contrastive_examples: int = 10,
-        prompt: str = None,
     ) -> List[Cluster]:
         pass

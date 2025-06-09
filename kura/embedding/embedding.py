@@ -1,14 +1,14 @@
 from kura.base_classes import BaseEmbeddingModel
 from kura.types import ConversationSummary
 import logging
-from typing import Any
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
 
 async def embed_summaries(
     summaries: list[ConversationSummary], embedding_model: BaseEmbeddingModel
-) -> list[dict[str, Any]]:
+) -> list[dict[str, Union[ConversationSummary, list[float]]]]:
     """Embeds conversation summaries and returns items ready for clustering."""
     if not summaries:
         return []

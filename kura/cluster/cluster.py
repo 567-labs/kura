@@ -12,13 +12,13 @@ import asyncio
 import instructor
 from instructor.models import KnownModelName
 from asyncio import Semaphore
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, cast
 from rich.console import Console
 
 logger = logging.getLogger(__name__)
 
 
-class ClusterModel:
+class ClusterModel(BaseClusterModel):
     """
     Model for generating cluster descriptions using LLMs.
 
@@ -62,8 +62,8 @@ class ClusterModel:
     async def generate_clusters(
         self,
         cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
-        max_contrastive_examples: int = 10,
         prompt: str = DEFAULT_CLUSTER_PROMPT,
+        max_contrastive_examples: int = 10,
     ) -> List[Cluster]:
         """Generate clusters from a mapping of cluster IDs to summaries."""
         self.sem = Semaphore(self.max_concurrent_requests)
@@ -99,7 +99,7 @@ class ClusterModel:
         summaries: List[ConversationSummary],
         contrastive_examples: List[ConversationSummary],
         semaphore: Semaphore,
-        client: instructor.Instructor,
+        client: instructor.AsyncInstructor,
         prompt: str = DEFAULT_CLUSTER_PROMPT,
     ) -> Cluster:
         """
@@ -311,7 +311,7 @@ async def cluster_conversations(
     embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
     clustering_method: BaseClusteringMethod = KmeansClusteringModel(),
     clustering_model: BaseClusterModel = ClusterModel(),
-    checkpoint_manager: CheckpointManager = None,
+    checkpoint_manager: Optional[CheckpointManager] = None,
     max_contrastive_examples: int = 10,
     prompt: str = DEFAULT_CLUSTER_PROMPT,
     **kwargs,
@@ -333,8 +333,7 @@ async def cluster_conversations(
         List of clusters with generated names and descriptions
     """
     if not summaries:
-        logger.warning("Empty summaries list provided")
-        return {}
+        raise ValueError("Empty summaries list provided")
 
     if checkpoint_manager:
         cached = checkpoint_manager.load_checkpoint(
