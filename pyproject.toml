@@ -42,6 +42,10 @@ docs = [
     "mkdocs-rss-plugin>=1.17.1",
     "mkdocstrings[python]>=0.27.0",
     "mkdocs-minify-plugin>=0.8.0",
+    "mkdocs-jupyter>=0.25.1",
+    "jupyter>=1.1.1",
+    "notebook>=7.2.2",
+    "ipykernel>=6.29.5",
 ]
 dev = [
     "pyright>=1.1.399",

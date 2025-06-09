@@ -84,6 +84,11 @@ nav:
       - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
       - Configuration: getting-started/configuration.md
+      - Tutorial:
+          - Overview: getting-started/tutorial.md
+          - Cluster Conversations: notebooks/how-to-look-at-data/1. Cluster Conversations.ipynb
+          - Better Summaries: notebooks/how-to-look-at-data/2. Better Summaries.ipynb
+          - Classifiers: notebooks/how-to-look-at-data/3. Classifiers.ipynb
   - Core Concepts:
       - Overview: core-concepts/overview.md
       - Conversations: core-concepts/conversations.md
@@ -111,6 +116,10 @@ plugins:
         - categories
         - tags
       use_git: false
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+      theme: light
   - mkdocstrings:
       default_handler: python
       handlers:
