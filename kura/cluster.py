@@ -401,7 +401,7 @@ def get_contrastive_examples(
     Args:
         cluster_id: The id of the cluster to get contrastive examples for
         cluster_id_to_summaries: A dictionary of cluster ids to their summaries
-        limit: The number of contrastive examples to return. Defaults to 10.
+        max_contrastive_examples: The number of contrastive examples to return. Defaults to 10.
 
     Returns:
         List of contrastive examples from other clusters
