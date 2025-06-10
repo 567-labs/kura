@@ -86,7 +86,7 @@ class MetaClusterModel(BaseMetaClusterModel):
         **kwargs,  # For future use
     ):
         if clustering_model is None:
-            from kura.cluster.models import KmeansClusteringModel
+            from kura.cluster import KmeansClusteringModel
 
             clustering_model = KmeansClusteringModel(12)
 
