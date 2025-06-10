@@ -22,6 +22,9 @@ dependencies = [
     "typer>=0.9.0",
     "sqlmodel>=0.0.14",
     "datasets>=3.6.0",
+    "sentence-transformers>=3.0.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
 ]
 
 
@@ -55,6 +58,10 @@ dev = [
     "ruff>=0.11.11",
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.5.49",
+]
+vllm = [
+    "vllm>=0.5.0",
+    "ray>=2.8.0",
 ]
 
 
