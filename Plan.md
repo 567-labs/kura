@@ -244,10 +244,18 @@ meta_clusters = await generate_meta_clusters_from_base_clusters(
 - `MetaClusterModel.reduce_clusters()` can be mocked for testing iteration logic
 - Individual components (embedding, clustering, LLM) can be tested separately
 
-## 4. Migration Path
+## 4. Implementation Checklist
 
-1. **Phase 1**: Create new `MetaClusterModel` class with `reduce_clusters()` method containing all logic
-2. **Phase 2**: Implement main `generate_meta_clusters_from_base_clusters()` procedural function
-3. **Phase 3**: Update existing code to use new procedural API
-4. **Phase 4**: Remove old complex methods from existing `MetaClusterModel`
-5. **Phase 5**: Clean up any remaining UI logic that should be in separate modules
+1. **Rename current kura/meta_cluster.py to kura/meta_cluster_archive.py**
+2. **Create new kura/meta_cluster.py with imports, logging setup, and basic scaffolding**
+3. **Implement generate_meta_clusters_from_base_clusters() procedural function (orchestration only)**
+4. **Create minimal MetaClusterModel stub class with reduce_clusters() method signature**
+5. **Test the scaffolding works with a simple stub implementation**
+6. **Extract and adapt helper functions (get_contrastive_examples, validation models) from archive**
+7. **Implement full reduce_clusters() method with embedding, clustering, and LLM logic**
+8. **Handle edge cases in reduce_clusters (empty list, single cluster)**
+9. **Ensure BaseMetaClusterModel interface matches new reduce_clusters() signature**
+10. **Find and update any existing code that imports/uses old MetaClusterModel**
+11. **Run get_diagnostics and any linting/typecheck commands to ensure no errors**
+12. **Integrate Rich console progress tracking into MetaClusterModel**
+13. **Remove kura/meta_cluster_archive.py once everything is working**
