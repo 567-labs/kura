@@ -12,7 +12,7 @@ import asyncio
 import instructor
 from instructor.models import KnownModelName
 from asyncio import Semaphore
-from typing import Dict, List, Optional, Union, cast
+from typing import Dict, List, Optional, Union
 from rich.console import Console
 
 logger = logging.getLogger(__name__)

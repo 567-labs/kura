@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import Type, TypeVar
 
 from kura.types import Conversation, GeneratedSummary, ConversationSummary
 

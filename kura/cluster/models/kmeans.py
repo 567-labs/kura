@@ -40,7 +40,7 @@ class KmeansClusteringModel(BaseClusteringMethod):
 
         try:
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
-            data: list[T] = [item["item"] for item in items]  # pyright: ignore
+            data = [item["item"] for item in items]
             n_clusters = math.ceil(len(data) / self.clusters_per_group)
 
             logger.debug(
