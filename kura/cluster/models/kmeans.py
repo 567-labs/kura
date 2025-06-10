@@ -2,7 +2,7 @@ from kura.base_classes import BaseClusteringMethod
 from kura.types.summarisation import ConversationSummary
 from sklearn.cluster import KMeans
 import math
-from typing import Union
+from typing import Union, cast
 import numpy as np
 import logging
 
@@ -34,7 +34,7 @@ class KmeansClusteringModel(BaseClusteringMethod):
         """
         if not items:
             logger.warning("Empty items list provided to cluster method")
-            return {}
+            raise ValueError("Empty items list provided to cluster method")
 
         logger.info(f"Starting K-means clustering of {len(items)} items")
 
@@ -71,7 +71,7 @@ class KmeansClusteringModel(BaseClusteringMethod):
                 f"Cluster size stats - min: {min(cluster_sizes)}, max: {max(cluster_sizes)}, avg: {sum(cluster_sizes) / len(cluster_sizes):.1f}"
             )
 
-            return result
+            return cast(dict[int, list[ConversationSummary]], result)
 
         except Exception as e:
             logger.error(

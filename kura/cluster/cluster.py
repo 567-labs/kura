@@ -3,7 +3,7 @@ from kura.checkpoint import CheckpointManager
 from kura.embedding.embedding import embed_summaries
 from kura.embedding.models import OpenAIEmbeddingModel
 from kura.cluster.models import KmeansClusteringModel
-from kura.cluster.constants import DEFAULT_CLUSTER_PROMPT
+from kura.cluster.prompts import DEFAULT_CLUSTER_PROMPT
 from kura.types.summarisation import ConversationSummary
 from kura.types.cluster import Cluster, GeneratedCluster
 import logging
