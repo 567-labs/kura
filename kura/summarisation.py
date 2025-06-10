@@ -43,6 +43,7 @@ class SummaryModel(BaseSummaryModel):
         self.max_concurrent_requests = max_concurrent_requests
         self.model = model
         self.console = console
+        self.semaphore: Optional[Semaphore] = None
         logger.info(
             f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, extractors={len(extractors)}"
         )
@@ -321,7 +322,8 @@ class SummaryModel(BaseSummaryModel):
         )
 
         client = instructor.from_provider(self.model, async_client=True)
-        async with self.semaphore:  # type: ignore
+        assert self.semaphore is not None, "Semaphore should be initialized before use"
+        async with self.semaphore:
             try:
                 resp = await client.chat.completions.create(  # type: ignore
                     temperature=0.2,  # as per the Clio paper
