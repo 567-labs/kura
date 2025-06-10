@@ -18,12 +18,11 @@ from pydantic import BaseModel
 
 # Import existing Kura components
 from kura.base_classes import (
-    BaseClusterModel,
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
 from kura.checkpoint import CheckpointManager
-from kura.types import Cluster, ConversationSummary
+from kura.types import Cluster
 from kura.types.dimensionality import ProjectedCluster
 
 # Set up logger
@@ -35,57 +34,6 @@ T = TypeVar("T", bound=BaseModel)
 # =============================================================================
 # Core Pipeline Functions
 # =============================================================================
-
-
-async def generate_base_clusters_from_conversation_summaries(
-    summaries: List[ConversationSummary],
-    *,
-    model: BaseClusterModel,
-    checkpoint_manager: Optional[CheckpointManager] = None,
-) -> List[Cluster]:
-    """Generate base clusters from conversation summaries.
-
-    This function groups similar summaries into initial clusters using
-    the provided clustering model. Supports different clustering algorithms
-    through the model interface.
-
-    Args:
-        summaries: List of conversation summaries to cluster
-        model: Model to use for clustering (HDBSCAN, KMeans, etc.)
-        checkpoint_manager: Optional checkpoint manager for caching
-
-    Returns:
-        List of base clusters
-
-    Example:
-        >>> cluster_model = ClusterModel(algorithm="hdbscan")
-        >>> clusters = await generate_base_clusters(
-        ...     summaries=conversation_summaries,
-        ...     model=cluster_model,
-        ...     checkpoint_manager=checkpoint_mgr
-        ... )
-    """
-    logger.info(
-        f"Starting clustering of {len(summaries)} summaries using {type(model).__name__}"
-    )
-
-    # Try to load from checkpoint
-    if checkpoint_manager:
-        cached = checkpoint_manager.load_checkpoint(model.checkpoint_filename, Cluster)
-        if cached:
-            logger.info(f"Loaded {len(cached)} clusters from checkpoint")
-            return cached
-
-    # Generate clusters
-    logger.info("Generating new clusters...")
-    clusters = await model.cluster_summaries(summaries)
-    logger.info(f"Generated {len(clusters)} clusters")
-
-    # Save to checkpoint
-    if checkpoint_manager:
-        checkpoint_manager.save_checkpoint(model.checkpoint_filename, clusters)
-
-    return clusters
 
 
 async def reduce_clusters_from_base_clusters(

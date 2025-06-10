@@ -1,23 +1,24 @@
 from kura.base_classes import BaseClusteringMethod
+from kura.types.summarisation import ConversationSummary
 from sklearn.cluster import KMeans
 import math
-from typing import TypeVar
+from typing import Union, cast
 import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
 
-
-class KmeansClusteringMethod(BaseClusteringMethod):
+class KmeansClusteringModel(BaseClusteringMethod):
     def __init__(self, clusters_per_group: int = 10):
         self.clusters_per_group = clusters_per_group
         logger.info(
-            f"Initialized KmeansClusteringMethod with clusters_per_group={clusters_per_group}"
+            f"Initialized KmeansClusteringModel with clusters_per_group={clusters_per_group}"
         )
 
-    def cluster(self, items: list[T]) -> dict[int, list[T]]:
+    def cluster(
+        self, items: list[dict[str, Union[ConversationSummary, list[float]]]]
+    ) -> dict[int, list[ConversationSummary]]:
         """
         We perform a clustering here using an embedding defined on each individual item.
 
@@ -33,13 +34,13 @@ class KmeansClusteringMethod(BaseClusteringMethod):
         """
         if not items:
             logger.warning("Empty items list provided to cluster method")
-            return {}
+            raise ValueError("Empty items list provided to cluster method")
 
         logger.info(f"Starting K-means clustering of {len(items)} items")
 
         try:
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
-            data: list[T] = [item["item"] for item in items]  # pyright: ignore
+            data = [item["item"] for item in items]
             n_clusters = math.ceil(len(data) / self.clusters_per_group)
 
             logger.debug(
@@ -70,7 +71,7 @@ class KmeansClusteringMethod(BaseClusteringMethod):
                 f"Cluster size stats - min: {min(cluster_sizes)}, max: {max(cluster_sizes)}, avg: {sum(cluster_sizes) / len(cluster_sizes):.1f}"
             )
 
-            return result
+            return cast(dict[int, list[ConversationSummary]], result)
 
         except Exception as e:
             logger.error(

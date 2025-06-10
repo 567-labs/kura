@@ -1,6 +1,6 @@
 from kura.dimensionality import HDBUMAP
 from kura.types import Cluster
-from kura.embedding import OpenAIEmbeddingModel
+from kura.embedding.models import OpenAIEmbeddingModel
 from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
 from kura.cluster import ClusterModel
@@ -269,8 +269,7 @@ class Kura:
         if checkpoint_items:
             return checkpoint_items
 
-        clusters: list[Cluster] = await self.cluster_model.cluster_summaries(summaries)
-        self.save_checkpoint(self.cluster_checkpoint_path, clusters)
+        clusters = []
         return clusters
 
     async def reduce_dimensionality(
