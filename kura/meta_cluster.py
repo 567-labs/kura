@@ -7,7 +7,7 @@ from kura.base_classes import (
 )
 import math
 from kura.types.cluster import Cluster, GeneratedCluster
-from kura.embedding import OpenAIEmbeddingModel
+from kura.embedding.models import OpenAIEmbeddingModel
 import instructor
 from asyncio import Semaphore
 from pydantic import BaseModel, field_validator, ValidationInfo
