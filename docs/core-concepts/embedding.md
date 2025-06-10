@@ -9,7 +9,7 @@ Kura converts text into numerical vectors (embeddings) for clustering and simila
 Choose between cloud and local models:
 
 ```python
-from kura.embedding.models import OpenAIEmbeddingModel, SentenceTransformerEmbeddingModel
+from kura.embedding import OpenAIEmbeddingModel, SentenceTransformerEmbeddingModel
 
 # Cloud embeddings (high quality, requires API key)
 openai_model = OpenAIEmbeddingModel(

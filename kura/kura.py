@@ -1,6 +1,6 @@
 from kura.dimensionality import HDBUMAP
 from kura.types import Cluster
-from kura.embedding.models import OpenAIEmbeddingModel
+from kura.embedding import OpenAIEmbeddingModel
 from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
 from kura.cluster import ClusterModel

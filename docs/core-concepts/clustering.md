@@ -90,7 +90,7 @@ clusters = await generate_base_clusters_from_conversation_summaries(
 You can modify how clusters are named and described by providing custom prompts:
 
 ```python
-from kura.cluster.constants import DEFAULT_CLUSTER_PROMPT
+from kura.cluster import DEFAULT_CLUSTER_PROMPT
 
 # Use default prompt with modifications
 custom_prompt = DEFAULT_CLUSTER_PROMPT + """

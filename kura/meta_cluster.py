@@ -7,7 +7,7 @@ from kura.base_classes import (
 )
 import math
 from kura.types.cluster import Cluster, GeneratedCluster
-from kura.embedding.models import OpenAIEmbeddingModel
+from kura.embedding import OpenAIEmbeddingModel
 import instructor
 from asyncio import Semaphore
 from pydantic import BaseModel, field_validator, ValidationInfo
@@ -86,7 +86,7 @@ class MetaClusterModel(BaseMetaClusterModel):
         **kwargs,  # For future use
     ):
         if clustering_model is None:
-            from kura.cluster.models import KmeansClusteringModel
+            from kura.cluster import KmeansClusteringModel
 
             clustering_model = KmeansClusteringModel(12)
 
