@@ -1,6 +1,6 @@
 from kura.base_classes import BaseDimensionalityReduction, BaseEmbeddingModel
 from kura.types import Cluster, ProjectedCluster
-from kura.embedding.models import OpenAIEmbeddingModel
+from kura.embedding import OpenAIEmbeddingModel
 from typing import Union
 import numpy as np
 import logging
