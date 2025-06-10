@@ -1,21 +1,65 @@
 from kura.base_classes import BaseEmbeddingModel, BaseClusteringMethod, BaseClusterModel
 from kura.checkpoint import CheckpointManager
-from kura.embedding.embedding import embed_summaries
-from kura.embedding.models import OpenAIEmbeddingModel
-from kura.cluster.models import KmeansClusteringModel
-from kura.cluster.prompts import DEFAULT_CLUSTER_PROMPT
+from kura.embedding import embed_summaries, OpenAIEmbeddingModel
 from kura.types.summarisation import ConversationSummary
 from kura.types.cluster import Cluster, GeneratedCluster
 import logging
+from sklearn.cluster import KMeans
+import math
+from typing import Union, cast, Dict, List, Optional
 import numpy as np
 import asyncio
 import instructor
 from instructor.models import KnownModelName
 from asyncio import Semaphore
-from typing import Dict, List, Optional, Union
 from rich.console import Console
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Cluster Prompt
+# ============================================================================
+
+
+DEFAULT_CLUSTER_PROMPT = """
+You are tasked with summarizing a group of related statements into a short, precise, and accurate description and name. Your goal is to create a concise summary that captures the essence of these statements and distinguishes them from other similar groups of statements.
+
+Summarize all the statements into a clear, precise, two-sentence description in the past tense. Your summary should be specific to this group and distinguish it from the contrastive answers of the other groups.
+
+After creating the summary, generate a short name for the group of statements. This name should be at most ten words long (perhaps less) and be specific but also reflective of most of the statements (rather than reflecting only one or two).
+
+The name should distinguish this group from the contrastive examples. For instance, "Write fantasy sexual roleplay with octopi and monsters", "Generate blog spam for gambling websites", or "Assist with high school math homework" would be better and more actionable than general terms like "Write erotic content" or "Help with homework". Be as descriptive as possible and assume neither good nor bad faith. Do not hesitate to identify and describe socially harmful or sensitive topics specifically; specificity is necessary for monitoring.
+
+Present your output in the following format:
+<summary> [Insert your two-sentence summary here] </summary>
+<name> [Insert your generated short name here] </name>
+
+The names you propose must follow these requirements:
+- The cluster name should be a sentence in the imperative that captures the user's request. For example, 'Brainstorm ideas for a birthday party' or 'Help me find a new job.'
+- Create names that are specific enough to be meaningful, but not so specific that they can't meaningfully represent many different statements.
+- Avoid overly general or vague terms, and do not hesitate to describe socially harmful or sensitive topics (in fact, clusters that clearly describe harmful behavior are slightly preferred); specificity is necessary for observability and enforcement.
+- Ensure that the cluster name is distinct from the contrastive examples.
+- Use clear, concise, and descriptive language for the cluster name.
+
+Below are the related statements:
+<positive_examples>
+{% for item in positive_examples %}{{ item }}
+{% endfor %}
+</positive_examples>
+
+For context, here are statements from nearby groups that are NOT part of the group you're summarizing:
+<contrastive_examples>
+{% for item in contrastive_examples %}{{ item }}
+{% endfor %}
+</contrastive_examples>
+
+Do not elaborate beyond what you say in the tags. Remember to analyze both the statements and the contrastive statements carefully to ensure your summary and name accurately represent the specific group while distinguishing it from others. The cluster name should be a sentence in the imperative that captures the user's request. For example, 'Brainstorm ideas for a birthday party' or 'Help me find a new job.'
+"""
+
+
+# ============================================================================
+# Cluster Model
+# ============================================================================
 
 
 class ClusterModel(BaseClusterModel):
@@ -265,6 +309,11 @@ class ClusterModel(BaseClusterModel):
         return clusters
 
 
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+
 def get_contrastive_examples(
     cluster_id: int,
     cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
@@ -364,3 +413,79 @@ async def generate_base_clusters_from_conversation_summaries(
         )
 
     return clusters
+
+
+# ============================================================================
+# Clustering Methods
+# ============================================================================
+
+
+class KmeansClusteringModel(BaseClusteringMethod):
+    def __init__(self, clusters_per_group: int = 10):
+        self.clusters_per_group = clusters_per_group
+        logger.info(
+            f"Initialized KmeansClusteringModel with clusters_per_group={clusters_per_group}"
+        )
+
+    def cluster(
+        self, items: list[dict[str, Union[ConversationSummary, list[float]]]]
+    ) -> dict[int, list[ConversationSummary]]:
+        """
+        We perform a clustering here using an embedding defined on each individual item.
+
+        We assume that the item is passed in as a dictionary with
+
+        - its relevant embedding stored in the "embedding" key.
+        - the item itself stored in the "item" key.
+
+        {
+            "embedding": list[float],
+            "item": any,
+        }
+        """
+        if not items:
+            logger.warning("Empty items list provided to cluster method")
+            raise ValueError("Empty items list provided to cluster method")
+
+        logger.info(f"Starting K-means clustering of {len(items)} items")
+
+        try:
+            embeddings = [item["embedding"] for item in items]  # pyright: ignore
+            data = [item["item"] for item in items]
+            n_clusters = math.ceil(len(data) / self.clusters_per_group)
+
+            logger.debug(
+                f"Calculated {n_clusters} clusters for {len(data)} items (target: {self.clusters_per_group} items per cluster)"
+            )
+
+            X = np.array(embeddings)
+            logger.debug(f"Created embedding matrix of shape {X.shape}")
+
+            kmeans = KMeans(n_clusters=n_clusters)
+            cluster_labels = kmeans.fit_predict(X)
+
+            logger.debug(
+                f"K-means clustering completed, assigned {len(set(cluster_labels))} unique cluster labels"
+            )
+
+            result = {
+                i: [data[j] for j in range(len(data)) if cluster_labels[j] == i]
+                for i in range(n_clusters)
+            }
+
+            # Log cluster size distribution
+            cluster_sizes = [len(cluster_items) for cluster_items in result.values()]
+            logger.info(
+                f"K-means clustering completed: {len(result)} clusters created with sizes {cluster_sizes}"
+            )
+            logger.debug(
+                f"Cluster size stats - min: {min(cluster_sizes)}, max: {max(cluster_sizes)}, avg: {sum(cluster_sizes) / len(cluster_sizes):.1f}"
+            )
+
+            return cast(dict[int, list[ConversationSummary]], result)
+
+        except Exception as e:
+            logger.error(
+                f"Failed to perform K-means clustering on {len(items)} items: {e}"
+            )
+            raise
