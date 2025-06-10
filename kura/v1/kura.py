@@ -103,6 +103,166 @@ class CheckpointManager:
         logger.info(f"Saved checkpoint to {checkpoint_path} with {len(data)} items")
 
 
+class MultiCheckpointManager:
+    """Manages multiple checkpoint managers for redundancy, performance, or organization.
+    
+    This class implements the same interface as CheckpointManager but coordinates
+    operations across multiple underlying checkpoint managers. Supports various
+    strategies for loading and saving across multiple storage backends.
+    
+    Use cases:
+    - Redundancy: Save to local + cloud storage
+    - Performance: Fast primary + slow backup storage  
+    - Organization: Different managers for different environments
+    - Data governance: Different retention policies
+    """
+
+    def __init__(
+        self,
+        managers: List[CheckpointManager],
+        *,
+        load_strategy: str = "first_found",
+        save_strategy: str = "all_enabled",
+        fail_on_save_error: bool = False,
+    ):
+        """Initialize multi-checkpoint manager.
+
+        Args:
+            managers: List of CheckpointManager instances to coordinate
+            load_strategy: How to load from multiple managers
+                - "first_found": Return first successful load (default)
+                - "priority": Try managers in order, return first success
+            save_strategy: How to save across managers  
+                - "all_enabled": Save to all enabled managers (default)
+                - "primary_only": Save to first enabled manager only
+            fail_on_save_error: Whether to raise exception if any save fails
+        """
+        if not managers:
+            raise ValueError("At least one checkpoint manager must be provided")
+        
+        self.managers = managers
+        self.load_strategy = load_strategy
+        self.save_strategy = save_strategy
+        self.fail_on_save_error = fail_on_save_error
+        
+        # Set up all enabled managers
+        for manager in self.managers:
+            if manager.enabled:
+                manager.setup_checkpoint_dir()
+
+    @property
+    def enabled(self) -> bool:
+        """Multi-manager is enabled if any underlying manager is enabled."""
+        return any(manager.enabled for manager in self.managers)
+
+    @property 
+    def checkpoint_dir(self) -> str:
+        """Return primary checkpoint directory (first enabled manager)."""
+        for manager in self.managers:
+            if manager.enabled:
+                return manager.checkpoint_dir
+        return self.managers[0].checkpoint_dir if self.managers else ""
+
+    def setup_checkpoint_dir(self) -> None:
+        """Set up checkpoint directories for all enabled managers."""
+        for manager in self.managers:
+            if manager.enabled:
+                manager.setup_checkpoint_dir()
+
+    def get_checkpoint_path(self, filename: str) -> str:
+        """Get checkpoint path from primary manager."""
+        for manager in self.managers:
+            if manager.enabled:
+                return manager.get_checkpoint_path(filename)
+        return self.managers[0].get_checkpoint_path(filename) if self.managers else filename
+
+    def load_checkpoint(self, filename: str, model_class: type[T]) -> Optional[List[T]]:
+        """Load checkpoint using configured load strategy.
+        
+        Args:
+            filename: Name of the checkpoint file
+            model_class: Pydantic model class for deserializing
+            
+        Returns:
+            List of model instances from first successful load, None if not found
+        """
+        if not self.enabled:
+            return None
+
+        if self.load_strategy in ["first_found", "priority"]:
+            # Try managers in order, return first successful load
+            for i, manager in enumerate(self.managers):
+                if not manager.enabled:
+                    continue
+                    
+                try:
+                    result = manager.load_checkpoint(filename, model_class)
+                    if result is not None:
+                        logger.info(
+                            f"Loaded checkpoint from manager {i+1}/{len(self.managers)} "
+                            f"({manager.checkpoint_dir})"
+                        )
+                        return result
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to load from manager {i+1} ({manager.checkpoint_dir}): {e}"
+                    )
+                    continue
+                    
+            return None
+        else:
+            raise ValueError(f"Unknown load strategy: {self.load_strategy}")
+
+    def save_checkpoint(self, filename: str, data: List[T]) -> None:
+        """Save checkpoint using configured save strategy.
+        
+        Args:
+            filename: Name of the checkpoint file
+            data: List of model instances to save
+        """
+        if not self.enabled:
+            return
+
+        if self.save_strategy == "all_enabled":
+            # Save to all enabled managers
+            errors = []
+            successful_saves = 0
+            
+            for i, manager in enumerate(self.managers):
+                if not manager.enabled:
+                    continue
+                    
+                try:
+                    manager.save_checkpoint(filename, data)
+                    successful_saves += 1
+                    logger.info(
+                        f"Saved checkpoint to manager {i+1}/{len(self.managers)} "
+                        f"({manager.checkpoint_dir})"
+                    )
+                except Exception as e:
+                    error_msg = f"Failed to save to manager {i+1} ({manager.checkpoint_dir}): {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+                    
+            if successful_saves == 0:
+                raise RuntimeError(f"Failed to save to any checkpoint manager: {errors}")
+            elif errors and self.fail_on_save_error:  
+                raise RuntimeError(f"Some checkpoint saves failed: {errors}")
+            elif errors:
+                logger.warning(f"Some checkpoint saves failed but continuing: {errors}")
+                
+        elif self.save_strategy == "primary_only":
+            # Save to first enabled manager only
+            for manager in self.managers:
+                if manager.enabled:
+                    manager.save_checkpoint(filename, data)
+                    return
+            logger.warning("No enabled checkpoint managers found for saving")
+            
+        else:
+            raise ValueError(f"Unknown save strategy: {self.save_strategy}")
+
+
 # =============================================================================
 # Core Pipeline Functions
 # =============================================================================

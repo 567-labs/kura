@@ -4,6 +4,7 @@ from .v1.kura import (
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
     CheckpointManager,
+    MultiCheckpointManager,
 )
 from .cluster import ClusterModel
 from .meta_cluster import MetaClusterModel
@@ -25,4 +26,5 @@ __all__ = [
     "reduce_clusters_from_base_clusters",
     "reduce_dimensionality_from_clusters",
     "CheckpointManager",
+    "MultiCheckpointManager",
 ]
