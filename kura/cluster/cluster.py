@@ -306,7 +306,7 @@ def get_contrastive_examples(
     return selected
 
 
-async def cluster_conversations(
+async def generate_base_clusters_from_conversation_summaries(
     summaries: List[ConversationSummary],
     embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
     clustering_method: BaseClusteringMethod = KmeansClusteringModel(),

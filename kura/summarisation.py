@@ -127,8 +127,8 @@ class SummaryModel(BaseSummaryModel):
     async def summarise(
         self,
         conversations: list[Conversation],
-        *,
         prompt: str = DEFAULT_SUMMARY_PROMPT,
+        *,
         response_schema: Type[T] = GeneratedSummary,
         temperature: float = 0.2,
         **kwargs,

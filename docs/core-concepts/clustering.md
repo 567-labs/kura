@@ -1,155 +1,183 @@
 # Clustering
 
-Kura's clustering pipeline groups similar conversation summaries into meaningful clusters. This process is fundamental for large-scale analysis, enabling the discovery of dominant themes, understanding diverse user intents, and surfacing potentially "unknown unknown" patterns from vast quantities of conversational data. Clustering follows summarization and embedding in the Kura pipeline.
+Kura groups similar conversation summaries into meaningful clusters using semantic similarity. This bottom-up pattern discovery enables identification of dominant themes, understanding diverse user intents, and surfacing "unknown unknown" patterns from large conversational datasets. Clustering transforms individual summaries into organized, interpretable groups.
+
+The clustering process takes `ConversationSummary` objects (from [Summarization](summarization.md)) and produces `Cluster` objects with descriptive names and summaries. Each cluster represents a coherent group of related conversations, making it easier to navigate and understand large-scale conversational data.
 
 ---
 
-## Overview
+## Quick Start
 
-**Clustering** in Kura organizes `ConversationSummary` objects (see [Summarization](summarization.md)) into groups based on semantic similarity. Each resulting cluster is assigned a descriptive name and a concise summary, making it easier to interpret the primary topics and user requests within the dataset. This bottom-up approach to pattern discovery is crucial for making sense of and navigating large collections of conversations.
-
-- **Input:** A list of `ConversationSummary` objects (with or without embeddings)
-- **Output:** A list of `Cluster` objects, each with a name, description, and associated conversation IDs
-
-Clustering enables downstream tasks such as:
-- Identifying and monitoring prevalent topics or user needs
-- Visualizing trends and thematic structures in the data
-- Facilitating efficient exploratory search and retrieval of related conversations
-- Providing a foundation for hierarchical topic modeling through [Meta-Clustering](meta-clustering.md)
-
----
-
-## The Clustering Model
-
-Kura's main clustering logic is implemented in the `ClusterModel` class (see `kura/cluster.py`). This class orchestrates the embedding, grouping, and labeling of conversation summaries.
-
-### Key Components
-
-- **Clustering Method:** Determines how summaries are grouped (default: K-means, see `KmeansClusteringMethod`)
-- **Embedding Model:** Used to convert summaries to vectors if not already embedded (default: `OpenAIEmbeddingModel`)
-- **Cluster Naming:** Uses an LLM to generate a descriptive name and summary for each cluster, distinguishing it from others
-
-#### Example: ClusterModel Initialization
+Here's the simplest way to cluster conversation summaries:
 
 ```python
-model = ClusterModel(
-    clustering_method=KmeansClusteringMethod(),
-    embedding_model=OpenAIEmbeddingModel(),
-    max_concurrent_requests=50,
-    model="openai/gpt-4o-mini",
+from kura import generate_base_clusters_from_conversation_summaries
+from kura.cluster import ClusterModel
+from kura.types import ConversationSummary
+import asyncio
+
+# Assume you have summaries from the summarization step
+summaries = [...]  # List of ConversationSummary objects
+
+
+async def main():
+    # Initialize the clustering model
+    cluster_model = ClusterModel()
+
+    # Cluster the summaries
+    clusters = await generate_base_clusters_from_conversation_summaries(
+        summaries,
+        clustering_model=cluster_model
+    )
+
+    # Each cluster contains: name, description, chat_ids
+    for cluster in clusters:
+        print(f"Cluster: {cluster.name}")
+        print(f"Description: {cluster.description}")
+        print(f"Conversations: {len(cluster.chat_ids)}")
+        print("---")
+
+
+asyncio.run(main())
+```
+
+This automatically
+
+1. Embeds Summaries
+2. Groups them using K-means clustering
+3. Generates descriptive names and summaries for each cluster
+
+---
+
+## How It Works
+
+Kura clusters conversations in three steps: generate embeddings, group similar summaries, and create descriptive names. This produces human-readable clusters from conversation summaries.
+
+The pipeline produces clusters like:
+
+- **"Help troubleshoot React TypeScript Redux issues"** (3 conversations)
+- **"Optimize real-time data pipelines with Spark and Kafka"** (11 conversations)
+- **"Assist with data analysis and visualization in Python"** (19 conversations)
+
+---
+
+## Customizing Clustering
+
+Kura's clustering follows a procedural, configurable design where you control behavior through function parameters. You can customize three key aspects:
+
+### 1. Modify the Clustering Model
+
+Different models offer varying performance, cost, and capability trade-offs for generating cluster names and descriptions:
+
+```python
+from kura.cluster import ClusterModel
+
+# Use a different model with custom settings
+cluster_model = ClusterModel(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    max_concurrent_requests=20,  # Control API rate limits
+    temperature=0.1,  # Lower temperature for more consistent naming
+)
+
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries,
+    clustering_model=cluster_model
 )
 ```
 
----
+### 2. Customize Cluster Prompts
 
-## Clustering Pipeline
-
-The clustering process consists of several steps:
-
-1. **Embedding Summaries:**
-   - If summaries do not already have embeddings, the model uses the configured embedding model to generate them.
-   - Embedding is performed in batches and can be parallelized for efficiency.
-
-   ```python
-   embeddings = await self.embedding_model.embed([str(item) for item in summaries])
-   ```
-
-2. **Grouping Summaries:**
-   - The clustering method (e.g., K-means) groups summaries based on their embeddings.
-   - Each group is assigned a cluster ID.
-
-   ```python
-   cluster_id_to_summaries = self.clustering_method.cluster(items_with_embeddings)
-   ```
-
-3. **Generating Cluster Names and Descriptions:**
-   - For each cluster, an LLM is prompted to generate a concise, two-sentence summary and a short, imperative cluster name.
-   - The prompt includes both positive examples (summaries in the cluster) and contrastive examples (summaries from other clusters). Contrastive examples are crucial: they guide the LLM to produce highly specific and distinguishing names/descriptions, preventing overly generic labels and ensuring each cluster's unique essence is captured.
-
-   ```python
-   cluster = await self.generate_cluster(summaries, contrastive_examples)
-   # Returns a Cluster object with name, description, and chat_ids
-   ```
-
-4. **Output:**
-   - The result is a list of `Cluster` objects, each containing:
-     - `name`: Imperative sentence capturing the main request/theme
-     - `description`: Two-sentence summary of the cluster
-     - `chat_ids`: List of conversation IDs in the cluster
-
----
-
-## Cluster Naming and Description Generation
-
-Cluster names and descriptions are generated using a large language model (LLM) with a carefully crafted prompt. The prompt:
-- Instructs the LLM to summarize the group in two sentences (past tense)
-- Requires the name to be an imperative sentence (e.g., "Help me debug Python code")
-- Provides contrastive examples to ensure the name/summary is specific, distinct, and accurately reflects the cluster's content compared to others.
-- Encourages specificity, especially for sensitive or harmful topics
-- Reinforces privacy by instructing the LLM to avoid including any Personally Identifiable Information (PII) or proper nouns in the generated cluster names and descriptions, complementing the PII removal in the initial summarization phase.
-
-**Prompt excerpt:**
-
-```
-Summarize all the statements into a clear, precise, two-sentence description in the past tense. ...
-After creating the summary, generate a short name for the group of statements. This name should be at most ten words long ...
-The cluster name should be a sentence in the imperative that captures the user's request. ...
-```
-
----
-
-## Configuration and Extensibility
-
-- **Clustering Method:** Swap out `KmeansClusteringMethod` for other algorithms by implementing the `BaseClusteringMethod` interface.
-- **Embedding Model:** Use any model implementing `BaseEmbeddingModel` (e.g., local or cloud-based embeddings).
-- **LLM Model:** The LLM used for naming/describing clusters is configurable (default: `openai/gpt-4o-mini`).
-- **Concurrency:** `max_concurrent_requests` controls parallelism for embedding and LLM calls.
-- **Progress Reporting:** Optional integration with Rich or tqdm for progress bars and live cluster previews.
-
----
-
-## Hierarchical Analysis with Meta-Clustering
-
-While the `ClusterModel` produces a flat list of semantically distinct clusters, Kura also supports the creation of hierarchical cluster structures through its **meta-clustering** capabilities (see [Meta-Clustering](meta-clustering.md)). This next step takes the output of the initial clustering (a list of `Cluster` objects) and groups these clusters into higher-level, more general parent clusters.
-
-This hierarchical approach is particularly useful for:
-- Managing and navigating a large number of base clusters.
-- Discovering broader themes and relationships between groups of clusters.
-- Enabling a multi-level exploratory search, from general topics down to specific conversation groups.
-
-Refer to the [Meta-Clustering](meta-clustering.md) documentation for details on how Kura achieves this hierarchical organization.
-
----
-
-## Output: Cluster Object
-
-Each cluster is represented as a `Cluster` object (see `kura/types.py`):
+You can modify how clusters are named and described by providing custom prompts:
 
 ```python
-class Cluster(BaseModel):
-    name: str
-    description: str
-    chat_ids: list[str]
-    parent_id: Optional[int] = None
+from kura.cluster.constants import DEFAULT_CLUSTER_PROMPT
+
+# Use default prompt with modifications
+custom_prompt = DEFAULT_CLUSTER_PROMPT + """
+Focus on technical aspects and programming languages mentioned.
+Prioritize framework-specific details in cluster names.
+"""
+
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries,
+    clustering_model=cluster_model,
+    prompt=custom_prompt,
+    max_contrastive_examples=15,  # More contrastive examples for specificity
+)
 ```
+
+You can also completely replace the default prompt:
+
+```python
+technical_prompt = """
+Analyze the provided conversation summaries and create a cluster description.
+
+Focus specifically on:
+- Technical frameworks and libraries mentioned
+- Programming languages used
+- Problem complexity level
+- Solution approaches
+
+Generate a concise name (max 8 words) that captures the technical essence.
+Create a two-sentence description focusing on the technical aspects.
+
+Summaries to analyze:
+{% for summary in positive_examples %}
+- {{ summary.summary }}
+{% endfor %}
+
+Contrast with these examples from other clusters:
+{% for example in contrastive_examples[:5] %}
+- {{ example.summary }}
+{% endfor %}
+"""
+
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries,
+    prompt=technical_prompt
+)
+```
+
+### 3. Configure Performance and Visualization
+
+Control concurrency, visualization, and checkpointing:
+
+```python
+from rich.console import Console
+from kura.checkpoint import CheckpointManager
+
+console = Console()
+checkpoint_mgr = CheckpointManager("./cluster_cache", enabled=True)
+
+cluster_model = ClusterModel(
+    max_concurrent_requests=50,  # Higher concurrency for faster processing
+    console=console,  # Enable rich visualization
+)
+
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries,
+    clustering_model=cluster_model,
+    checkpoint_manager=checkpoint_mgr,  # Cache results
+    max_contrastive_examples=20,  # More examples for better distinction
+)
+```
+
+The console visualization provides:
+
+- Real-time progress bars during clustering
+- Live preview of the latest 3 generated clusters
+- Cluster names, descriptions, and conversation counts
 
 ---
 
-## Pipeline Integration
+## Integration with Kura Pipeline
 
 Clustering is the third major step in Kura's analysis pipeline:
 
-1. **Loading:** Conversations are loaded
-2. **Summarization:** Each conversation is summarized
-3. **Embedding:** Summaries are embedded as vectors
-4. **Clustering:** Embeddings are grouped into clusters (this step)
-5. **Visualization/Analysis:** Clusters and summaries are explored
+1. **Loading:** Conversations are loaded from various sources
+2. **Summarization:** Each conversation is summarized using the CLIO framework
+3. **Clustering:** Summaries are grouped into meaningful clusters (this step)
+4. **Meta-Clustering:** Clusters can be further grouped hierarchically (optional)
+5. **Visualization:** Results are explored through interactive interfaces
 
----
-
-## References
-
-- [Summarization](summarization.md)
-- [Embedding](embedding.md)
-- [API documentation](../api/index.md)
-- [Source Code](https://github.com/567-labs/kura/blob/main/kura/cluster.py)
+The procedural API design allows each step to be customized independently while maintaining compatibility with the overall pipeline.

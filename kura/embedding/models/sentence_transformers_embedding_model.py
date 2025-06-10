@@ -11,6 +11,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
         self,
         model_name: str = "all-MiniLM-L6-v2",
         model_batch_size: int = 128,
+        device: str = "cpu",
     ):
         from sentence_transformers import SentenceTransformer  # type: ignore
 
@@ -18,7 +19,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
             f"Initializing SentenceTransformerEmbeddingModel with model={model_name}, batch_size={model_batch_size}"
         )
         try:
-            self.model = SentenceTransformer(model_name)
+            self.model = SentenceTransformer(model_name, device=device)
             self.model_name = model_name
             self._model_batch_size = model_batch_size
             logger.info(f"Successfully loaded SentenceTransformer model: {model_name}")
