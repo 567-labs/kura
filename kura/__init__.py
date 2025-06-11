@@ -1,4 +1,5 @@
 from .checkpoint import CheckpointManager
+from .checkpoints import MultiCheckpointManager
 from .summarisation import SummaryModel, summarise_conversations
 from .cluster import (
     ClusterDescriptionModel,
@@ -40,6 +41,7 @@ __all__ = [
     "Conversation",
     "MetaClusterModel",
     "CheckpointManager",
+    "MultiCheckpointManager",
     "KmeansClusteringMethod",
     "MiniBatchKmeansClusteringMethod",
     "HDBSCANClusteringMethod",

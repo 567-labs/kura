@@ -71,3 +71,24 @@ class CheckpointManager:
             for item in data:
                 f.write(item.model_dump_json() + "\n")
         logger.info(f"Saved checkpoint to {checkpoint_path} with {len(data)} items")
+
+    def list_checkpoints(self) -> List[str]:
+        """List all available checkpoint files."""
+        if not self.enabled or not os.path.exists(self.checkpoint_dir):
+            return []
+        return [
+            f
+            for f in os.listdir(self.checkpoint_dir)
+            if os.path.isfile(os.path.join(self.checkpoint_dir, f))
+        ]
+
+    def delete_checkpoint(self, filename: str) -> bool:
+        """Delete a checkpoint file."""
+        if not self.enabled:
+            return False
+        checkpoint_path = self.get_checkpoint_path(filename)
+        if os.path.exists(checkpoint_path):
+            os.remove(checkpoint_path)
+            logger.info(f"Deleted checkpoint: {checkpoint_path}")
+            return True
+        return False

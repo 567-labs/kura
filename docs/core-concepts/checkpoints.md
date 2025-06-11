@@ -548,3 +548,268 @@ manager = HFDatasetCheckpointManager("./checkpoints", streaming=True)
 - [HuggingFace Datasets Documentation](https://huggingface.co/docs/datasets/)
 - [PyArrow Documentation](https://arrow.apache.org/docs/python/)
 - [Kura Pipeline Overview](overview.md)
+
+---
+
+## MultiCheckpointManager
+
+The MultiCheckpointManager allows you to coordinate multiple checkpoint backends simultaneously, providing redundancy, performance optimization, and flexible migration strategies.
+
+### Overview
+
+MultiCheckpointManager acts as a coordinator for multiple checkpoint backends, enabling:
+
+- **Redundancy** - Save to multiple backends for reliability
+- **Performance** - Load from the fastest available backend
+- **Migration** - Easily move between checkpoint formats
+- **Flexibility** - Mix different storage technologies
+
+### Basic Usage
+
+```python
+from kura import CheckpointManager, MultiCheckpointManager
+from kura.checkpoints import ParquetCheckpointManager
+
+# Create individual managers
+jsonl_mgr = CheckpointManager("./checkpoints/jsonl")
+parquet_mgr = ParquetCheckpointManager("./checkpoints/parquet")
+
+# Coordinate them with MultiCheckpointManager
+multi_mgr = MultiCheckpointManager(
+    [jsonl_mgr, parquet_mgr],
+    save_strategy="all_enabled",  # Save to both
+    load_strategy="first_found"    # Load from first available
+)
+
+# Use in pipeline
+summaries = await summarise_conversations(
+    conversations,
+    model=summary_model,
+    checkpoint_manager=multi_mgr
+)
+```
+
+### Save Strategies
+
+#### all_enabled (Default)
+
+Saves checkpoints to all enabled managers, providing redundancy:
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers,
+    save_strategy="all_enabled"
+)
+# Saves to: JSONL ✓, Parquet ✓, HF ✓
+```
+
+#### primary_only
+
+Saves only to the first enabled manager, optimizing for performance:
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers,
+    save_strategy="primary_only"
+)
+# Saves to: JSONL ✓, Parquet ✗, HF ✗
+```
+
+### Load Strategies
+
+#### first_found (Default)
+
+Tries each manager until one has the checkpoint:
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers,
+    load_strategy="first_found"
+)
+# Tries: JSONL → Parquet → HF (stops at first success)
+```
+
+#### priority
+
+Always uses the first manager, fails if it doesn't have the checkpoint:
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers,
+    load_strategy="priority"
+)
+# Tries: JSONL only (fails if not found)
+```
+
+### Use Cases
+
+#### 1. Development with Production Backup
+
+```python
+# Fast local storage for development
+local_mgr = CheckpointManager("./checkpoints/local")
+
+# Network storage for backup
+network_mgr = CheckpointManager("/mnt/shared/checkpoints")
+
+multi_mgr = MultiCheckpointManager(
+    [local_mgr, network_mgr],
+    save_strategy="all_enabled",    # Save to both
+    load_strategy="first_found"     # Load from local first
+)
+```
+
+#### 2. Format Migration
+
+```python
+# Migrate from JSONL to Parquet
+old_mgr = CheckpointManager("./old_jsonl")
+new_mgr = ParquetCheckpointManager("./new_parquet")
+
+migration_mgr = MultiCheckpointManager(
+    [old_mgr, new_mgr],
+    save_strategy="all_enabled",  # Save to both during migration
+    load_strategy="priority"      # Load from old format
+)
+
+# Run pipeline - will save to both formats
+summaries = await summarise_conversations(
+    conversations,
+    model=summary_model,
+    checkpoint_manager=migration_mgr
+)
+```
+
+#### 3. Performance Optimization
+
+```python
+# Mix formats for optimal performance
+jsonl_mgr = CheckpointManager("./jsonl")      # Human-readable
+parquet_mgr = ParquetCheckpointManager("./parquet")  # Compressed
+hf_mgr = HFDatasetCheckpointManager("./hf")  # Advanced features
+
+multi_mgr = MultiCheckpointManager(
+    [jsonl_mgr, parquet_mgr, hf_mgr],
+    save_strategy="all_enabled",
+    load_strategy="first_found"
+)
+
+# Benefits:
+# - JSONL for debugging
+# - Parquet for space efficiency
+# - HF for advanced queries
+```
+
+#### 4. Graceful Degradation
+
+```python
+# Handle failures gracefully
+primary_mgr = CheckpointManager("/fast/ssd", enabled=True)
+backup_mgr = CheckpointManager("/slow/hdd", enabled=True)
+archive_mgr = CheckpointManager("/glacier", enabled=False)  # Disabled
+
+multi_mgr = MultiCheckpointManager(
+    [primary_mgr, backup_mgr, archive_mgr]
+)
+# Will use only enabled managers automatically
+```
+
+### Advanced Features
+
+#### Checkpoint Statistics
+
+```python
+# Get information about the multi-checkpoint setup
+stats = multi_mgr.get_stats()
+print(f"Enabled managers: {stats['enabled_managers']}/{stats['num_managers']}")
+print(f"Save strategy: {stats['save_strategy']}")
+print(f"Load strategy: {stats['load_strategy']}")
+
+for mgr_stat in stats["managers"]:
+    print(f"- {mgr_stat['type']}: {mgr_stat['checkpoint_count']} files")
+```
+
+#### Listing and Deletion
+
+```python
+# List all unique checkpoints across managers
+all_checkpoints = multi_mgr.list_checkpoints()
+print(f"Available checkpoints: {all_checkpoints}")
+
+# Delete from all managers
+multi_mgr.delete_checkpoint("old_summaries.jsonl")
+```
+
+### Best Practices
+
+1. **Order managers by priority** - Place fastest/most reliable first
+2. **Mix formats wisely** - Balance features, performance, and storage
+3. **Monitor disk usage** - Use `get_stats()` to track checkpoint counts
+4. **Test failover** - Verify load strategies work as expected
+5. **Document your setup** - Make strategy choices clear to team members
+
+### Example: Complete Pipeline with Multi-Backend
+
+```python
+import asyncio
+from kura import (
+    CheckpointManager,
+    MultiCheckpointManager,
+    SummaryModel,
+    ClusterDescriptionModel,
+    MetaClusterModel,
+    summarise_conversations,
+    generate_base_clusters_from_conversation_summaries,
+    reduce_clusters_from_base_clusters
+)
+from kura.checkpoints import ParquetCheckpointManager
+
+async def run_analysis_with_multi_checkpoints(conversations):
+    # Set up multi-backend checkpointing
+    jsonl_mgr = CheckpointManager("./checkpoints/jsonl")
+    parquet_mgr = ParquetCheckpointManager("./checkpoints/parquet")
+
+    checkpoint_mgr = MultiCheckpointManager(
+        [jsonl_mgr, parquet_mgr],
+        save_strategy="all_enabled",  # Redundancy
+        load_strategy="first_found"   # Performance
+    )
+
+    # Run pipeline with automatic multi-backend checkpointing
+    summaries = await summarise_conversations(
+        conversations,
+        model=SummaryModel(model="gpt-4o-mini"),
+        checkpoint_manager=checkpoint_mgr
+    )
+
+    clusters = await generate_base_clusters_from_conversation_summaries(
+        summaries,
+        model=ClusterDescriptionModel(),
+        checkpoint_manager=checkpoint_mgr
+    )
+
+    meta_clusters = await reduce_clusters_from_base_clusters(
+        clusters,
+        model=MetaClusterModel(max_clusters=10),
+        checkpoint_manager=checkpoint_mgr
+    )
+
+    # Check storage usage
+    stats = checkpoint_mgr.get_stats()
+    print(f"\nCheckpoint storage summary:")
+    for mgr_stat in stats["managers"]:
+        print(f"- {mgr_stat['type']}: {mgr_stat['checkpoint_count']} files")
+
+    return meta_clusters
+
+# Run the analysis
+conversations = load_conversations()  # Your data loading logic
+results = asyncio.run(run_analysis_with_multi_checkpoints(conversations))
+```
+
+This setup provides:
+- **Redundant storage** in both JSONL and Parquet formats
+- **Fast loading** from whichever format is available first
+- **Easy debugging** with human-readable JSONL files
+- **Space efficiency** with Parquet compression
+- **Automatic failover** if one backend is unavailable

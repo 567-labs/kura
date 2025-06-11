@@ -11,6 +11,9 @@ from .kura import (
     reduce_dimensionality_from_clusters,
 )
 
+# Import MultiCheckpointManager from checkpoints module
+from kura.checkpoints import MultiCheckpointManager
+
 # Import ParquetCheckpointManager if pyarrow is available
 try:
     from kura.checkpoints.parquet import ParquetCheckpointManager
@@ -31,6 +34,7 @@ except ImportError:
 __all__ = [
     "reduce_clusters_from_base_clusters",
     "reduce_dimensionality_from_clusters",
+    "MultiCheckpointManager",
 ]
 
 # Add ParquetCheckpointManager to __all__ if available
