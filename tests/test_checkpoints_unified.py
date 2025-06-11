@@ -503,10 +503,10 @@ class TestManagerSpecificFeatures:
             manager = HFDatasetCheckpointManager(temp_dir)
 
             # Save data
-            manager.save_checkpoint("info_test", sample_summaries, "summaries")
+            manager.save_checkpoint("summaries", sample_summaries)
 
             # Get info
-            info = manager.get_checkpoint_info("info_test")
+            info = manager.get_checkpoint_info("summaries")
             assert info is not None
             assert info["num_rows"] == len(sample_summaries)
             assert info["num_columns"] > 0
@@ -518,16 +518,16 @@ class TestManagerSpecificFeatures:
             manager = HFDatasetCheckpointManager(temp_dir)
 
             # Save and verify
-            manager.save_checkpoint("to_delete", sample_summaries, "summaries")
+            manager.save_checkpoint("summaries", sample_summaries)
             checkpoints = manager.list_checkpoints()
-            assert "to_delete" in checkpoints
+            assert "summaries" in checkpoints
 
             # Delete and verify
-            deleted = manager.delete_checkpoint("to_delete")
+            deleted = manager.delete_checkpoint("summaries")
             assert deleted is True
 
             checkpoints = manager.list_checkpoints()
-            assert "to_delete" not in checkpoints
+            assert "summaries" not in checkpoints
 
 
 # =============================================================================
