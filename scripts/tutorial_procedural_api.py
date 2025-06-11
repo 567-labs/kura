@@ -2,7 +2,6 @@ import time
 import asyncio
 from contextlib import contextmanager
 
-from kura.base_classes import BaseCheckpointManager
 from kura import (
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
@@ -10,6 +9,7 @@ from kura import (
     reduce_dimensionality_from_clusters,
 )
 
+from kura import MultiCheckpointManager
 from kura.checkpoints import (
     HFDatasetCheckpointManager,
     JSONLCheckpointManager,
@@ -110,58 +110,110 @@ print(
     f"Saved {len(conversations)} conversations to {CHECKPOINT_DIR}/conversations.json\n"
 )
 
-checkpoint_manager = HFDatasetCheckpointManager(CHECKPOINT_DIR, enabled=True)
+# Create individual checkpoint managers
+hf_manager = HFDatasetCheckpointManager(f"{CHECKPOINT_DIR}/hf", enabled=True)
+parquet_manager = ParquetCheckpointManager(f"{CHECKPOINT_DIR}/parquet", enabled=True)
+jsonl_manager = JSONLCheckpointManager(f"{CHECKPOINT_DIR}/jsonl", enabled=True)
+
+# Create a MultiCheckpointManager that saves to all formats
+multi_checkpoint_manager = MultiCheckpointManager(
+    [hf_manager, parquet_manager, jsonl_manager],
+    save_strategy="all_enabled",  # Save to all formats
+    load_strategy="first_found",  # Load from the first available
+)
+
+print(
+    f"Using MultiCheckpointManager with {len(multi_checkpoint_manager.managers)} backends:"
+)
+for manager in multi_checkpoint_manager.managers:
+    print(f"  - {type(manager).__name__}: {manager.checkpoint_dir}")
+print()
 
 
-async def process(checkpoint_manager: BaseCheckpointManager):
-    slug = f"{checkpoint_manager.__class__.__name__}"
-    """Process conversations using checkpoints."""
-    print("Step 1: Generating summaries with checkpoints...")
-    with timer_manager.timer(f"{slug} - Summarization"):
+async def process():
+    """Process conversations using the MultiCheckpointManager."""
+    print("Step 1: Generating summaries with multi-checkpoint support...")
+    with timer_manager.timer("MultiCheckpointManager - Summarization"):
         summaries = await summarise_conversations(
             conversations,
             model=summary_model,
-            checkpoint_manager=checkpoint_manager,
+            checkpoint_manager=multi_checkpoint_manager,
         )
-    print(f"Generated {len(summaries)} summaries using checkpoints")
+    print(f"Generated {len(summaries)} summaries using multi-checkpoint")
 
-    print("Step 2: Generating clusters with checkpoints...")
-    with timer_manager.timer(f"{slug} - Clustering"):
+    print("\nStep 2: Generating clusters with multi-checkpoint support...")
+    with timer_manager.timer("MultiCheckpointManager - Clustering"):
         clusters = await generate_base_clusters_from_conversation_summaries(
             summaries,
             model=cluster_model,
             clustering_method=minibatch_kmeans_clustering,
-            checkpoint_manager=checkpoint_manager,
+            checkpoint_manager=multi_checkpoint_manager,
         )
-    print(f"Generated {len(clusters)} clusters using checkpoints")
+    print(f"Generated {len(clusters)} clusters using multi-checkpoint")
 
-    print("Step 3: Meta clustering with checkpoints...")
-    with timer_manager.timer(f"{slug} - Meta clustering"):
+    print("\nStep 3: Meta clustering with multi-checkpoint support...")
+    with timer_manager.timer("MultiCheckpointManager - Meta clustering"):
         reduced_clusters = await reduce_clusters_from_base_clusters(
             clusters,
             model=meta_cluster_model,
-            checkpoint_manager=checkpoint_manager,
+            checkpoint_manager=multi_checkpoint_manager,
         )
-    print(f"Reduced to {len(reduced_clusters)} meta clusters using checkpoints")
+    print(f"Reduced to {len(reduced_clusters)} meta clusters using multi-checkpoint")
 
-    print("Step 4: Dimensionality reduction with checkpoints...")
-    with timer_manager.timer(f"{slug} - Dimensionality reduction"):
+    print("\nStep 4: Dimensionality reduction with multi-checkpoint support...")
+    with timer_manager.timer("MultiCheckpointManager - Dimensionality reduction"):
         projected_clusters = await reduce_dimensionality_from_clusters(
             reduced_clusters,
             model=dimensionality_model,
-            checkpoint_manager=checkpoint_manager,
+            checkpoint_manager=multi_checkpoint_manager,
         )
-    print(f"Generated {len(projected_clusters)} projected clusters using {slug}")
+    print(
+        f"Generated {len(projected_clusters)} projected clusters using multi-checkpoint"
+    )
 
-    return reduced_clusters, projected_clusters
+    # Show checkpoint statistics
+    print("\nCheckpoint Statistics:")
+    stats = multi_checkpoint_manager.get_stats()
+    for mgr_stat in stats["managers"]:
+        print(
+            f"  - {mgr_stat['type']}: {mgr_stat.get('checkpoint_count', 'N/A')} files"
+        )
+
+    return summaries, clusters, reduced_clusters, projected_clusters
 
 
-for checkpoint_manager in [
-    HFDatasetCheckpointManager(f"{CHECKPOINT_DIR}/hf", enabled=True),
-    ParquetCheckpointManager(f"{CHECKPOINT_DIR}/parquet", enabled=True),
-    JSONLCheckpointManager(f"{CHECKPOINT_DIR}/jsonl", enabled=True),
-]:
-    print(f"Running with {type(checkpoint_manager).__name__}")
-    asyncio.run(process(checkpoint_manager))
+# Run the process once with all checkpoints being saved simultaneously
+summaries, clusters, reduced_clusters, projected_clusters = asyncio.run(process())
+
+print("\nDemonstrating load strategies...")
+
+# Create a new MultiCheckpointManager with priority loading (HF first)
+priority_manager = MultiCheckpointManager(
+    [hf_manager, parquet_manager, jsonl_manager],
+    save_strategy="primary_only",  # Only save to HF
+    load_strategy="priority",  # Only load from HF
+)
+
+print("\nTesting priority load from HF datasets only...")
+with timer_manager.timer("Priority load - HF Dataset"):
+    loaded_summaries = priority_manager.load_checkpoint(
+        "summaries", summaries[0].__class__
+    )
+    if loaded_summaries:
+        print(f"  Successfully loaded {len(loaded_summaries)} summaries from HF")
+
+# Create another manager that tries all formats
+fallback_manager = MultiCheckpointManager(
+    [parquet_manager, jsonl_manager],  # Exclude HF
+    load_strategy="first_found",
+)
+
+print("\nTesting fallback loading (Parquet → JSONL)...")
+with timer_manager.timer("Fallback load - Parquet/JSONL"):
+    loaded_clusters = fallback_manager.load_checkpoint(
+        "clusters", clusters[0].__class__
+    )
+    if loaded_clusters:
+        print(f"  Successfully loaded {len(loaded_clusters)} clusters")
 
 timer_manager.print_summary()
