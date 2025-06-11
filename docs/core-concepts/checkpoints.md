@@ -19,6 +19,8 @@ The checkpoint system supports three storage formats, each optimized for differe
 - **Parquet** - Optimized columnar storage with compression
 - **HuggingFace Datasets** - Advanced features with cloud integration
 
+Additionally, the **MultiCheckpointManager** enables using multiple formats simultaneously for redundancy, performance optimization, or environment separation.
+
 ---
 
 ## JSONL Format (Default)
