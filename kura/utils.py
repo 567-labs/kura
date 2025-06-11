@@ -23,7 +23,7 @@ def batch_texts(texts: list[str], batch_size: int) -> list[list[str]]:
 
 def calculate_cluster_levels(
     clusters: list[ProjectedCluster], parent_id: str | None = None, level: int = 0
-) -> None:
+) -> list[ProjectedCluster]:
     """Calculate the hierarchical level of each cluster using a top-down approach.
 
     Root clusters (parent_id=None) are at level 0, their children at level 1, etc.
@@ -35,9 +35,14 @@ def calculate_cluster_levels(
         level: Current level in the hierarchy (internal use)
     """
     if not clusters:
-        return
+        return clusters
+
+    res = []
 
     level_clusters = [cluster for cluster in clusters if cluster.parent_id == parent_id]
     for cluster in level_clusters:
         cluster.level = level
-        calculate_cluster_levels(clusters, cluster.id, level + 1)
+        res.append(cluster)
+        res.extend(calculate_cluster_levels(clusters, cluster.id, level + 1))
+
+    return res

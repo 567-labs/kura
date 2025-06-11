@@ -84,9 +84,6 @@ class HDBUMAP(BaseDimensionalityReduction):
             logger.error(f"UMAP dimensionality reduction failed: {e}")
             raise
 
-        # Calculate cluster levels once for all clusters
-        clusters = calculate_cluster_levels(clusters)
-
         # Create projected clusters with 2D coordinates
         res = []
         for i, cluster in enumerate(clusters):
@@ -99,9 +96,11 @@ class HDBUMAP(BaseDimensionalityReduction):
                 parent_id=cluster.parent_id,
                 x_coord=float(reduced_embeddings[i][0]),  # pyright: ignore
                 y_coord=float(reduced_embeddings[i][1]),  # pyright: ignore
-                level=cluster.level,
+                level=0,
             )
             res.append(projected)
+
+        res = calculate_cluster_levels(res)
 
         logger.info(f"Successfully created {len(res)} projected clusters")
         return res
