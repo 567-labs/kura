@@ -81,21 +81,25 @@ copyright: Copyright &copy; 2025 Ivan Leo
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: getting-started/installation.md
-    - Quickstart: getting-started/quickstart.md
-    - Configuration: getting-started/configuration.md
-    - Procedural API Tutorial: getting-started/tutorial-procedural-api.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+      - Tutorial:
+          - Overview: getting-started/tutorial.md
+          - Cluster Conversations: notebooks/how-to-look-at-data/1. Cluster Conversations.ipynb
+          - Better Summaries: notebooks/how-to-look-at-data/2. Better Summaries.ipynb
+          - Classifiers: notebooks/how-to-look-at-data/3. Classifiers.ipynb
   - Core Concepts:
-    - Overview: core-concepts/overview.md
-    - Conversations: core-concepts/conversations.md
-    - Summarization: core-concepts/summarization.md
-    - Embedding: core-concepts/embedding.md
-    - Clustering: core-concepts/clustering.md
-    - Meta-Clustering: core-concepts/meta-clustering.md
-    - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
+      - Overview: core-concepts/overview.md
+      - Conversations: core-concepts/conversations.md
+      - Summarization: core-concepts/summarization.md
+      - Embedding: core-concepts/embedding.md
+      - Clustering: core-concepts/clustering.md
+      - Meta-Clustering: core-concepts/meta-clustering.md
+      - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
   - API Reference: api/index.md
   - Blog:
-    - blog/index.md
+      - blog/index.md
 
 plugins:
   - social
@@ -112,6 +116,10 @@ plugins:
         - categories
         - tags
       use_git: false
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+      theme: light
   - mkdocstrings:
       default_handler: python
       handlers:

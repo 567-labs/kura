@@ -19,7 +19,7 @@ The main components are:
 
 ## Processing Pipeline
 
-When you run `kura.cluster_conversations()`, the data flows through the following steps:
+When you run the kura pipeline, the data flows through the following steps:
 
 1. **Load Conversations**: Raw conversation data is loaded from your specified source.
 2. **Generate Summaries**: Each conversation is summarized, often into a concise task description or key topic. This summary becomes a primary unit for analysis.

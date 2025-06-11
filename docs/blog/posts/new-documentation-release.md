@@ -21,6 +21,8 @@ Our documentation has been completely reorganized and expanded to provide a bett
 - **Core Concepts Explained**: Detailed explanations of Kura's architecture and components
 - **Improved Code Examples**: Concise, practical examples throughout
 
+<!-- more -->
+
 ## Getting Started
 
 If you're new to Kura, we recommend starting with:
@@ -28,7 +30,6 @@ If you're new to Kura, we recommend starting with:
 1. [Installation Guide](../../getting-started/installation.md)
 2. [Quickstart Guide](../../getting-started/quickstart.md)
 3. [Core Concepts Overview](../../core-concepts/overview.md)
-4. [Procedural API Tutorial](../../getting-started/tutorial-procedural-api.md)
 
 ## We Want Your Feedback!
 

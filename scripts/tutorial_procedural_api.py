@@ -28,8 +28,8 @@ with timer("Importing kura modules"):
         CheckpointManager,
     )
 
-    # Import v1 visualization functions
-    from kura.v1.visualization import (
+    # Import visualization functions
+    from kura.visualization import (
         visualise_clusters_enhanced,
         visualise_clusters_rich,
         visualise_from_checkpoint_manager,

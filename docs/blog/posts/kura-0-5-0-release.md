@@ -17,7 +17,7 @@ We're excited to announce the release of Kura v0.5.0! This release brings signif
 The headline feature of this release is the introduction of a functional, procedural API that gives you fine-grained control over the analysis pipeline:
 
 ```python
-from kura.v1 import (
+from kura import (
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
@@ -36,6 +36,9 @@ This new API offers:
 - Easy integration with heterogeneous models (OpenAI, vLLM, Hugging Face)
 - Functional programming style with no hidden state
 - Keyword-only arguments for clarity
+
+<!-- more -->
+
 
 ### Enhanced Documentation
 

@@ -37,7 +37,7 @@ The procedural API provides a functional approach to conversation analysis with 
 
 ### Checkpoint Management
 
-::: kura.v1.kura.CheckpointManager
+::: kura.CheckpointManager
 
 ## Implementation Classes
 

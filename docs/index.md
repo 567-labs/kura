@@ -45,7 +45,7 @@ uv pip install kura
 ## Quick Start
 
 ```python
-from kura.v1 import (
+from kura import (
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
@@ -108,24 +108,36 @@ async def process_conversations():
 
 # Execute the pipeline
 results = asyncio.run(process_conversations())
+visualise_pipeline_results(results, style="basic")
+Clusters (190 conversations)
+╠══ Generate SEO-optimized content for blogs and scripts (38 conversations)
+║   ╠══ Assist in writing SEO-friendly blog posts (12 conversations)
+║   ╚══ Help create SEO-driven marketing content (8 conversations)
+╠══ Help analyze and visualize data with R and Tableau (25 conversations)
+║   ╠══ Assist with data analysis and visualization in R (15 conversations)
+║   ╚══ Troubleshoot sales data visualizations in Tableau (10 conversations)
+... (and more clusters)
 ```
 
 ## Documentation
 
 ### Getting Started
-  - [Installation Guide](getting-started/installation.md)
-  - [Tutorial: Procedural API](getting-started/tutorial-procedural-api.md)
+
+- [Installation Guide](getting-started/installation.md)
+- [Quickstart](getting-started/quickstart.md)
 
 ### Core Concepts
-  - [Conversations](core-concepts/conversations.md)
-  - [Embedding](core-concepts/embedding.md)
-  - [Clustering](core-concepts/clustering.md)
-  - [Summarization](core-concepts/summarization.md)
-  - [Meta-Clustering](core-concepts/meta-clustering.md)
-  - [Dimensionality Reduction](core-concepts/dimensionality-reduction.md)
+
+- [Conversations](core-concepts/conversations.md)
+- [Embedding](core-concepts/embedding.md)
+- [Clustering](core-concepts/clustering.md)
+- [Summarization](core-concepts/summarization.md)
+- [Meta-Clustering](core-concepts/meta-clustering.md)
+- [Dimensionality Reduction](core-concepts/dimensionality-reduction.md)
 
 ### API Reference
-  - [Procedural API Documentation](api/index.md)
+
+- [Procedural API Documentation](api/index.md)
 
 ## About
 
