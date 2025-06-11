@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 import pytest
 
-from kura.v1 import MultiCheckpointManager
 from kura.checkpoint import CheckpointManager
+from kura.checkpoints import MultiCheckpointManager
 from kura.types import ConversationSummary, Cluster
 from datetime import datetime
 

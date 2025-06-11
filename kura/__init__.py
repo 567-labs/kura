@@ -9,8 +9,8 @@ from .cluster import (
 from .v1.kura import (
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    MultiCheckpointManager,
 )
+from .checkpoints import MultiCheckpointManager
 from .meta_cluster import MetaClusterModel
 
 from .types import Conversation

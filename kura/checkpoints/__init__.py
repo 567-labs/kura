@@ -8,14 +8,19 @@ intermediate pipeline results. The available backends are:
 - JSONLCheckpointManager: Traditional JSONL file-based checkpoints (default)
 - ParquetCheckpointManager: Parquet-based checkpoints for better compression
 - HFDatasetCheckpointManager: HuggingFace datasets-based checkpoints
+- MultiCheckpointManager: Coordinates multiple checkpoint managers
 
 The ParquetCheckpointManager provides better compression (50% space savings)
 and faster loading for analytical workloads, while HFDatasetCheckpointManager
 provides advanced features like streaming, versioning, and cloud storage integration.
+
+The MultiCheckpointManager enables redundancy, performance optimization, and
+environment separation by coordinating multiple checkpoint backends.
 """
 
 from kura.base_classes import BaseCheckpointManager
 from .jsonl import JSONLCheckpointManager
+from .multi import MultiCheckpointManager
 
 # Import ParquetCheckpointManager if PyArrow is available
 try:
@@ -36,6 +41,7 @@ except ImportError:
 __all__ = [
     "BaseCheckpointManager",
     "JSONLCheckpointManager",
+    "MultiCheckpointManager",
     "PARQUET_AVAILABLE",
     "HF_DATASETS_AVAILABLE",
 ]

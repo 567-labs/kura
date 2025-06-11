@@ -11,12 +11,11 @@ from .kura import (
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    # Multiple checkpoint manager support
-    MultiCheckpointManager,
 )
 
 # Import checkpoint managers
 from kura.checkpoint import CheckpointManager
+from kura.checkpoints import MultiCheckpointManager
 
 # Import ParquetCheckpointManager if pyarrow is available
 try:

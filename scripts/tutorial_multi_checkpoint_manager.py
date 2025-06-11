@@ -10,12 +10,12 @@ import asyncio
 import os
 from kura.v1 import (
     CheckpointManager,
-    MultiCheckpointManager,
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
 )
+from kura.checkpoints import MultiCheckpointManager
 from kura import (
     SummaryModel,
     ClusterDescriptionModel,
@@ -243,14 +243,20 @@ async def example_5_full_pipeline():
 
 
 async def example_6_mixed_formats():
-    """Example 6: Using different checkpoint formats together.
+    """Example 6: Using JSONL and Parquet checkpoint formats together.
 
-    This example shows how to combine different checkpoint manager types
-    (requires optional dependencies).
+    This example shows how to combine JSONL (default) and Parquet checkpoint
+    managers for optimal storage and performance.
     """
-    print("\n\n=== Example 6: Mixed Checkpoint Formats ===\n")
+    print("\n\n=== Example 6: JSONL + Parquet Mixed Format Example ===\n")
 
-    managers = [CheckpointManager("./checkpoints/jsonl")]
+    # Import checkpoint managers
+    from kura.checkpoints import JSONLCheckpointManager
+
+    # Always use JSONL as the primary format
+    jsonl_mgr = JSONLCheckpointManager("./checkpoints/jsonl")
+    managers = [jsonl_mgr]
+    print("✓ Using JSONLCheckpointManager (primary format)")
 
     # Try to add ParquetCheckpointManager if available
     try:
@@ -258,35 +264,61 @@ async def example_6_mixed_formats():
 
         parquet_mgr = ParquetCheckpointManager("./checkpoints/parquet")
         managers.append(parquet_mgr)
-        print("✓ Added ParquetCheckpointManager")
+        print("✓ Added ParquetCheckpointManager (compressed backup)")
     except ImportError:
         print(
-            "✗ ParquetCheckpointManager not available (install with: pip install kura[parquet])"
+            "✗ ParquetCheckpointManager not available (install with: pip install pyarrow)"
         )
 
-    # Try to add HFDatasetCheckpointManager if available
-    try:
-        from kura.v1 import HFDatasetCheckpointManager
+    # Create multi-format manager
+    multi_mgr = MultiCheckpointManager(
+        managers=managers,
+        save_strategy="all_enabled",  # Save in both formats
+        load_strategy="priority",  # Load from JSONL first (faster for small files)
+    )
 
-        hf_mgr = HFDatasetCheckpointManager("./checkpoints/hf_datasets")
-        managers.append(hf_mgr)
-        print("✓ Added HFDatasetCheckpointManager")
-    except ImportError:
-        print(
-            "✗ HFDatasetCheckpointManager not available (install with: pip install kura[hf])"
+    print("\nCreated multi-format checkpoint manager:")
+    print("  - Primary: JSONL (human-readable, easy debugging)")
+    print("  - Backup: Parquet (50% smaller, columnar format)")
+    print(f"  - Strategy: {multi_mgr}")
+
+    # Run a small pipeline to demonstrate
+    conversations = [
+        Conversation.from_messages(
+            [
+                {"role": "user", "content": f"Sample question {i}"},
+                {"role": "assistant", "content": f"Sample answer {i}"},
+            ]
         )
+        for i in range(5)
+    ]
 
+    summary_model = SummaryModel()
+
+    print("\nRunning pipeline with multi-format checkpoints...")
+    summaries = await summarise_conversations(
+        conversations, model=summary_model, checkpoint_manager=multi_mgr
+    )
+
+    print(f"✓ Generated {len(summaries)} summaries")
+
+    # Show file sizes if both formats were saved
     if len(managers) > 1:
-        multi_mgr = MultiCheckpointManager(
-            managers=managers,
-            save_strategy="all_enabled",  # Save in all formats
-            load_strategy="priority",  # Load from most efficient
+        import os
+
+        jsonl_size = os.path.getsize("./checkpoints/jsonl/summaries.jsonl")
+        parquet_size = os.path.getsize("./checkpoints/parquet/summaries.parquet")
+
+        print("\nCheckpoint file sizes:")
+        print(f"  - JSONL: {jsonl_size:,} bytes")
+        print(
+            f"  - Parquet: {parquet_size:,} bytes ({100 * (1 - parquet_size / jsonl_size):.0f}% smaller)"
         )
 
-        print(f"\nCreated multi-format checkpoint manager with {len(managers)} formats")
-        print(f"{multi_mgr}")
-    else:
-        print("\nNote: Install optional dependencies to see mixed format example")
+        print("\nBenefits of this setup:")
+        print("  - JSONL: Easy to inspect, debug, and manually edit")
+        print("  - Parquet: Better compression, faster for large datasets")
+        print("  - MultiCheckpointManager: Automatic redundancy and format flexibility")
 
 
 def cleanup_examples():
