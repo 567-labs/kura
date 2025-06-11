@@ -73,7 +73,7 @@ class MetaClusterModel(BaseMetaClusterModel):
     @property
     def checkpoint_filename(self) -> str:
         """The filename to use for checkpointing this model's output."""
-        return "meta_clusters.jsonl"
+        return "meta_clusters"
 
     def __init__(
         self,

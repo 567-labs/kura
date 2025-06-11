@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 # Cluster Prompt
 # ============================================================================
 
-
 DEFAULT_CLUSTER_PROMPT = """
 You are tasked with summarizing a group of related statements into a short, precise, and accurate description and name. Your goal is to create a concise summary that captures the essence of these statements and distinguishes them from other similar groups of statements.
 

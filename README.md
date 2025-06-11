@@ -41,11 +41,16 @@ from kura import (
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    CheckpointManager,
+)
+from kura.checkpoints import (
+    HFDatasetCheckpointManager,
+    JSONLCheckpointManager,
+    ParquetCheckpointManager,
 )
 from kura.v1.visualization import visualise_pipeline_results
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
+from kura.k_means import MiniBatchKmeansClusteringMethod
 from kura.cluster import ClusterModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
@@ -53,13 +58,31 @@ from kura.dimensionality import HDBUMAP
 async def main():
     # Initialize models
     console = Console()
-    summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)
-    meta_cluster_model = MetaClusterModel(console=console)
+    summary_model = SummaryModel(console=console, max_concurrent_requests=100)
+
+    # Use MiniBatch K-means for better performance with large datasets
+    minibatch_kmeans_clustering = MiniBatchKmeansClusteringMethod(
+        clusters_per_group=10,  # Target items per cluster
+        batch_size=1000,  # Mini-batch size for processing
+        max_iter=100,  # Maximum iterations
+        random_state=42,  # Random seed for reproducibility
+    )
+
+    cluster_model = ClusterModel(
+        clustering_method=minibatch_kmeans_clustering,
+        metric="euclidean",
+        console=console,
+    )
+    meta_cluster_model = MetaClusterModel(console=console, max_concurrent_requests=100)
     dimensionality_model = HDBUMAP()
 
-    # Set up checkpointing to save intermediate results
-    checkpoint_manager = CheckpointManager("./checkpoints", enabled=True)
+    # Set up checkpointing - you can choose from multiple backends
+    # HuggingFace Datasets (advanced features, cloud sync)
+    checkpoint_manager = HFDatasetCheckpointManager("./checkpoints", enabled=True)
+
+    # Alternative checkpoint managers:
+    # checkpoint_manager = ParquetCheckpointManager("./checkpoints", enabled=True)  # 50% smaller files
+    # checkpoint_manager = JSONLCheckpointManager("./checkpoints", enabled=True)    # Human-readable
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
@@ -68,29 +91,37 @@ async def main():
     )
 
     # Process through the pipeline step by step
+    print("Step 1: Generating conversation summaries...")
     summaries = await summarise_conversations(
         conversations,
         model=summary_model,
         checkpoint_manager=checkpoint_manager
     )
+    print(f"Generated {len(summaries)} summaries")
 
+    print("Step 2: Generating base clusters from summaries...")
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
         checkpoint_manager=checkpoint_manager
     )
+    print(f"Generated {len(clusters)} base clusters")
 
+    print("Step 3: Reducing clusters hierarchically...")
     reduced_clusters = await reduce_clusters_from_base_clusters(
         clusters,
         model=meta_cluster_model,
         checkpoint_manager=checkpoint_manager
     )
+    print(f"Reduced to {len(reduced_clusters)} meta clusters")
 
+    print("Step 4: Projecting clusters to 2D for visualization...")
     projected_clusters = await reduce_dimensionality_from_clusters(
         reduced_clusters,
         model=dimensionality_model,
         checkpoint_manager=checkpoint_manager,
     )
+    print(f"Generated {len(projected_clusters)} projected clusters")
 
     # Visualize results
     visualise_pipeline_results(reduced_clusters, style="enhanced")
@@ -137,6 +168,30 @@ The pipeline architecture processes data through sequential stages: loading, sum
 - **API Reference**
   - [Procedural API Documentation](https://567-labs.github.io/kura/api/)
 
+## Checkpoint System
+
+Kura provides three checkpoint managers for different use cases:
+
+| Checkpoint Manager | Format | Dependencies | File Size | Use Case |
+| ------------------ | ------ | ------------ | --------- | -------- |
+| **JSONLCheckpointManager** | JSON Lines | None | Baseline | Development, debugging, small datasets |
+| **ParquetCheckpointManager** | Parquet | PyArrow | 50% smaller | Production workflows, analytics |
+| **HFDatasetCheckpointManager** | HF Datasets | datasets, PyArrow | 7% smaller | Large-scale ML, cloud workflows |
+
+### Checkpoint Performance (190 conversations)
+
+Based on tutorial benchmarks:
+
+```text
+JSONL: 200KB total storage
+PARQUET: 100KB total storage (50% space savings)
+HF: 186KB total storage (7% space savings)
+```
+
+- **JSONL**: Human-readable, universal compatibility, no dependencies
+- **Parquet**: Best compression, fastest analytical queries, type safety
+- **HuggingFace**: Streaming support, cloud sync, versioning, advanced features
+
 ## Comparison with Similar Tools
 
 | Feature                | Kura                                  | Traditional Analytics          | Manual Review          | Generic Clustering       |
@@ -167,40 +222,64 @@ To quickly test Kura and see it in action:
 uv run python scripts/tutorial_procedural_api.py
 ```
 
-Expected output:
+This script tests all three checkpoint managers and provides timing comparisons. Expected output:
 
 ```text
 Loaded 190 conversations successfully!
 
+Saved 190 conversations to ./tutorial_checkpoints/conversations.json
+
+Running with HFDatasetCheckpointManager
+Step 1: Generating summaries with checkpoints...
+Generated 190 summaries using checkpoints
+Step 2: Generating clusters with checkpoints...
+Generated 19 clusters using checkpoints
+Step 3: Meta clustering with checkpoints...
+Reduced to 29 meta clusters using checkpoints
+Step 4: Dimensionality reduction with checkpoints...
+Generated 29 projected clusters using HFDatasetCheckpointManager
+
+Running with ParquetCheckpointManager
+Step 1: Generating summaries with checkpoints...
+Generated 190 summaries using checkpoints
+Step 2: Generating clusters with checkpoints...
+Generated 19 clusters using checkpoints
+Step 3: Meta clustering with checkpoints...
+Reduced to 29 meta clusters using checkpoints
+Step 4: Dimensionality reduction with checkpoints...
+Generated 29 projected clusters using ParquetCheckpointManager
+
+Running with JSONLCheckpointManager
+Step 1: Generating summaries with checkpoints...
+Generated 190 summaries using checkpoints
+Step 2: Generating clusters with checkpoints...
+Generated 19 clusters using checkpoints
+Step 3: Meta clustering with checkpoints...
+Reduced to 29 meta clusters using checkpoints
+Step 4: Dimensionality reduction with checkpoints...
+Generated 29 projected clusters using JSONLCheckpointManager
+
 ============================================================
-                  Conversation Processing
+                    TIMING SUMMARY
 ============================================================
-
-Starting conversation clustering...
-Step 1: Generating conversation summaries...
-Generated 190 summaries
-Step 2: Generating base clusters from summaries...
-Generated 19 base clusters
-Step 3: Reducing clusters hierarchically...
-Reduced to 29 meta clusters
-Step 4: Projecting clusters to 2D for visualization...
-Generated 29 projected clusters
-
-Pipeline complete! Generated 29 projected clusters!
-
-Processing Summary:
-  • Input conversations: 190
-  • Final reduced clusters: 29
-  • Final projected clusters: 29
-  • Checkpoints saved to: ./tutorial_checkpoints
+Loading sample conversations               1.23s ( 5.2%)
+Saving conversations to JSON               0.45s ( 1.9%)
+HFDatasetCheckpointManager - Summarization 8.45s (35.8%)
+HFDatasetCheckpointManager - Clustering    6.78s (28.7%)
+HFDatasetCheckpointManager - Meta clustering 4.32s (18.3%)
+HFDatasetCheckpointManager - Dimensionality 2.34s (9.9%)
+------------------------------------------------------------
+Total Time                               23.57s
+============================================================
 ```
 
 This will:
 
 - Load 190 sample conversations from Hugging Face
-- Process them through the complete pipeline
-- Generate 29 hierarchical clusters organized into 10 root categories
-- Save checkpoints to `./tutorial_checkpoints`
+- Process them through the complete pipeline with each checkpoint manager
+- Compare timing and storage efficiency across formats
+- Generate 29 hierarchical clusters organized into categories
+- Save checkpoints to `./tutorial_checkpoints/` with subfolders for each format
 
 ## Development
 

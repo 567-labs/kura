@@ -72,6 +72,25 @@ kura start-app
 
 # Start with a custom checkpoint directory
 kura start-app --dir ./my-checkpoints
+
+# Start with HuggingFace datasets checkpoints (recommended for large datasets)
+kura start-app --checkpoint-format hf-dataset
+```
+
+### Checkpoint Management
+
+```bash
+# Analyze existing JSONL checkpoints and estimate migration benefits
+kura analyze-checkpoints ./checkpoints
+
+# Migrate JSONL checkpoints to HuggingFace datasets format
+kura migrate-checkpoints ./old_checkpoints ./new_hf_checkpoints
+
+# Migrate with HuggingFace Hub upload and compression
+kura migrate-checkpoints ./old_checkpoints ./new_hf_checkpoints \
+    --hub-repo my-username/kura-analysis \
+    --hub-token $HF_TOKEN \
+    --compression gzip
 ```
 
 ## Architecture Overview
@@ -230,7 +249,11 @@ conversations = [
 
 ## Checkpoints
 
-Kura uses checkpoint files to save state between runs (checkpoint handling in `kura/kura.py`):
+Kura supports two checkpoint systems for storing intermediate pipeline results:
+
+### 1. JSONL Checkpoints (Legacy)
+
+The traditional system uses JSONL files (checkpoint handling in `kura/kura.py`):
 - `conversations.json`: Raw conversation data
 - `summaries.jsonl`: Summarized conversations
 - `clusters.jsonl`: Base cluster data
@@ -238,6 +261,59 @@ Kura uses checkpoint files to save state between runs (checkpoint handling in `k
 - `dimensionality.jsonl`: Projected cluster data for visualization
 
 Checkpoints are stored in the directory specified by the `checkpoint_dir` parameter (default: `./checkpoints`).
+
+### 2. HuggingFace Datasets Checkpoints (Recommended)
+
+The new system uses HuggingFace datasets for better performance and scalability:
+
+**Benefits:**
+- **Memory Efficiency**: 10-100x better for large datasets using memory-mapped files
+- **Performance**: Significantly faster loading with built-in optimization
+- **Compression**: 50-80% smaller storage footprint with built-in compression
+- **Streaming**: Process datasets larger than available RAM
+- **Querying**: Filter and query without loading entire dataset
+- **Versioning**: Built-in version control via HuggingFace Hub
+- **Collaboration**: Easy sharing via HuggingFace Hub
+- **Schema Validation**: Automatic data structure validation
+
+**Usage with Procedural API:**
+```python
+from kura.v1 import create_hf_checkpoint_manager
+
+# Create HF datasets checkpoint manager
+checkpoint_mgr = create_hf_checkpoint_manager(
+    checkpoint_dir="./hf_checkpoints",
+    hub_repo="my-username/kura-analysis",  # Optional: cloud backup
+    compression="gzip",                    # Built-in compression
+    streaming=True                         # Handle large datasets
+)
+
+# Use with any pipeline function
+summaries = await summarise_conversations(
+    conversations,
+    model=summary_model,
+    checkpoint_manager=checkpoint_mgr
+)
+```
+
+**Advanced Features:**
+```python
+# Filter checkpoints efficiently
+large_clusters = checkpoint_mgr.filter_checkpoint(
+    "clusters",
+    lambda x: len(x["chat_ids"]) > 100,  # Only large clusters
+    Cluster
+)
+
+# Get checkpoint statistics
+info = checkpoint_mgr.get_checkpoint_info("summaries")
+print(f"Size: {info['size_bytes']} bytes, Rows: {info['num_rows']}")
+```
+
+**Format Selection:**
+Choose checkpoint format based on needs:
+- **JSONL**: Small datasets (< 10MB), quick prototyping, legacy compatibility
+- **HF Datasets**: Large datasets (> 100MB), production deployments, collaboration
 
 ## Visualization
 

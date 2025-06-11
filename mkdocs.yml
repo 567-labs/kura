@@ -97,6 +97,7 @@ nav:
       - Clustering: core-concepts/clustering.md
       - Meta-Clustering: core-concepts/meta-clustering.md
       - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
+      - Checkpoints: core-concepts/checkpoints.md
   - API Reference: api/index.md
   - Blog:
       - blog/index.md

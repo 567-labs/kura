@@ -4,6 +4,7 @@ from .clustering_method import BaseClusteringMethod
 from .cluster import BaseClusterModel
 from .meta_cluster import BaseMetaClusterModel
 from .dimensionality import BaseDimensionalityReduction
+from .checkpoint import BaseCheckpointManager
 
 __all__ = [
     "BaseEmbeddingModel",
@@ -12,4 +13,5 @@ __all__ = [
     "BaseClusterModel",
     "BaseMetaClusterModel",
     "BaseDimensionalityReduction",
+    "BaseCheckpointManager",
 ]

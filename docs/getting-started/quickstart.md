@@ -54,9 +54,23 @@ async def main():
     # Initialize models
     console = Console()
     summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)
+    cluster_model = ClusterModel(console=console)  # Uses K-means by default
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
+
+    # Optional: Use different clustering methods for specific use cases
+
+    # For exploratory analysis - HDBSCAN automatically discovers optimal cluster count
+    # from kura.hdbscan import HDBSCANClusteringMethod
+    # hdbscan_clustering = HDBSCANClusteringMethod(min_cluster_size=10)
+    # cluster_model = ClusterModel(clustering_method=hdbscan_clustering, console=console)
+
+    # For large datasets (100k+ conversations) - MiniBatch KMeans is memory efficient
+    # from kura.k_means import MiniBatchKmeansClusteringMethod
+    # minibatch_clustering = MiniBatchKmeansClusteringMethod(
+    #     clusters_per_group=10, batch_size=1000, random_state=42
+    # )
+    # cluster_model = ClusterModel(clustering_method=minibatch_clustering, console=console)
 
     # Set up checkpointing to save intermediate results
     checkpoint_manager = CheckpointManager("./checkpoints", enabled=True)
@@ -109,6 +123,13 @@ This example will:
 2. Process them through the complete analysis pipeline step by step
 3. Generate hierarchical clusters organized into categories
 4. Display the results with enhanced visualization
+
+> **💡 Tip**: The example above uses K-means clustering (default). Kura provides three clustering options:
+> - **K-means** (default): Good for small-medium datasets with consistent cluster sizes
+> - **HDBSCAN**: Best for exploratory analysis, automatically discovers optimal cluster count
+> - **MiniBatch KMeans**: Memory-efficient for large datasets (100k+ conversations)
+>
+> See the [clustering documentation](../core-concepts/clustering.md#clustering-algorithms) for a detailed comparison and when to use each method.
 
 ## Visualization Options & Output
 
