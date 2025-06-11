@@ -22,7 +22,7 @@ from kura.base_classes import (
     BaseDimensionalityReduction,
     BaseCheckpointManager,
     BaseSummaryModel,
-    BaseClusterModel,
+    BaseClusterDescriptionModel,
 )
 from kura.types import Conversation, ConversationSummary, Cluster
 from kura.types.dimensionality import ProjectedCluster
@@ -93,7 +93,7 @@ async def summarise_conversations(
 async def generate_base_clusters_from_conversation_summaries(
     summaries: List[ConversationSummary],
     *,
-    model: BaseClusterModel,
+    model: BaseClusterDescriptionModel,
     checkpoint_manager: Optional[BaseCheckpointManager] = None,
 ) -> List[Cluster]:
     """Generate base clusters from conversation summaries.

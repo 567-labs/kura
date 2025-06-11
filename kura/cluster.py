@@ -1,4 +1,8 @@
-from kura.base_classes import BaseEmbeddingModel, BaseClusteringMethod, BaseClusterModel
+from kura.base_classes import (
+    BaseEmbeddingModel,
+    BaseClusteringMethod,
+    BaseClusterDescriptionModel,
+)
 from kura.checkpoint import CheckpointManager
 from kura.embedding import embed_summaries, OpenAIEmbeddingModel
 from kura.types.summarisation import ConversationSummary
@@ -60,7 +64,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
 # ============================================================================
 
 
-class ClusterModel(BaseClusterModel):
+class ClusterDescriptionModel(BaseClusterDescriptionModel):
     """
     Model for generating cluster descriptions using LLMs.
 
@@ -73,7 +77,7 @@ class ClusterModel(BaseClusterModel):
         model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         temperature: float = 0.2,
-        checkpoint_filename: str = "clusters.jsonl",
+        checkpoint_filename: str = "clusters",
         console: Optional[Console] = None,
     ):
         """
@@ -435,7 +439,7 @@ async def generate_base_clusters_from_conversation_summaries(
     summaries: List[ConversationSummary],
     embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
     clustering_method: BaseClusteringMethod = KmeansClusteringModel(),
-    clustering_model: BaseClusterModel = ClusterModel(),
+    clustering_model: BaseClusterDescriptionModel = ClusterDescriptionModel(),
     checkpoint_manager: Optional[CheckpointManager] = None,
     max_contrastive_examples: int = 10,
     prompt: str = DEFAULT_CLUSTER_PROMPT,

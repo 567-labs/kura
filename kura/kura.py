@@ -3,12 +3,12 @@ from kura.types import Cluster
 from kura.embedding import OpenAIEmbeddingModel
 from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
-from kura.cluster import ClusterModel
+from kura.cluster import ClusterDescriptionModel
 from kura.visualization import ClusterVisualizer
 from kura.base_classes import (
     BaseEmbeddingModel,
     BaseSummaryModel,
-    BaseClusterModel,
+    BaseClusterDescriptionModel,
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
@@ -53,7 +53,7 @@ class Kura:
         self,
         embedding_model: Union[BaseEmbeddingModel, None] = None,
         summarisation_model: Union[BaseSummaryModel, None] = None,
-        cluster_model: Union[BaseClusterModel, None] = None,
+        cluster_model: Union[BaseClusterDescriptionModel, None] = None,
         meta_cluster_model: Union[BaseMetaClusterModel, None] = None,
         dimensionality_reduction: BaseDimensionalityReduction = HDBUMAP(),
         checkpoint_dir: str = "./checkpoints",
@@ -113,7 +113,9 @@ class Kura:
             self.summarisation_model = summarisation_model
 
         if cluster_model is None:
-            self.cluster_model = ClusterModel(console=console_to_pass, **kwargs)
+            self.cluster_model = ClusterDescriptionModel(
+                console=console_to_pass, **kwargs
+            )
         else:
             self.cluster_model = cluster_model
 

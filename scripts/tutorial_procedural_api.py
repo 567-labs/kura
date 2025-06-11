@@ -18,7 +18,7 @@ from kura.checkpoints import (
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
 from kura.k_means import MiniBatchKmeansClusteringMethod
-from kura.cluster import ClusterModel
+from kura.cluster import ClusterDescriptionModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
 from rich.console import Console
@@ -79,9 +79,7 @@ minibatch_kmeans_clustering = MiniBatchKmeansClusteringMethod(
     random_state=42,  # Random seed for reproducibility
 )
 
-cluster_model = ClusterModel(
-    clustering_method=minibatch_kmeans_clustering,
-    metric="euclidean",
+cluster_model = ClusterDescriptionModel(
     console=console,
 )
 meta_cluster_model = MetaClusterModel(console=console, max_concurrent_requests=100)
@@ -132,6 +130,7 @@ async def process(checkpoint_manager: BaseCheckpointManager):
         clusters = await generate_base_clusters_from_conversation_summaries(
             summaries,
             model=cluster_model,
+            clustering_method=minibatch_kmeans_clustering,
             checkpoint_manager=checkpoint_manager,
         )
     print(f"Generated {len(clusters)} clusters using checkpoints")

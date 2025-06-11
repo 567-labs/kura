@@ -68,9 +68,7 @@ async def main():
         random_state=42,  # Random seed for reproducibility
     )
 
-    cluster_model = ClusterModel(
-        clustering_method=minibatch_kmeans_clustering,
-        metric="euclidean",
+    cluster_model = ClusterDescriptionModel(
         console=console,
     )
     meta_cluster_model = MetaClusterModel(console=console, max_concurrent_requests=100)
@@ -103,6 +101,7 @@ async def main():
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
+        clustering_method=minibatch_kmeans_clustering,
         checkpoint_manager=checkpoint_manager
     )
     print(f"Generated {len(clusters)} base clusters")
@@ -172,11 +171,11 @@ The pipeline architecture processes data through sequential stages: loading, sum
 
 Kura provides three checkpoint managers for different use cases:
 
-| Checkpoint Manager | Format | Dependencies | File Size | Use Case |
-| ------------------ | ------ | ------------ | --------- | -------- |
-| **JSONLCheckpointManager** | JSON Lines | None | Baseline | Development, debugging, small datasets |
-| **ParquetCheckpointManager** | Parquet | PyArrow | 50% smaller | Production workflows, analytics |
-| **HFDatasetCheckpointManager** | HF Datasets | datasets, PyArrow | 7% smaller | Large-scale ML, cloud workflows |
+| Checkpoint Manager             | Format      | Dependencies      | File Size   | Use Case                               |
+| ------------------------------ | ----------- | ----------------- | ----------- | -------------------------------------- |
+| **JSONLCheckpointManager**     | JSON Lines  | None              | Baseline    | Development, debugging, small datasets |
+| **ParquetCheckpointManager**   | Parquet     | PyArrow           | 50% smaller | Production workflows, analytics        |
+| **HFDatasetCheckpointManager** | HF Datasets | datasets, PyArrow | 7% smaller  | Large-scale ML, cloud workflows        |
 
 ### Checkpoint Performance (190 conversations)
 

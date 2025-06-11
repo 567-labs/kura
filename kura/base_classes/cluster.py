@@ -4,7 +4,7 @@ from kura.types.cluster import Cluster
 from typing import Dict, List
 
 
-class BaseClusterModel(ABC):
+class BaseClusterDescriptionModel(ABC):
     @property
     @abstractmethod
     def checkpoint_filename(self) -> str:
