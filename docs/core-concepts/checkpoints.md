@@ -541,6 +541,213 @@ manager = HFDatasetCheckpointManager("./checkpoints", streaming=True)
 
 ---
 
+## Multi-Checkpoint Manager
+
+The `MultiCheckpointManager` enables using multiple checkpoint backends simultaneously for redundancy, performance optimization, or environment separation.
+
+### Key Features
+
+- **Redundant Storage** - Save to multiple backends for backup and reliability
+- **Performance Optimization** - Load from the fastest available source
+- **Environment Separation** - Different storage for dev/staging/prod
+- **Flexible Strategies** - Configurable save and load behaviors
+- **Format Mixing** - Combine different checkpoint formats (JSONL, Parquet, HF)
+
+### Usage
+
+```python
+from kura.checkpoints import MultiCheckpointManager, JSONLCheckpointManager
+from kura.checkpoints import ParquetCheckpointManager
+
+# Create individual managers
+jsonl_mgr = JSONLCheckpointManager("./checkpoints/jsonl")
+parquet_mgr = ParquetCheckpointManager("./checkpoints/parquet")
+
+# Combine them with MultiCheckpointManager
+multi_mgr = MultiCheckpointManager(
+    managers=[jsonl_mgr, parquet_mgr],
+    save_strategy="all_enabled",    # Save to both formats
+    load_strategy="first_found"     # Load from first available
+)
+
+# Use in pipeline - works as drop-in replacement
+summaries = await summarise_conversations(
+    conversations,
+    model=summary_model,
+    checkpoint_manager=multi_mgr  # Automatically manages both backends
+)
+```
+
+### Save Strategies
+
+#### `all_enabled` (default)
+Saves checkpoints to all enabled managers for maximum redundancy.
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers=[local_mgr, backup_mgr, cloud_mgr],
+    save_strategy="all_enabled"  # Saves to all three locations
+)
+```
+
+#### `primary_only`
+Saves only to the first enabled manager for maximum performance.
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers=[fast_ssd_mgr, slow_backup_mgr],
+    save_strategy="primary_only"  # Only saves to fast SSD
+)
+```
+
+### Load Strategies
+
+#### `first_found` (default)
+Returns data from the first manager that has the checkpoint.
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers=[local_mgr, remote_mgr],
+    load_strategy="first_found"  # Tries all until one succeeds
+)
+```
+
+#### `priority`
+Tries managers in order, returning from the first one only.
+
+```python
+multi_mgr = MultiCheckpointManager(
+    managers=[cache_mgr, local_mgr, remote_mgr],
+    load_strategy="priority"  # Strict order: cache → local → remote
+)
+```
+
+### Common Use Cases
+
+#### 1. Local + Cloud Backup
+
+```python
+# Primary: Fast local storage
+# Backup: Cloud storage for disaster recovery
+local_mgr = JSONLCheckpointManager("./checkpoints/local")
+cloud_mgr = HFDatasetCheckpointManager(
+    "./checkpoints/cloud",
+    hub_repo="your-org/kura-backups",
+    hub_token="your_token"
+)
+
+multi_mgr = MultiCheckpointManager(
+    managers=[local_mgr, cloud_mgr],
+    save_strategy="all_enabled",     # Save everywhere
+    load_strategy="priority"         # Load from local first
+)
+```
+
+#### 2. Format Migration
+
+```python
+# Gradually migrate from JSONL to Parquet
+jsonl_mgr = JSONLCheckpointManager("./checkpoints/legacy")
+parquet_mgr = ParquetCheckpointManager("./checkpoints/optimized")
+
+multi_mgr = MultiCheckpointManager(
+    managers=[jsonl_mgr, parquet_mgr],
+    save_strategy="all_enabled",     # Save in both formats
+    load_strategy="priority"         # Prefer JSONL for compatibility
+)
+```
+
+#### 3. Development vs Production
+
+```python
+import os
+
+# Environment-specific configuration
+if os.getenv("KURA_ENV") == "production":
+    managers = [
+        ParquetCheckpointManager("./checkpoints/prod"),
+        HFDatasetCheckpointManager(
+            "./checkpoints/backup",
+            hub_repo="company/prod-checkpoints"
+        )
+    ]
+else:
+    managers = [
+        JSONLCheckpointManager("./checkpoints/dev")  # Simple for debugging
+    ]
+
+multi_mgr = MultiCheckpointManager(managers=managers)
+```
+
+#### 4. Performance + Redundancy
+
+```python
+# Combine formats for optimal performance and safety
+managers = [
+    # Primary: Human-readable for debugging
+    JSONLCheckpointManager("./checkpoints/debug"),
+    # Secondary: Compressed for storage efficiency
+    ParquetCheckpointManager("./checkpoints/compressed"),
+    # Tertiary: Cloud backup with versioning
+    HFDatasetCheckpointManager(
+        "./checkpoints/cloud",
+        hub_repo="team/kura-checkpoints"
+    )
+]
+
+multi_mgr = MultiCheckpointManager(
+    managers=managers,
+    save_strategy="all_enabled",    # Maximum redundancy
+    load_strategy="first_found"     # Maximum availability
+)
+```
+
+### Best Practices
+
+1. **Order Managers by Speed** - Place fastest storage first in the list
+2. **Mix Formats Wisely** - Combine human-readable (JSONL) with optimized (Parquet)
+3. **Enable Selectively** - Use the `enabled` parameter on individual managers
+4. **Monitor Failures** - Check logs for save/load failures
+5. **Test Recovery** - Verify backups work by disabling primary storage
+
+### Advanced Configuration
+
+```python
+# Conditional enabling based on environment
+debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+
+multi_mgr = MultiCheckpointManager(
+    managers=[
+        JSONLCheckpointManager("./main", enabled=True),
+        JSONLCheckpointManager("./debug", enabled=debug_mode),
+        ParquetCheckpointManager("./optimized", enabled=not debug_mode)
+    ],
+    save_strategy="all_enabled",
+    load_strategy="first_found"
+)
+```
+
+### API Reference
+
+```python
+class MultiCheckpointManager(BaseCheckpointManager):
+    def __init__(
+        self,
+        managers: List[BaseCheckpointManager],
+        *,
+        save_strategy: Literal["all_enabled", "primary_only"] = "all_enabled",
+        load_strategy: Literal["first_found", "priority"] = "first_found",
+    ):
+        """
+        Args:
+            managers: List of checkpoint managers to coordinate
+            save_strategy: How to save checkpoints across managers
+            load_strategy: How to load checkpoints from managers
+        """
+```
+
+---
+
 ## References
 
 - [Parquet Format Documentation](https://parquet.apache.org/docs/)
