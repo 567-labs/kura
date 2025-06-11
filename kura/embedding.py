@@ -1,8 +1,36 @@
 from kura.base_classes import BaseEmbeddingModel
+from kura.types import ConversationSummary
+import logging
+from typing import Union
+from kura.utils import batch_texts
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
 from openai import AsyncOpenAI
-import logging
+
+logger = logging.getLogger(__name__)
+
+
+async def embed_summaries(
+    summaries: list[ConversationSummary], embedding_model: BaseEmbeddingModel
+) -> list[dict[str, Union[ConversationSummary, list[float]]]]:
+    """Embeds conversation summaries and returns items ready for clustering."""
+    if not summaries:
+        return []
+
+    logger.info(f"Processing {len(summaries)} summaries")
+    texts_to_embed = [str(item) for item in summaries]
+
+    try:
+        embeddings = await embedding_model.embed(texts_to_embed)
+    except Exception as e:
+        logger.error(f"Error embedding summaries: {e}")
+        raise
+
+    return [
+        {"item": summary, "embedding": embedding}
+        for summary, embedding in zip(summaries, embeddings)
+    ]
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +82,7 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
         # Create batches
-        batches = _batch_texts(texts, self._model_batch_size)
+        batches = batch_texts(texts, self._model_batch_size)
         logger.debug(
             f"Split {len(texts)} texts into {len(batches)} batches of size {self._model_batch_size}"
         )
@@ -79,23 +107,12 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         return embeddings
 
 
-def _batch_texts(texts: list[str], batch_size: int) -> list[list[str]]:
-    """Helper function to divide a list of texts into batches."""
-    if not texts:
-        return []
-
-    batches = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        batches.append(batch)
-    return batches
-
-
 class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
     def __init__(
         self,
         model_name: str = "all-MiniLM-L6-v2",
         model_batch_size: int = 128,
+        device: str = "cpu",
     ):
         from sentence_transformers import SentenceTransformer  # type: ignore
 
@@ -103,12 +120,16 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
             f"Initializing SentenceTransformerEmbeddingModel with model={model_name}, batch_size={model_batch_size}"
         )
         try:
-            self.model = SentenceTransformer(model_name)
+            self.model = SentenceTransformer(model_name, device=device)
+            self.model_name = model_name
             self._model_batch_size = model_batch_size
             logger.info(f"Successfully loaded SentenceTransformer model: {model_name}")
         except Exception as e:
             logger.error(f"Failed to load SentenceTransformer model {model_name}: {e}")
             raise
+
+    def slug(self) -> str:
+        return f"sentence-transformers:{self.model_name}-batchsize:{self._model_batch_size}"
 
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(3))
     async def embed(self, texts: list[str]) -> list[list[float]]:
@@ -121,7 +142,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
         )
 
         # Create batches
-        batches = _batch_texts(texts, self._model_batch_size)
+        batches = batch_texts(texts, self._model_batch_size)
         logger.debug(
             f"Split {len(texts)} texts into {len(batches)} batches of size {self._model_batch_size}"
         )

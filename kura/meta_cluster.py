@@ -86,9 +86,9 @@ class MetaClusterModel(BaseMetaClusterModel):
         **kwargs,  # For future use
     ):
         if clustering_model is None:
-            from kura.k_means import KmeansClusteringMethod
+            from kura.cluster import KmeansClusteringModel
 
-            clustering_model = KmeansClusteringMethod(12)
+            clustering_model = KmeansClusteringModel(12)
 
         self.max_concurrent_requests = max_concurrent_requests
         self.sem = Semaphore(max_concurrent_requests)

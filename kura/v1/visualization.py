@@ -7,7 +7,7 @@ and rich-formatted output using the Rich library when available.
 Compatible with the procedural Kura v1 pipeline approach.
 """
 
-from typing import List, Optional, Union, TYPE_CHECKING, Any
+from typing import List, Optional, Union, TYPE_CHECKING, Any, Literal
 from pathlib import Path
 import logging
 from kura.types import Cluster, ClusterTreeNode
@@ -618,7 +618,7 @@ def visualise_from_checkpoint_manager(
 def visualise_pipeline_results(
     clusters: List[Cluster],
     *,
-    style: str = "enhanced",
+    style: Literal["basic", "enhanced", "rich"] = "enhanced",
     console: Optional[ConsoleType] = None,
 ) -> None:
     """Visualize clusters that are the result of a pipeline execution.

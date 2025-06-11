@@ -155,6 +155,7 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.keys
+  - pymdownx.superfences
   - pymdownx.magiclink:
       normalize_issue_symbols: true
       repo_url_shorthand: true

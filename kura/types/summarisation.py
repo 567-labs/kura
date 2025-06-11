@@ -31,19 +31,30 @@ class GeneratedSummary(BaseModel):
         None, description="List of errors the assistant made"
     )
 
+
+class ConversationSummary(GeneratedSummary):
+    chat_id: str
+    metadata: dict
+    embedding: Optional[list[float]] = None
+
     def __repr__(self) -> str:
-        return f"""<summary>{self.summary}</summary>
+        result = f"""<summary>{self.summary}</summary>
 <topic>{self.topic}</topic>
 <request>{self.request}</request>
 <task>{self.task}</task>
 <languages>{self.languages}</languages>
 <assistant_errors>{self.assistant_errors}</assistant_errors>"""
 
+        # Add metadata items with type checking
+        for key, value in self.metadata.items():
+            if isinstance(value, (str, int, float, bool)):
+                result += f"\n<{key}>{value}</{key}>"
+            elif isinstance(value, list) and all(
+                isinstance(item, (str, int, float)) for item in value
+            ):
+                result += f"\n<{key}>{value}</{key}>"
 
-class ConversationSummary(GeneratedSummary):
-    chat_id: str
-    metadata: dict
-    embedding: Optional[list[float]] = None
+        return result
 
 
 class ExtractedProperty(BaseModel):

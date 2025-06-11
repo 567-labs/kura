@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from kura.summarisation import ConversationSummary
-from kura.types import Cluster
+from kura.types.summarisation import ConversationSummary
+from kura.types.cluster import Cluster
+from typing import Dict, List
 
 
-class BaseClusterModel(ABC):
+class BaseClusterDescriptionModel(ABC):
     @property
     @abstractmethod
     def checkpoint_filename(self) -> str:
@@ -11,9 +12,10 @@ class BaseClusterModel(ABC):
         pass
 
     @abstractmethod
-    async def cluster_summaries(
-        self, summaries: list[ConversationSummary]
-    ) -> list[Cluster]:
+    async def generate_clusters(
+        self,
+        cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
+        prompt: str,
+        max_contrastive_examples: int = 10,
+    ) -> List[Cluster]:
         pass
-
-    # TODO : Add abstract method for hooks here once we start supporting it

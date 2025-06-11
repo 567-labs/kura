@@ -1,14 +1,14 @@
 from kura.dimensionality import HDBUMAP
-from kura.types import Conversation, Cluster
+from kura.types import Cluster
 from kura.embedding import OpenAIEmbeddingModel
 from kura.summarisation import SummaryModel
 from kura.meta_cluster import MetaClusterModel
-from kura.cluster import ClusterModel
+from kura.cluster import ClusterDescriptionModel
 from kura.visualization import ClusterVisualizer
 from kura.base_classes import (
     BaseEmbeddingModel,
     BaseSummaryModel,
-    BaseClusterModel,
+    BaseClusterDescriptionModel,
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
@@ -53,7 +53,7 @@ class Kura:
         self,
         embedding_model: Union[BaseEmbeddingModel, None] = None,
         summarisation_model: Union[BaseSummaryModel, None] = None,
-        cluster_model: Union[BaseClusterModel, None] = None,
+        cluster_model: Union[BaseClusterDescriptionModel, None] = None,
         meta_cluster_model: Union[BaseMetaClusterModel, None] = None,
         dimensionality_reduction: BaseDimensionalityReduction = HDBUMAP(),
         checkpoint_dir: str = "./checkpoints",
@@ -113,7 +113,9 @@ class Kura:
             self.summarisation_model = summarisation_model
 
         if cluster_model is None:
-            self.cluster_model = ClusterModel(console=console_to_pass, **kwargs)
+            self.cluster_model = ClusterDescriptionModel(
+                console=console_to_pass, **kwargs
+            )
         else:
             self.cluster_model = cluster_model
 
@@ -255,30 +257,6 @@ class Kura:
         self.save_checkpoint(self.meta_cluster_checkpoint_path, clusters)
         return clusters
 
-    async def summarise_conversations(
-        self, conversations: list[Conversation]
-    ) -> list[ConversationSummary]:
-        """Generate summaries for a list of conversations.
-
-        Uses the summarisation_model to generate summaries for each conversation.
-        Loads from checkpoint if available.
-
-        Args:
-            conversations: List of conversations to summarize
-
-        Returns:
-            List of conversation summaries
-        """
-        checkpoint_items = self.load_checkpoint(
-            self.summary_checkpoint_path, ConversationSummary
-        )
-        if checkpoint_items:
-            return checkpoint_items
-
-        summaries = await self.summarisation_model.summarise(conversations)
-        self.save_checkpoint(self.summary_checkpoint_path, summaries)
-        return summaries
-
     async def generate_base_clusters(
         self, summaries: list[ConversationSummary]
     ) -> list[Cluster]:
@@ -297,8 +275,7 @@ class Kura:
         if checkpoint_items:
             return checkpoint_items
 
-        clusters: list[Cluster] = await self.cluster_model.cluster_summaries(summaries)
-        self.save_checkpoint(self.cluster_checkpoint_path, clusters)
+        clusters = []
         return clusters
 
     async def reduce_dimensionality(
@@ -328,42 +305,6 @@ class Kura:
         self.save_checkpoint(
             self.dimensionality_checkpoint_path, dimensionality_reduced_clusters
         )
-        return dimensionality_reduced_clusters
-
-    async def cluster_conversations(
-        self, conversations: list[Conversation]
-    ) -> list[ProjectedCluster]:
-        """Run the full clustering pipeline on a list of conversations.
-
-        This is the main method that orchestrates the entire Kura pipeline:
-        1. Set up checkpoints directory
-        2. Save raw conversations
-        3. Generate summaries
-        4. Create base clusters
-        5. Create hierarchical meta-clusters
-        6. Project clusters to 2D for visualization
-
-        Args:
-            conversations: List of conversations to process
-
-        Returns:
-            List of projected clusters with 2D coordinates
-        """
-        self.setup_checkpoint_dir()
-
-        # Configure the checkpoint directory
-        if not self.disable_checkpoints:
-            Conversation.generate_conversation_dump(
-                conversations, self.conversation_checkpoint_name
-            )
-
-        summaries = await self.summarise_conversations(conversations)
-        clusters: list[Cluster] = await self.generate_base_clusters(summaries)
-        processed_clusters: list[Cluster] = await self.reduce_clusters(clusters)
-        dimensionality_reduced_clusters = await self.reduce_dimensionality(
-            processed_clusters
-        )
-
         return dimensionality_reduced_clusters
 
     @property
