@@ -12,7 +12,18 @@ export const parseConversationFile = async (
 ): Promise<ConversationsList | null> => {
   try {
     const text = await file.text();
-    const conversations = JSON.parse(text);
+    let conversations;
+
+    // Parse based on file extension
+    if (file.name.endsWith('.json')) {
+      // Parse as single JSON array
+      conversations = JSON.parse(text);
+    } else {
+      // Parse as JSONL (default behavior)
+      const lines = text.split("\n").filter((line) => line.trim() !== "");
+      conversations = lines.map((line) => JSON.parse(line));
+    }
+
     const parsedConversations = ConversationListSchema.safeParse(conversations);
     if (!parsedConversations.success) {
       console.error(
@@ -33,8 +44,17 @@ export const parseConversationSummaryFile = async (
 ): Promise<ConversationSummariesList | null> => {
   try {
     const text = await file.text();
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-    const summaries = lines.map((line) => JSON.parse(line));
+    let summaries;
+
+    // Parse based on file extension
+    if (file.name.endsWith('.json')) {
+      // Parse as single JSON array
+      summaries = JSON.parse(text);
+    } else {
+      // Parse as JSONL (default behavior)
+      const lines = text.split("\n").filter((line) => line.trim() !== "");
+      summaries = lines.map((line) => JSON.parse(line));
+    }
 
     const parsedSummaries = ConversationSummaryListSchema.safeParse(summaries);
     if (!parsedSummaries.success) {

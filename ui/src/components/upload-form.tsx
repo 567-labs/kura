@@ -37,7 +37,10 @@ const UploadForm = ({
   clusters,
   handleVisualiseClusters,
 }: UploadFormProps) => {
-  const handleConversationsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConversationsChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    console.log("handleConversationsChange");
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -48,7 +51,9 @@ const UploadForm = ({
     }
   };
 
-  const handleSummariesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSummariesChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -59,7 +64,9 @@ const UploadForm = ({
     }
   };
 
-  const handleClustersChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleClustersChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -84,10 +91,12 @@ const UploadForm = ({
             <Input
               type="file"
               className="cursor-pointer mt-1"
-              accept=".json"
+              accept=".json,.jsonl,application/json,application/jsonl"
               onChange={handleConversationsChange}
             />
-            <p className="text-xs text-muted-foreground mt-1">(by default this is conversations.json)</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              (accepts .json or .jsonl format)
+            </p>
           </div>
           <div>
             <label className="text-sm font-medium">Summaries File</label>
@@ -97,7 +106,9 @@ const UploadForm = ({
               accept=".jsonl"
               onChange={handleSummariesChange}
             />
-            <p className="text-xs text-muted-foreground mt-1">(by default this is summaries.jsonl)</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              (by default this is summaries.jsonl)
+            </p>
           </div>
           <div>
             <label className="text-sm font-medium">Clusters File</label>
@@ -107,7 +118,9 @@ const UploadForm = ({
               accept=".jsonl"
               onChange={handleClustersChange}
             />
-            <p className="text-xs text-muted-foreground mt-1">(by default this is dimensionality.jsonl)</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              (by default this is dimensionality.jsonl)
+            </p>
           </div>
         </div>
         <div className="mt-4 text-left text-muted-foreground text-sm">

@@ -45,6 +45,10 @@ export default function ConversationDialog({
                 {new Date(conversation.created_at).toLocaleString()}
               </span>
             </div>
+            <div className="text-xs col-span-2">
+              <span className="font-medium">Summary:</span>{" "}
+              <span className="text-slate-600">{conversation.summary}</span>
+            </div>
           </div>
         </div>
 
