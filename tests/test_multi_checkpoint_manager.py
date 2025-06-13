@@ -42,10 +42,11 @@ def sample_clusters():
     return [
         Cluster(
             id=f"cluster_{i}",
-            label=f"Cluster {i}",
-            summary=f"Summary of cluster {i}",
+            name=f"Cluster {i}",
+            description=f"Summary of cluster {i}",
             chat_ids=[f"conv_{j}" for j in range(i, i + 3)],
-            embedding=[0.1 * i] * 10,
+            slug=f"cluster-{i}",
+            parent_id=None,
         )
         for i in range(3)
     ]
@@ -238,25 +239,23 @@ class TestMultiCheckpointManager:
     def test_invalid_save_strategy_during_init(self, temp_dirs):
         """Test that invalid save strategy during initialization raises error."""
         managers = [CheckpointManager(d) for d in temp_dirs[:2]]
-        
+
         with pytest.raises(ValueError, match="Invalid save_strategy 'invalid_save'"):
             MultiCheckpointManager(managers, save_strategy="invalid_save")
 
     def test_invalid_load_strategy_during_init(self, temp_dirs):
         """Test that invalid load strategy during initialization raises error."""
         managers = [CheckpointManager(d) for d in temp_dirs[:2]]
-        
+
         with pytest.raises(ValueError, match="Invalid load_strategy 'invalid_load'"):
             MultiCheckpointManager(managers, load_strategy="invalid_load")
 
     def test_both_invalid_strategies_during_init(self, temp_dirs):
         """Test that invalid strategies during initialization raise appropriate errors."""
         managers = [CheckpointManager(d) for d in temp_dirs[:2]]
-        
+
         # Should fail on save_strategy first (since it's validated first)
         with pytest.raises(ValueError, match="Invalid save_strategy 'bad_save'"):
             MultiCheckpointManager(
-                managers, 
-                save_strategy="bad_save", 
-                load_strategy="bad_load"
+                managers, save_strategy="bad_save", load_strategy="bad_load"
             )

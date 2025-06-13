@@ -503,7 +503,7 @@ class TestManagerSpecificFeatures:
             manager = HFDatasetCheckpointManager(temp_dir)
 
             # Save data
-            manager.save_checkpoint("info_test", sample_summaries, "summaries")
+            manager.save_checkpoint("info_test", sample_summaries)
 
             # Get info
             info = manager.get_checkpoint_info("info_test")
@@ -518,7 +518,7 @@ class TestManagerSpecificFeatures:
             manager = HFDatasetCheckpointManager(temp_dir)
 
             # Save and verify
-            manager.save_checkpoint("to_delete", sample_summaries, "summaries")
+            manager.save_checkpoint("to_delete", sample_summaries)
             checkpoints = manager.list_checkpoints()
             assert "to_delete" in checkpoints
 
