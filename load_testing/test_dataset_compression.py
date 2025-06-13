@@ -96,7 +96,7 @@ results = []
 
 for size in test_sizes:
     testing_summaries = []
-    while len(testing_summaries) < size:
+    while len(testing_summaries) < size and summaries:
         testing_summaries.extend(
             summaries[: min(size - len(testing_summaries), len(summaries))]
         )
