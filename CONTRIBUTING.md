@@ -205,23 +205,36 @@ uv pip install -e ".[visualization,parquet,embeddings]"
 
 ### Implementation Pattern
 
-When using optional dependencies, follow this pattern:
+When using optional dependencies, follow this type-safe pattern:
 
 ```python
-# At module level, handle the import gracefully
-try:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
     from some_optional_package import SomeClass
-    OPTIONAL_AVAILABLE = True
-except ImportError:
-    SomeClass = None
-    OPTIONAL_AVAILABLE = False
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        from some_optional_package import SomeClass
+        OPTIONAL_AVAILABLE = True
+    except ImportError:
+        SomeClass = None  # type: ignore
+        OPTIONAL_AVAILABLE = False
 
 # In your code, check availability before use
 if not OPTIONAL_AVAILABLE:
     raise ImportError(
         "Optional package 'some_optional_package' is required for this feature. "
-        "Install it with: uv pip install 'kura[feature_name]'"
+        "Install it with: uv pip install -e '.[feature_name]'"
     )
+```
+
+This pattern ensures:
+- Type checkers see the correct types during static analysis
+- Runtime gracefully handles missing optional dependencies
+- Clear error messages guide users to install missing dependencies
+- No type errors when using the imported classes/functions
 
 ## Pull Request Process
 

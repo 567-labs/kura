@@ -23,6 +23,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Add type hints to all new functions and methods
 - Write docstrings for all public functions and classes
 
+### Optional Dependencies
+When working with optional dependencies in Kura (like `rich`, `pyarrow`, `sentence-transformers`), use this type-safe pattern:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    from some_optional_package import SomeClass
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        from some_optional_package import SomeClass
+        OPTIONAL_AVAILABLE = True
+    except ImportError:
+        SomeClass = None  # type: ignore
+        OPTIONAL_AVAILABLE = False
+
+# In your code, check availability before use
+if not OPTIONAL_AVAILABLE:
+    raise ImportError(
+        "Optional package 'some_optional_package' is required for this feature. "
+        "Install it with: uv pip install -e '.[feature_name]'"
+    )
+```
+
+This pattern:
+- Prevents type errors during static analysis
+- Handles missing dependencies gracefully at runtime
+- Provides clear installation instructions to users
+
 ## Commands
 
 ### Python Environment Setup
