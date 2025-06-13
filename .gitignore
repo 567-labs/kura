@@ -46,6 +46,6 @@ logs/
 examples/
 
 # Tutorial checkpoints
-tutorial_checkpoints/
-tutorial_checkpoints_class/
 site/
+tutorial_checkpoints*/
+tutorial_*_checkpoints*/

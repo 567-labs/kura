@@ -1,0 +1,35 @@
+# Cursor Rules for Kura Project
+
+## Development Workflow
+- Always make pull requests for code changes
+- Never push directly to main branch
+- Create feature branches for new functionality
+- Make sure all files are properly completed before committing
+- Don't use `git add .` or `git add --all` - be selective about what you stage
+
+## Writing Style
+- Write at a 9th-grade reading level, always
+- Use clear, simple language in documentation and comments
+- Avoid technical jargon unless necessary
+
+## Python Development
+- Always use `uv` instead of `pip` for package management
+- Follow existing code style and patterns in the project
+- Add type hints to all new functions and methods
+- Write docstrings for all public functions and classes
+
+## Documentation
+- Read related documents to match existing style when writing
+- Keep documentation concise but complete
+- Use examples to illustrate complex concepts
+
+## Code Quality
+- Run tests before submitting pull requests
+- Use meaningful variable and function names
+- Keep functions small and focused on single responsibilities
+- Add comments for complex logic
+
+## Communication
+- Don't use emojis in commit messages or documentation
+- Be clear and direct in pull request descriptions
+- Explain the "why" behind code changes, not just the "what"

@@ -25,13 +25,14 @@ except ImportError:
 
 from kura.types import Conversation, Cluster, ConversationSummary
 from kura.types.dimensionality import ProjectedCluster
+from kura.base_classes import BaseCheckpointManager
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class ParquetCheckpointManager:
+class ParquetCheckpointManager(BaseCheckpointManager):
     """Handles checkpoint loading and saving using Parquet format for efficient storage."""
 
     def __init__(
@@ -127,9 +128,7 @@ class ParquetCheckpointManager:
     def get_checkpoint_path(self, filename: str) -> Path:
         """Get full path for a checkpoint file, converting to .parquet extension."""
         # Convert .jsonl extensions to .parquet
-        if filename.endswith(".jsonl"):
-            filename = filename[:-6] + ".parquet"
-        elif not filename.endswith(".parquet"):
+        if not filename.endswith(".parquet"):
             filename = filename + ".parquet"
 
         return self.checkpoint_dir / filename

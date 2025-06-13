@@ -2,17 +2,69 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Guidelines
+
+### Workflow Rules
+- Always make pull requests for code changes
+- Never push directly to main branch
+- Create feature branches for new functionality
+- Make sure all files are properly completed before committing
+- Don't use `git add .` or `git add --all` - be selective about what you stage
+
+### Writing Standards
+- Write at a 9th-grade reading level, always
+- Use clear, simple language in documentation and comments
+- Avoid technical jargon unless necessary
+- Don't use emojis in commit messages or documentation
+
+### Python Development
+- Always use `uv` instead of `pip` for package management
+- Follow existing code style and patterns in the project
+- Add type hints to all new functions and methods
+- Write docstrings for all public functions and classes
+
+### Optional Dependencies
+When working with optional dependencies in Kura (like `rich`, `pyarrow`, `sentence-transformers`), use this type-safe pattern:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    from some_optional_package import SomeClass
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        from some_optional_package import SomeClass
+        OPTIONAL_AVAILABLE = True
+    except ImportError:
+        SomeClass = None  # type: ignore
+        OPTIONAL_AVAILABLE = False
+
+# In your code, check availability before use
+if not OPTIONAL_AVAILABLE:
+    raise ImportError(
+        "Optional package 'some_optional_package' is required for this feature. "
+        "Install it with: uv pip install -e '.[feature_name]'"
+    )
+```
+
+This pattern:
+- Prevents type errors during static analysis
+- Handles missing dependencies gracefully at runtime
+- Provides clear installation instructions to users
+
 ## Commands
 
 ### Python Environment Setup
 
 ```bash
 # Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install package in development mode with dev dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 ### Running Tests
@@ -39,7 +91,7 @@ pyright
 
 ```bash
 # Install documentation dependencies
-pip install -e ".[docs]"
+uv pip install -e ".[docs]"
 
 # Serve documentation locally
 mkdocs serve
@@ -72,6 +124,25 @@ kura start-app
 
 # Start with a custom checkpoint directory
 kura start-app --dir ./my-checkpoints
+
+# Start with HuggingFace datasets checkpoints (recommended for large datasets)
+kura start-app --checkpoint-format hf-dataset
+```
+
+### Checkpoint Management
+
+```bash
+# Analyze existing JSONL checkpoints and estimate migration benefits
+kura analyze-checkpoints ./checkpoints
+
+# Migrate JSONL checkpoints to HuggingFace datasets format
+kura migrate-checkpoints ./old_checkpoints ./new_hf_checkpoints
+
+# Migrate with HuggingFace Hub upload and compression
+kura migrate-checkpoints ./old_checkpoints ./new_hf_checkpoints \
+    --hub-repo my-username/kura-analysis \
+    --hub-token $HF_TOKEN \
+    --compression gzip
 ```
 
 ## Architecture Overview
@@ -87,7 +158,7 @@ Kura offers two APIs for different use cases:
 
 ### Core Components
 
-1. **Summarisation Model** (`kura/summarisation.py`): Takes user conversations and summarizes them into task descriptions
+1. **Summarisation Model** (`kura/summarisation.py`): Takes user conversations and summarizes them into task descriptions, with optional disk caching using `diskcache`
 2. **Embedding Model** (`kura/embedding.py`): Converts text into vector representations (embeddings)
 3. **Clustering Model** (`kura/cluster.py`): Groups summaries into clusters based on embeddings
 4. **Meta Clustering Model** (`kura/meta_cluster.py`): Further groups clusters into a hierarchical structure (Note: `max_clusters` parameter now lives here, not in the main Kura class)
@@ -106,7 +177,7 @@ Kura offers two APIs for different use cases:
 
 - `Kura` (`kura/kura.py`): Main class that orchestrates the entire pipeline
 - `BaseEmbeddingModel` / `OpenAIEmbeddingModel` (`kura/embedding.py`): Handle text embedding
-- `BaseSummaryModel` / `SummaryModel` (`kura/summarisation.py`): Summarize conversations
+- `BaseSummaryModel` / `SummaryModel` (`kura/summarisation.py`): Summarize conversations with optional disk caching
 - `BaseClusterModel` / `ClusterModel` (`kura/cluster.py`): Create initial clusters
 - `BaseMetaClusterModel` / `MetaClusterModel` (`kura/meta_cluster.py`): Reduce clusters into hierarchical groups
 - `BaseDimensionalityReduction` / `HDBUMAP` (`kura/dimensionality.py`): Reduce dimensions for visualization
@@ -149,7 +220,7 @@ async def language_extractor(
 ) -> ExtractedProperty:
     sem = sems.get("default")
     client = clients.get("default")
-    
+
     async with sem:
         resp = await client.chat.completions.create(
             model="gemini-2.0-flash",
@@ -200,7 +271,7 @@ conversations = Conversation.from_claude_conversation_dump("conversations.json")
 ```python
 from kura.types import Conversation
 conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations", 
+    "ivanleomk/synthetic-gemini-conversations",
     split="train"
 )
 ```
@@ -227,82 +298,3 @@ conversations = [
     )
 ]
 ```
-
-## Checkpoints
-
-Kura uses checkpoint files to save state between runs (checkpoint handling in `kura/kura.py`):
-- `conversations.json`: Raw conversation data
-- `summaries.jsonl`: Summarized conversations
-- `clusters.jsonl`: Base cluster data
-- `meta_clusters.jsonl`: Hierarchical cluster data
-- `dimensionality.jsonl`: Projected cluster data for visualization
-
-Checkpoints are stored in the directory specified by the `checkpoint_dir` parameter (default: `./checkpoints`).
-
-## Visualization
-
-Kura includes visualization tools:
-
-### CLI Visualization
-```python
-# Tree visualization implemented in kura/kura.py
-kura.visualise_clusters()
-```
-
-### Web Server
-```bash
-# Web server implemented in kura/cli/server.py
-kura start-app
-# Access at http://localhost:8000
-```
-
-The web interface provides:
-- Interactive cluster map
-- Cluster hierarchy tree
-- Cluster details panel
-- Conversation preview
-- Metadata filtering
-
-## Procedural API (v1)
-
-The procedural API in `kura/v1/` provides a functional approach to the pipeline:
-
-### Key Functions
-- `summarise_conversations(conversations, *, model, checkpoint_manager=None)` - Generate summaries
-- `generate_base_clusters_from_conversation_summaries(summaries, *, model, checkpoint_manager=None)` - Create initial clusters
-- `reduce_clusters_from_base_clusters(clusters, *, model, checkpoint_manager=None)` - Build hierarchy
-- `reduce_dimensionality_from_clusters(clusters, *, model, checkpoint_manager=None)` - Project to 2D
-
-### Example Usage
-```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
-
-# Run pipeline with explicit steps
-checkpoint_mgr = CheckpointManager("./checkpoints", enabled=True)
-
-summaries = await summarise_conversations(
-    conversations,
-    model=summary_model,
-    checkpoint_manager=checkpoint_mgr
-)
-
-clusters = await generate_base_clusters_from_conversation_summaries(
-    summaries,
-    model=cluster_model,
-    checkpoint_manager=checkpoint_mgr
-)
-# ... continue with remaining steps
-```
-
-### Benefits
-- Fine-grained control over each step
-- Easy to skip or reorder steps
-- Support for heterogeneous models (OpenAI, vLLM, Hugging Face, etc.)
-- Functional programming style with no hidden state
-- All functions use keyword-only arguments for clarity

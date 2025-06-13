@@ -37,35 +37,43 @@ const UploadForm = ({
   clusters,
   handleVisualiseClusters,
 }: UploadFormProps) => {
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleConversationsChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    console.log("handleConversationsChange");
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (!files) return;
+    console.log("Parsing conversation file");
+    const conversations = await parseConversationFile(file);
+    if (conversations) {
+      setConversations(conversations);
+    }
+  };
 
-    for (const file of files) {
-      if (file.name === "conversations.json") {
-        console.log("Parsing conversation file");
-        const conversations = await parseConversationFile(file);
-        if (conversations) {
-          setConversations(conversations);
-        }
-      }
+  const handleSummariesChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      if (file.name === "summaries.jsonl") {
-        console.log("Parsing conversation summary file");
-        const summaries = await parseConversationSummaryFile(file);
-        if (summaries) {
-          setSummaries(summaries);
-        }
-      }
+    console.log("Parsing conversation summary file");
+    const summaries = await parseConversationSummaryFile(file);
+    if (summaries) {
+      setSummaries(summaries);
+    }
+  };
 
-      if (file.name === "dimensionality.jsonl") {
-        console.log("Parsing conversation cluster file");
-        const clusters = await parseConversationClusterFile(file);
-        if (clusters) {
-          setClusters(clusters);
-        }
-      }
+  const handleClustersChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log("Parsing conversation cluster file");
+    const clusters = await parseConversationClusterFile(file);
+    if (clusters) {
+      setClusters(clusters);
     }
   };
   return (
@@ -73,29 +81,58 @@ const UploadForm = ({
       <CardHeader>
         <CardTitle>Load Checkpoint</CardTitle>
         <CardDescription>
-          Select the checkpoint directory created by Kura{" "}
+          Upload individual files created by Kura
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Input
-          type="file"
-          multiple
-          //@ts-ignore
-          webkitdirectory=""
-          className="cursor-pointer"
-          accept=""
-          onChange={handleFileChange}
-        />
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Conversations File</label>
+            <Input
+              type="file"
+              className="cursor-pointer mt-1"
+              accept=".json,.jsonl,application/json,application/jsonl"
+              onChange={handleConversationsChange}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              (accepts .json or .jsonl format)
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Summaries File</label>
+            <Input
+              type="file"
+              className="cursor-pointer mt-1"
+              accept=".jsonl"
+              onChange={handleSummariesChange}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              (by default this is summaries.jsonl)
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Clusters File</label>
+            <Input
+              type="file"
+              className="cursor-pointer mt-1"
+              accept=".jsonl"
+              onChange={handleClustersChange}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              (by default this is dimensionality.jsonl)
+            </p>
+          </div>
+        </div>
         <div className="mt-4 text-left text-muted-foreground text-sm">
+          <Button className="w-full mt-4" onClick={handleVisualiseClusters}>
+            Visualise Clusters
+          </Button>
           {conversations && summaries && clusters && (
             <div>
               <p>
                 Loaded in {conversations.length} conversations,{" "}
                 {summaries?.length} summaries, {clusters?.length} clusters
               </p>
-              <Button className="w-full mt-4" onClick={handleVisualiseClusters}>
-                Visualise Clusters
-              </Button>
             </div>
           )}
         </div>

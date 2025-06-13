@@ -1,3 +1,4 @@
+from __future__ import annotations
 from kura.base_classes import BaseClusteringMethod
 import hdbscan
 from typing import TypeVar
