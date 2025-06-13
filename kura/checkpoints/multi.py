@@ -55,6 +55,20 @@ class MultiCheckpointManager(BaseCheckpointManager):
         if not managers:
             raise ValueError("At least one checkpoint manager must be provided")
 
+        # Validate save strategy
+        valid_save_strategies = {"all_enabled", "primary_only"}
+        if save_strategy not in valid_save_strategies:
+            raise ValueError(
+                f"Invalid save_strategy '{save_strategy}'. Must be one of: {', '.join(sorted(valid_save_strategies))}"
+            )
+
+        # Validate load strategy
+        valid_load_strategies = {"first_found", "priority"}
+        if load_strategy not in valid_load_strategies:
+            raise ValueError(
+                f"Invalid load_strategy '{load_strategy}'. Must be one of: {', '.join(sorted(valid_load_strategies))}"
+            )
+
         self.managers = managers
         self.save_strategy = save_strategy
         self.load_strategy = load_strategy
