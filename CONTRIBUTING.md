@@ -168,6 +168,61 @@ mkdocs serve
 - Use type hints for all function parameters and return values
 - Write docstrings for all public classes and functions
 
+## Dependency Management
+
+Kura is designed to be a lightweight library with minimal required dependencies. We follow these principles:
+
+### Core Philosophy
+- Keep the core library as light as possible
+- Make heavy dependencies optional whenever feasible
+- Use dynamic imports for optional functionality
+- Provide clear error messages when optional dependencies are missing
+
+### Adding New Dependencies
+
+When considering adding a new dependency:
+
+1. **Evaluate necessity**: Is this dependency absolutely required for core functionality?
+2. **Consider alternatives**: Can we achieve the same goal with existing dependencies or standard library?
+3. **Make it optional**: If the dependency is only needed for specific features, make it optional
+
+### Optional Dependencies
+
+Kura uses optional dependency groups for features that aren't essential to core functionality:
+
+- `visualization`: Rich terminal output (`rich`)
+- `parquet`: Parquet checkpoint format (`pyarrow`)
+- `embeddings`: Local embedding models (`sentence-transformers`)
+
+To install with optional dependencies:
+```bash
+# Install with visualization support
+uv pip install -e ".[visualization]"
+
+# Install with all optional dependencies
+uv pip install -e ".[visualization,parquet,embeddings]"
+```
+
+### Implementation Pattern
+
+When using optional dependencies, follow this pattern:
+
+```python
+# At module level, handle the import gracefully
+try:
+    from some_optional_package import SomeClass
+    OPTIONAL_AVAILABLE = True
+except ImportError:
+    SomeClass = None
+    OPTIONAL_AVAILABLE = False
+
+# In your code, check availability before use
+if not OPTIONAL_AVAILABLE:
+    raise ImportError(
+        "Optional package 'some_optional_package' is required for this feature. "
+        "Install it with: uv pip install 'kura[feature_name]'"
+    )
+
 ## Pull Request Process
 
 1. Fork the repository
