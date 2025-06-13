@@ -1,7 +1,7 @@
 site_name: Kura
 site_url: https://usekura.xyz
 site_author: Ivan Leo
-site_description: A tool for analysing and visualising chat data
+site_description: Transform thousands of conversations into actionable insights using AI-powered clustering and visualization
 repo_name: kura
 repo_url: https://github.com/567-labs/kura
 edit_uri: edit/main/docs/
@@ -12,6 +12,8 @@ extra:
       link: https://github.com/567-labs/kura
     - icon: fontawesome/brands/twitter
       link: https://twitter.com/ivanleomk
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/kura/
   analytics:
     provider: google
     property: G-5ZYBS2C5VF
@@ -98,9 +100,7 @@ nav:
       - Meta-Clustering: core-concepts/meta-clustering.md
       - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
       - Checkpoints: core-concepts/checkpoints.md
-  - API Reference: api/index.md
-  - Blog:
-      - blog/index.md
+  - Blog: blog/index.md
 
 plugins:
   - social

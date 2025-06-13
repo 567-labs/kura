@@ -12,7 +12,12 @@ from kura.base_classes import (
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
-from typing import Union, Optional, TypeVar
+from typing import Union, Optional, TypeVar, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from rich.console import Console as RichConsole
+else:
+    RichConsole = None
 import os
 from pydantic import BaseModel
 from kura.types.dimensionality import ProjectedCluster
@@ -59,7 +64,7 @@ class Kura:
         checkpoint_dir: str = "./checkpoints",
         conversation_checkpoint_name: str = "conversations.json",
         disable_checkpoints: bool = False,
-        console: Optional["Console"] = None,  # type: ignore
+        console: Optional["RichConsole"] = None,
         disable_progress: bool = False,
         **kwargs,  # For future use
     ):
@@ -236,7 +241,7 @@ class Kura:
 
         print(f"Starting with {len(root_clusters)} clusters")
 
-        while len(root_clusters) > self.meta_cluster_model.max_clusters:  # type: ignore
+        while len(root_clusters) > self.meta_cluster_model.max_clusters:
             # We get the updated list of clusters
             new_current_level = await self.meta_cluster_model.reduce_clusters(
                 root_clusters

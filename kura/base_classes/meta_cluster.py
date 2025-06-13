@@ -9,6 +9,12 @@ class BaseMetaClusterModel(ABC):
         """The filename to use for checkpointing this model's output."""
         pass
 
+    @property
+    @abstractmethod
+    def max_clusters(self) -> int:
+        """The maximum number of root clusters to reduce to."""
+        pass
+
     @abstractmethod
     async def reduce_clusters(self, clusters: list[Cluster]) -> list[Cluster]:
         pass

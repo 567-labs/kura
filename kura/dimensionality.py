@@ -1,6 +1,7 @@
 from kura.base_classes import BaseDimensionalityReduction, BaseEmbeddingModel
 from kura.types import Cluster, ProjectedCluster
 from kura.embedding import OpenAIEmbeddingModel
+from kura.utils import calculate_cluster_levels
 from typing import Union
 import numpy as np
 import logging
@@ -95,11 +96,11 @@ class HDBUMAP(BaseDimensionalityReduction):
                 parent_id=cluster.parent_id,
                 x_coord=float(reduced_embeddings[i][0]),  # pyright: ignore
                 y_coord=float(reduced_embeddings[i][1]),  # pyright: ignore
-                level=0
-                if cluster.parent_id is None
-                else 1,  # TODO: Fix this, should reflect the level of the cluster
+                level=0,
             )
             res.append(projected)
+
+        res = calculate_cluster_levels(res)
 
         logger.info(f"Successfully created {len(res)} projected clusters")
         return res
