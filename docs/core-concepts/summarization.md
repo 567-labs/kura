@@ -99,7 +99,7 @@ Kura's `SummaryModel` supports optional disk caching using `diskcache` to store 
 ### Benefits
 
 - **Cost Reduction**: Avoid re-summarizing identical conversations across runs
-- **Performance**: Skip expensive LLM calls for cached conversations  
+- **Performance**: Skip expensive LLM calls for cached conversations
 - **Persistence**: Cache survives between program restarts
 - **Intelligent Keys**: Cache considers all factors that affect output (model, temperature, prompt, etc.)
 
@@ -128,7 +128,7 @@ model_no_cache = SummaryModel(
 The caching system generates unique keys based on all factors that affect summarization output:
 
 - **Conversation content**: All message roles and content
-- **Model configuration**: The specific model being used  
+- **Model configuration**: The specific model being used
 - **Generation parameters**: Temperature, prompt text
 - **Schema**: The response schema class name
 - **Additional kwargs**: Any other parameters passed to the summarization
@@ -159,11 +159,11 @@ async def main():
         model="openai/gpt-4o-mini",
         cache_dir="./my_summary_cache"
     )
-    
+
     # First run: generates summaries and caches them
     summaries = await summarise_conversations(conversations, model=model)
     print(f"Generated {len(summaries)} summaries")
-    
+
     # Second run: loads from cache (much faster!)
     summaries_cached = await summarise_conversations(conversations, model=model)
     print(f"Loaded {len(summaries_cached)} summaries from cache")
@@ -174,7 +174,7 @@ async def main():
 ```python
 # Separate caches for different model configurations
 gpt4_model = SummaryModel(
-    model="openai/gpt-4o", 
+    model="openai/gpt-4o",
     cache_dir="./cache/gpt4"
 )
 
@@ -207,25 +207,7 @@ summaries_custom = await model.summarise(
 # Each prompt variation gets its own cached results
 ```
 
-### Cache Management
-
-The cache is managed automatically, but you can control the cache directory location:
-
-```python
-import os
-from kura.summarisation import SummaryModel
-
-# Use environment variable for cache location
-cache_dir = os.getenv("KURA_CACHE_DIR", "./default_cache")
-model = SummaryModel(cache_dir=cache_dir)
-
-# Or use project-specific cache directories
-model = SummaryModel(cache_dir=f"./cache/{project_name}/summaries")
-```
-
 **Cache size considerations:** The cache grows with unique conversations. Each cached summary includes the full `ConversationSummary` object. Monitor cache directory size for large-scale deployments.
-
-**Cache invalidation:** The cache automatically handles invalidation through intelligent key generation. No manual cache clearing is needed unless you want to force regeneration of all summaries.
 
 ---
 

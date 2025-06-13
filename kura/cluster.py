@@ -475,17 +475,22 @@ async def generate_base_clusters_from_conversation_summaries(
     logger.info(f"Clustering {len(summaries)} conversation summaries")
 
     # Embed the summaries
-    embedded_items = await embed_summaries(summaries, embedding_model)
+    import logfire
+
+    with logfire.span("embed_summaries"):
+        embedded_items = await embed_summaries(summaries, embedding_model)
 
     # Generate Initial Mapping of Cluster IDs to Summaries
-    clusters_id_to_summaries = clustering_method.cluster(embedded_items)
+    with logfire.span("cluster_summaries"):
+        clusters_id_to_summaries = clustering_method.cluster(embedded_items)
 
     # Generate Clusters
-    clusters = await clustering_model.generate_clusters(
-        cluster_id_to_summaries=clusters_id_to_summaries,
-        max_contrastive_examples=max_contrastive_examples,
-        prompt=prompt,
-    )
+    with logfire.span("generate_clusters"):
+        clusters = await clustering_model.generate_clusters(
+            cluster_id_to_summaries=clusters_id_to_summaries,
+            max_contrastive_examples=max_contrastive_examples,
+            prompt=prompt,
+        )
 
     if checkpoint_manager:
         checkpoint_manager.save_checkpoint(

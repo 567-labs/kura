@@ -70,7 +70,7 @@ def show_section_header(title):
 
 console = Console()
 summary_model = SummaryModel(console=console, max_concurrent_requests=100)
-CHECKPOINT_DIR = "./tutorial_checkpoints"
+CHECKPOINT_DIR = "./tutorial_checkpoints_2"
 
 minibatch_kmeans_clustering = MiniBatchKmeansClusteringMethod(
     clusters_per_group=10,  # Target items per cluster

@@ -1,0 +1,163 @@
+level,cluster_id,cluster_name,question_count,questions
+0,4082e354c3124139a3d7636cddd8494a,Organize educational content for various subjects,6,"132,134,140,151,153,154"
+0,91cd641e14db4db293004d73bf6cc199,Help me replace unusual vehicle terminology,1,108
+0,e4d51b511e2e4345b7cd758553d71cfc,Explain coding algorithms and physics concepts,14,"92,96,108,121,122,124,125,126,127,128,137,141,142,149"
+0,e6aaa3a5bdd34a37b7ad09a585d6857e,Promote sustainable engineering and environmental education,7,"100,143,144,145,146,147,148"
+0,8c43363826104cec8ec970f6078428b7,Clarify personal relationships and domestic violence dynamics,3,"94,104,107"
+0,0b2ef2f776bd43da9fab18e6827916a9,Enhance creative writing and persuasive communication skills,20,"81,82,83,84,85,86,87,88,90,91,92,95,123,131,133,136,138,156,157,160"
+0,700433c925714f94ba03ac8e03542a3d,Assist with solving mathematical and logical puzzles,19,"97,99,101,105,106,111,112,113,114,115,116,117,118,119,120,128,129,130,139"
+0,33aabe423f9d46cf9c29f9e672c1a237,Discuss health issues and report playground bullying,3,"93,103,110"
+0,ceec741b8010446eaf2b68c130a83774,Discuss cultural ethics and life perspectives,9,"89,98,102,109,135,150,152,158,159"
+0,7b8da3563b1b4df6a19dfb36dd15dcca,Devise engaging art projects for children,1,155
+1,2e60221b12bb4040847b4dcb82c68acf,Categorize academic questions and suggest figures,1,132
+1,8be8cbe92ed34bd480f4982168e7eec9,Design engaging drama-based history lesson plans,1,154
+1,3b21aa014acc4b4580604b9a0988c045,Simplify economic concepts and analyze financial data,4,"134,140,151,153"
+1,6f4917eea0bf482d92804e881ca88e1a,Identify and replace strange vehicle-related terms,1,108
+1,dc86257aa96e452896e89a51eb215bfa,Clarify machine learning and coding algorithms,13,"92,96,108,121,122,124,125,126,127,128,137,142,149"
+1,2b65cab50599483bad023facbb3e222a,Explain satellite orbits and quantum physics concepts,2,"141,142"
+1,f16e70d6049a42229dec91a15721f756,Explain scientific concepts and promote environmentalism,6,"100,143,144,145,146,148"
+1,7965cd281044496cbdbd7f45287ecaf6,Guide on building earthquake-resistant bridges,1,147
+1,ac3d8ebb8b84428dbbf0abf9eda084a5,Clarify familial and relationship dynamics,3,"94,104,107"
+1,1a5993c87e8e4af5abd9c2373d92fbae,Assist with creative writing and role-playing tasks,11,"81,83,85,86,87,88,91,92,123,133,160"
+1,bd38df1250314172bdcfe2570630f5ce,Help me improve my written text,3,"90,95,136"
+1,0db0c9887b144dd79b1544ab6d2af562,Analyze and evaluate persuasive communication strategies,6,"82,84,131,138,156,157"
+1,9164cb8f9dc7429a81b71b54b178591f,Help me solve mathematical and logical problems,18,"97,99,101,106,111,112,113,114,115,116,117,118,119,120,128,129,130,139"
+1,cac490a9ebd04b3db67420dbd8ef8742,Help solve a complex parking logic puzzle,1,105
+1,ff316bb1948c4c73ad3121abdcc2e9b2,Examine health-related concerns and remedies for individuals,2,"93,103"
+1,938add5f8e8c465ba7032cde819c73bf,Identify and address playground bullying incidents,1,110
+1,f7d24c7f4ff7467abb63f53d44399306,Explore cultural perspectives and ethical considerations,7,"89,98,102,135,150,158,159"
+1,a0288dc3d5134aae8947084972ec34c0,Explore life stages and the nature of shadows,2,"109,152"
+1,fff670672c954a07bed475b10cd4785b,Design interactive art activities for children,1,155
+2,67ae3346de144a6590dd5360aa3a05ef,Categorize academic questions and suggest relevant figures,1,132
+2,2edbd91e12a34caf92614940234a1547,Design engaging drama-driven history lesson plans,1,154
+2,583af9f3857f4b53a7226d0395146a47,Explain economic concepts and analyze financial data,4,"134,140,151,153"
+2,8ae7d218fb6d496f8a8cb87463559279,Identify and replace odd words in vehicle terms,1,108
+2,3aced972a2844cd9853286a4a649ca37,Differentiate between machine learning types clearly,6,"92,108,124,128,142,149"
+2,da15b87da8a5470290a10e2e5b1a4cca,Explain language models and provide coding solutions,4,"96,121,127,137"
+2,b44314d32ae44aa798ba436ba9734c79,Provide algorithm implementations for tree and array problems,2,"125,126"
+2,db0d0032efa2426eb388506b3f760e56,Write programs for binary and ternary tree calculations,2,"122,128"
+2,2fc0772271aa4c77941e328bface587e,Clarify satellite orbit changes and quantum concepts,2,"141,142"
+2,25843a18a1494991a16362259cdf2ea3,Explain photosynthesis and advocate for tree conservation,3,"100,143,148"
+2,d4f1471cb0eb449f8d4e49e29a7aefd3,Clarify and correct chemistry concepts and reactions,3,"144,145,146"
+2,45bec825125a4c78b5dd6889e00e9048,Provide guidance on seismic-resistant bridge design,1,147
+2,8a769552508c4f8290b2fd9980551ef8,Clarify familial relationships and sibling counts,2,"104,107"
+2,2698b08a6d3d4e2fac770399df578a4a,Offer relationship support in domestic violence situations,1,94
+2,aaf571ac15044925833888565bc6ca4a,Generate creative writing with structured constraints,6,"81,83,86,87,88,92"
+2,a8e5703b35584d34ac02b56622fb7ebb,Create imaginative characters with cultural references,2,"85,92"
+2,30b8541117184835af2daa4a4db558e5,Role-play as entrepreneur and dance instructor,1,91
+2,b0b2e5038d82454081f9771f107d0dcc,Recommend films and create engaging adaptations,3,"123,133,160"
+2,60a04ec3608e4b5697287e84774a710b,Refine and correct various text formats,3,"90,95,136"
+2,88de7493770347769200f4d8b77c847a,Evaluate and analyze product reviews with ratings,2,"131,138"
+2,f1042b84dcd847de8be53f186ecf14b0,Evaluate advertising strategies using argumentation principles,2,"156,157"
+2,bb240f89f6344219a48a446937b2cec4,Compose persuasive and evaluative professional emails,2,"82,84"
+2,f446b951070040419099d97f9beef651,Help me with various mathematical problems,9,"97,99,101,115,116,117,119,120,139"
+2,861f94be2c7a450f95956120912de880,Determine truth values of fruit price comparisons,1,106
+2,050167d3742f4a058a42f6d7cc2c1716,Assist with advanced geometry and algorithm implementation,4,"111,128,129,130"
+2,8d29a642e70d4b85b2760026924999b8,Help me calculate incorrect probabilities in statistics,2,"113,114"
+2,c914615603d54a4587697da1a79b7eef,Assist with modular arithmetic calculations,1,118
+2,0d8390e4185147209decf5b4de59ff5e,Calculate software investment with halving strategy,1,112
+2,77fcf11477ef4450b9d0c734b084c6ab,Solve a parking logic puzzle involving executives,1,105
+2,d4bd8a8eb91a4336a564b755dd61be97,Explore daily hospital visits for healthy individuals,1,103
+2,0fe1ebf82ea0484d9126093962ffd777,Suggest pregnancy-safe remedies for abdominal pain,1,93
+2,764d96dc11df454cba8de19d04cf3ba9,Monitor and report playground bullying incidents,1,110
+2,1bd508a43847495aad8b65cf49218bce,Clarify ambiguous location clues for famous buildings,2,"102,135"
+2,6e2c4048bbc746499087b4e703f29c95,Examine landforms' impact on culture and settlement,1,150
+2,65ed7bf05fa1441f9a451fc9406447c0,Design cultural training for business etiquette and energy ethics,2,"89,159"
+2,8a9d1fac73ce46659a653363874393aa,Debate AI ethics using philosophical methods,2,"98,158"
+2,ba4dc89042ed4729a2df707848fa198b,Discuss life stages and shadow direction intricacies,2,"109,152"
+2,a2af1a5a13ce4a5fbb4a3e7e7a9d5030,Create interactive art experiences for children,1,155
+3,74fae2133e8f41a1919bba11c1e26014,Categorize academic questions and identify relevant figures,1,132
+3,337bb752fa764c99814e464449e1fc79,Create detailed drama-based history lesson plans,1,154
+3,96ddba06959c485fbebbb2819765a7fb,Explain economic indicators and policies simply,1,151
+3,dc11a39da40f4c86b39c4638ebee5d4c,Extract monthly highest and lowest stock prices with formatting,1,140
+3,c43380f6fa0f44358888e9278a377c7f,Analyze company profits and profit margins for 2021,1,134
+3,3aa59c38d55c4538b3935b17829ff4a9,Explain economic indicators and policies for children,1,151
+3,992d3f0f3e5f4bf5a19ccc41e9e68855,Discuss and compare antitrust laws with case studies,1,153
+3,2d3416ea7e7d49cdaef66b6d889e8b0c,Identify and replace odd word in car parts list,1,108
+3,b8980c7254384539982a83d365e5632d,Identify and replace odd car-related word,1,108
+3,6ed0e0a4457b41fab15565558c5cc429,Identify and replace the odd car-related word,1,108
+3,3ed8ec380db6426d856a5a2981a651bc,Identify and replace odd vehicle-related word,1,108
+3,85154765d6f9495d9015cfc9a7398d25,Identify and replace odd word in vehicle terms,1,108
+3,72780ba73a964cf783f306f088aa0e7d,Explain machine learning types and their differences,5,"92,108,128,142,149"
+3,bce361a61e29463887a99d9e69a7e9e4,Explain machine learning types and their differences,1,149
+3,5b585e89ec4a40f9b12c0b8791de584b,Explain machine learning types with examples and distinctions,1,149
+3,539273deb37b403c88ea2e039e9a5a18,Explain machine learning types and autonomous driving use,1,149
+3,a4d1cebfd9974d4a89fb73c41da80f04,Identify bugs in Python longest common subsequence functions,1,124
+3,4589bfc2cfca4997899cff182619b544,Explain machine learning types and clarify learning applicability,1,149
+3,c6bfe3cc7b5b49ca90face925f96b457,Explain language models and their training data,1,96
+3,73ee841c8c1d47119f4cdcabe93ed720,Write Python functions for majority and top-2 elements using Boyer-Moore,1,127
+3,d65092201608471097719e5f423f5e8e,Develop and parallelize Python program for top-5 word frequency,1,121
+3,2e23e05be50d48f9b9d15a477b2db158,Identify and shorten named entities in JSON,1,137
+3,5cd460edf1c94098bf85b450c4043d0d,Write Python functions to find highest common ancestor in trees,1,125
+3,3749370fd9714227a83e0f38c3397193,Implement and optimize median of two sorted arrays,1,126
+3,aac051b4ac944a02a54eb0aab2badb49,Implement dynamic programming to count full binary and ternary trees,1,128
+3,435b89b5ae9d4b21a9410db88a6d6116,Implement recursive functions to count full binary and ternary trees,1,128
+3,750e8ea89e3c49cbb93053d7f5d64a15,Write recursive C++ programs for Fibonacci and custom sequences,1,122
+3,87a087a850d24c10ade484465c78a016,Explain satellite orbit changes when speed decreases,1,142
+3,b9fd6e05083146609bda5dd581c8c035,Explain quantum superposition and entanglement concepts,1,141
+3,1e19ce386b974e3c88dbacb1ae3f6780,Explain satellite orbit changes when speed decreases,1,142
+3,660ca4b1247d46f4b8389b763e29c57c,Explain satellite orbit changes when speed decreases,1,142
+3,02bc97041d9f430da46d7b8f9168ca28,Explain photosynthesis stages and estimate tree energy output,1,143
+3,f2225c711a6d430694cefb6bd8718d93,Create proposals to stop deforestation from a tree's perspective,1,100
+3,2f303b62adb4486ca8a2d1ca7ce57dea,Design a solar-powered water heating system with budget,1,148
+3,c8022e5d57fa478c9b43c60596d248a5,Explain and correct facts about the central dogma,1,144
+3,8fa2847589ba4b8d8a6b1744390e1d73,Explain differences between exothermic and endothermic reactions,1,146
+3,85c23b0a5175490592a7f0c09d4c5b2c,Explain calcium carbonate and hydrochloric acid reaction,1,145
+3,054464612653447489552ce09aa4f7e3,Advise on seismic-resistant bridge design and drawbacks,1,147
+3,9d5336eececa452abe8dfa98d28f9e25,Explain familial relationships and generational distances,1,107
+3,347dbd2d4b4f4893b78dbb72589a79da,Solve sibling count puzzles about David's brothers,1,104
+3,9acbeaa8a72e49b6a8aff17250a35055,Provide relationship coaching for domestic violence without legal action,1,94
+3,79212ce396da4869a152aa2ccef188d0,Role-play as TV character discussing hand dryers and dinner plans,1,92
+3,93dc480b0d914f9a95fc9a24a6b26927,Write and rewrite travel blog posts with letter constraints,1,81
+3,64ab46a93a9e45b2a0f89a4fae378b87,Create a fictional story opening about time travel and summarize with nouns and adjectives,1,88
+3,1a8a96d93a784ac3bad32c3a648f1103,Write short stories with four-word sentence constraint,1,87
+3,4cabffd99bf944da8bf4c87f77ddae17,Write descriptive paragraphs with alphabetical sentence starts,1,86
+3,e36a244447ae450caafd4593e75052fa,Create and rephrase smartphone comparison outline as limerick,1,83
+3,c53f97f0076e471aac17727e9494d0bb,Create vivid character descriptions with literary allusions,1,85
+3,8375a8c2739349ea845568155b14df75,Role-play as TV show character discussing hand dryers and dinner plans,1,92
+3,3bf8c7df9a3644e797dfa6d991ad10c8,Role-play as entrepreneur explaining Mars and teaching dance,1,91
+3,9dde5d8617784169ab4f5d7c8d675a5e,Recommend award-winning documentaries and craft adversity pitches,1,160
+3,a05489e468074668be7500aeab349a89,Create simple HTML joke website with CSS styling,1,123
+3,ef4aa96f008241fa99159521c84d83c8,Extract and reformat book data with year filter,1,133
+3,b1f46d481f904018a90aa5e4e78114b5,Correct grammar and remove gendered pronouns,1,90
+3,678027f5c96c4c048b1882171d0460fb,Count and sort word occurrences in text,1,136
+3,a36c18046b314c369240804f3ef826ba,Translate and refine multilingual text into polished English,1,95
+3,0fc698fb7679457791638503a91c1a2f,Evaluate movie reviews with ratings and release dates in JSON,1,131
+3,dc804ac87d424530b4595036250f39de,Analyze smartphone reviews and convert ratings to letter grades,1,138
+3,07f821ebc9174b68a52c00f55301063d,Explain and apply argument evaluation principles to business ads,1,157
+3,800c800bcff340ba9d60744854da7a3e,Explain base rate fallacy and plan political campaigns,1,156
+3,5e8c7a926546430f937fd5dc0b27409f,Write persuasive email and rephrase with metaphors,1,84
+3,d6539a3947574079958b5a56e38ca865,Draft and self-evaluate professional feedback request emails,1,82
+3,a355ede916724918a96c8ccaea6f3a5b,Explain race positions after overtaking specific runners,1,101
+3,3da19be258b44475980039e04de0d2b6,Calculate total cost and revenue with 25% markup,1,119
+3,c2a4f7722715412a8d262f26e8001154,Solve absolute value inequalities and count integer solutions,1,117
+3,05e810a4a8c14e0fb5b8d7a86947cb18,Create short rhyming poetic math proofs,1,99
+3,4dcd9f97df2d4a049227ea1e980b4232,Explain probability and geometry concepts clearly,1,97
+3,35065a901c1c49c4962ac1020c8f7da7,Solve bus passenger and ticket revenue math problems,1,115
+3,1ed1b1f0f7f54e3d96c4d2494d795a9a,Extract and rename variables in equations alphabetically,1,139
+3,7671e26add54428295d54633f86c7e20,Evaluate and solve cubic polynomial equations,1,120
+3,bbdfd331124f44e3a68b766a5836cb03,Express algebraic differences x-y and z-x in terms of other variables,1,116
+3,056e268eed2c4fefbdb52146576185c3,Analyze truth values of fruit price statements,1,106
+3,e56241cddbd2467ea7393093f759ed85,Calculate area of triangle and circumscribing circle,1,111
+3,4fb5c7faf5c94afc8152688a44c44534,Implement and optimize kth smallest element algorithms,1,129
+3,157ddf03d89c476ba75815b4b9bcebf5,Implement functions to count full binary and ternary trees,1,128
+3,fab95b799769417b949bd132ad40a05c,Implement Python programs to find common elements in arrays,1,130
+3,35bf7cf96cda47a6aeba3eab753a5091,Calculate and explain dice roll probabilities with errors,1,114
+3,720f5e2c1c4b42b5be61119a3876e33e,Calculate probabilities for students' color preferences,1,113
+3,08ef8ca9ef8c40019537398184e7dd4d,Solve modular arithmetic remainders for multiples of a number,1,118
+3,e06ef73f4d37478da77d0cfe06441466,Calculate startup software investments with halving pattern,1,112
+3,7aed2a82771e432ea754d1ae54f40c1f,Solve logic puzzle about executives' parking and secretary,1,105
+3,a2c26d501e0f4f88bcbda1089ba0dd7b,Explain reasons for healthy person’s daily hospital visits,1,103
+3,070026ce01774117bbe8aa5e6cbdec57,Provide pregnancy-safe remedies for abdominal pain with allergies,1,93
+3,332e3f583e2849f6968c6d45fde7c907,Help identify and verify bullying during recess,1,110
+3,c270afea49ec4282b13c3723bc898d14,Determine location of famous building from ambiguous clues,1,102
+3,8d47d6fa7add45cb895e9e4e439ccb1d,Extract and format country data in JSON and YAML,1,135
+3,2b9c790cfa7941ec909944aac027892c,Explain Alps and Rhine impacts and design validation experiment,1,150
+3,a059e747e8e741ec9735e9af8a05a1c1,Create Japanese business etiquette training script,1,159
+3,937dc6a867ff40d38d06c534f560cf31,"Create catchy, ethical renewable bio-energy headlines",1,89
+3,057ca350dd8745c4aea1fd845a12371b,Explain Socratic methods and debate AI in education,1,158
+3,0c954e82864c475dbe80c70c3b494210,Explain philosopher's methods and simulate AI debate,1,158
+3,d0abb77ac27f478db6a625bc44bb661c,Role-play as fictional superhero discussing AI assistants,1,98
+3,bb9e2ed904694c0697c76b66ce024f06,Explain shadow direction relative to person after sunrise,1,109
+3,03e4957f18a64e549f68806bc1710ecc,Explain life stages' impact on time and mortality with poem,1,152
+3,143602e403584546be5b4cefe2f40924,Generate interactive children's art experience plans with budgets,1,155
