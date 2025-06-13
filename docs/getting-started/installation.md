@@ -12,10 +12,31 @@ Kura has the following requirements:
 
 ## Installation
 
+### Basic Installation
+
 ```bash
-# Install using uv
+# Install using uv (includes JSONL checkpoint manager only)
 uv pip install kura
 ```
+
+### Optional Dependencies
+
+For advanced checkpoint managers that provide better compression and performance:
+
+```bash
+# Install with checkpoint support (HuggingFace Datasets and Parquet managers)
+uv pip install "kura[checkpoints]"
+
+# Install with all optional dependencies
+uv pip install "kura[all]"
+```
+
+**Available Optional Dependencies:**
+
+- **`checkpoints`**: Enables HuggingFace Datasets and Parquet checkpoint managers
+  - Includes: `datasets>=3.6.0`, `pyarrow>=10.0.0`
+  - Recommended for production use and large datasets (>5k conversations)
+- **`all`**: All optional dependencies combined
 
 ### Development Installation
 
@@ -49,9 +70,9 @@ export OPENAI_API_KEY=your_api_key_here
 set OPENAI_API_KEY=your_api_key_here
 ```
 
-## Installing Optional Dependencies
+## Installing Additional Development Dependencies
 
-Kura supports additional features with optional dependencies:
+For development work, you can install all development and documentation dependencies:
 
 ```bash
 uv sync --all-extras --group dev --group docs

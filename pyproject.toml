@@ -21,12 +21,22 @@ dependencies = [
     "thefuzz>=0.22.1",
     "typer>=0.9.0",
     "sqlmodel>=0.0.14",
-    "datasets>=3.6.0",
-    "pyarrow>=10.0.0",
     "diskcache>=5.6.3",
 ]
 
 
+
+[project.optional-dependencies]
+# Required for HuggingFace and Parquet checkpoint managers
+checkpoints = [
+    "datasets>=3.6.0",
+    "pyarrow>=10.0.0",
+]
+# All optional dependencies
+all = [
+    "datasets>=3.6.0", 
+    "pyarrow>=10.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]

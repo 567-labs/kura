@@ -56,9 +56,30 @@ Kura transforms unstructured conversation data into structured insights:
 
 ## Installation
 
+### Basic Installation
+
 ```bash
 uv pip install kura
 ```
+
+This installs Kura with basic functionality using the JSONL checkpoint manager (no external dependencies).
+
+### Optional Dependencies
+
+For advanced checkpoint managers that provide better compression and features:
+
+```bash
+# Install with checkpoint support (HuggingFace Datasets and Parquet)
+uv pip install "kura[checkpoints]"
+
+# Install with all optional dependencies
+uv pip install "kura[all]"
+```
+
+**Checkpoint Manager Dependencies:**
+- **JSONL**: No additional dependencies (included in basic install)
+- **Parquet**: Requires `pyarrow` (install with `kura[checkpoints]`)
+- **HuggingFace Datasets**: Requires `datasets` and `pyarrow` (install with `kura[checkpoints]`)
 
 ## When to Use Kura
 
@@ -396,6 +417,24 @@ Kura provides three checkpoint managers for different use cases:
 | **JSONLCheckpointManager**     | JSON Lines  | None              | Baseline    | Development, debugging, small datasets |
 | **ParquetCheckpointManager**   | Parquet     | PyArrow           | 50% smaller | Production workflows, analytics        |
 | **HFDatasetCheckpointManager** | HF Datasets | datasets, PyArrow | 7% smaller  | Large-scale ML, cloud workflows        |
+
+### Checkpoint Performance Benchmarks
+
+Real-world file size comparisons across different dataset sizes:
+
+| Dataset Size | HF Datasets | Parquet | JSONL |
+|-------------|-------------|---------|-------|
+| 100 conversations | 0.09 MB | 0.03 MB | 0.10 MB |
+| 1,000 conversations | 0.88 MB | 0.15 MB | 0.99 MB |
+| 5,000 conversations | 4.41 MB | 0.15 MB | 4.93 MB |
+| 10,000 conversations | 8.81 MB | 0.15 MB | 9.86 MB |
+| 100,000 conversations | 88.08 MB | 0.20 MB | 98.61 MB |
+
+**Key Insights:**
+- **Parquet** provides the best compression for large datasets (up to 99% space savings)
+- **JSONL** offers human-readable format with consistent file sizes
+- **HF Datasets** balances compression with advanced features like streaming and cloud sync
+- **Parquet** is recommended for production use with large datasets (>5k conversations)
 
 ### Checkpoint Performance (190 conversations)
 
