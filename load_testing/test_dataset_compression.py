@@ -4,12 +4,13 @@ from kura.checkpoints import (
     JSONLCheckpointManager,
 )
 import os
+import shutil
+import pandas as pd
 from kura.types.summarisation import ConversationSummary
 
 
 def test_dataset_compression(summaries: list[ConversationSummary]):
     checkpoint_dir = f"/Users/ivanleo/Documents/coding/kura/data/test/{len(summaries)}"
-    import shutil
 
     shutil.rmtree(checkpoint_dir, ignore_errors=True)
 
@@ -101,9 +102,6 @@ for size in test_sizes:
             summaries[: min(size - len(testing_summaries), len(summaries))]
         )
     results.append(test_dataset_compression(testing_summaries))
-
-
-import pandas as pd
 
 df = pd.DataFrame(results)
 df_new = pd.DataFrame()

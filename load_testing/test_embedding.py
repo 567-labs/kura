@@ -18,7 +18,14 @@ from kura.cluster import (
     ClusterDescriptionModel,
 )
 from kura.checkpoint import CheckpointManager
-import logfire
+
+# Optional logfire import for tracing (one-off script dependency)
+try:
+    import logfire
+    LOGFIRE_AVAILABLE = True
+except ImportError:
+    LOGFIRE_AVAILABLE = False
+    logfire = None
 
 
 class TimingManager:
@@ -48,12 +55,14 @@ class TimingManager:
         self.timings.clear()
 
 
-logfire.configure(
-    send_to_logfire=True,
-    token="pylf_v1_us_zqHtQw15s82x8b3dqsRvxP1md9Z1mpVMYC1jrRYqcGVf",
-    console=False,
-)
-logfire.instrument_openai()
+# Configure logfire if available
+if LOGFIRE_AVAILABLE:
+    logfire.configure(
+        send_to_logfire=True,
+        token="pylf_v1_us_zqHtQw15s82x8b3dqsRvxP1md9Z1mpVMYC1jrRYqcGVf",
+        console=False,
+    )
+    logfire.instrument_openai()
 
 # Configure logging
 logging.basicConfig(
@@ -116,15 +125,26 @@ async def load_test_clustering(
     # Run each step individually with timing
     try:
         with timing_manager.timer("embed_summaries"):
-            with logfire.span("embed_summaries"):
+            if LOGFIRE_AVAILABLE:
+                with logfire.span("embed_summaries"):
+                    embedded_items = await embed_summaries(test_summaries, embedding_model)
+            else:
                 embedded_items = await embed_summaries(test_summaries, embedding_model)
 
         with timing_manager.timer("cluster_embeddings"):
-            with logfire.span("cluster_embeddings"):
+            if LOGFIRE_AVAILABLE:
+                with logfire.span("cluster_embeddings"):
+                    clusters_id_to_summaries = clustering_method.cluster(embedded_items)
+            else:
                 clusters_id_to_summaries = clustering_method.cluster(embedded_items)
 
         with timing_manager.timer("generate_cluster_descriptions"):
-            with logfire.span("generate_cluster_descriptions"):
+            if LOGFIRE_AVAILABLE:
+                with logfire.span("generate_cluster_descriptions"):
+                    clusters = await clustering_model.generate_clusters(
+                        cluster_id_to_summaries=clusters_id_to_summaries,
+                    )
+            else:
                 clusters = await clustering_model.generate_clusters(
                     cluster_id_to_summaries=clusters_id_to_summaries,
                 )
@@ -212,7 +232,12 @@ async def main():
     all_results = []
 
     for config in test_configs:
-        with logfire.span(f"test_clustering_{config['summary_count']}"):
+        if LOGFIRE_AVAILABLE:
+            with logfire.span(f"test_clustering_{config['summary_count']}"):
+                logger.info(f"Running test: {config}")
+                result = await load_test_clustering(**config)
+                all_results.append(result)
+        else:
             logger.info(f"Running test: {config}")
             result = await load_test_clustering(**config)
             all_results.append(result)
