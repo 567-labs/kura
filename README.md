@@ -16,6 +16,7 @@ Kura is an open-source library for understanding chat data through machine learn
 ## The Hidden Cost of Not Understanding Your Users
 
 Every day, your AI assistant or chatbot has thousands of conversations. Within this data lies critical intelligence:
+
 - **80% of support tickets** might stem from the same 5 unclear features
 - **Key feature requests** repeated by hundreds of users in different ways
 - **Revenue opportunities** from unmet needs you didn't know existed
@@ -40,16 +41,19 @@ Kura transforms unstructured conversation data into structured insights:
 ## Real-World Impact
 
 ### E-commerce Support Bot
+
 **Challenge**: 50,000 weekly conversations, unknown pain points
 **Discovery**: 35% of conversations about shipping clustered into 3 issues
 **Result**: Fixed root causes, reduced support volume by 40%
 
 ### Developer Documentation Assistant
+
 **Challenge**: Users struggling but not reporting specific issues
 **Discovery**: 2,000+ conversations revealed 5 consistently confusing APIs
 **Result**: Targeted doc improvements, 60% reduction in those queries
 
 ### SaaS Onboarding Bot
+
 **Challenge**: 30% of trials not converting, unclear why
 **Discovery**: Clustering revealed 3 missing integration requests
 **Result**: Built integrations, trial conversion increased 18%
@@ -63,12 +67,14 @@ uv pip install kura
 ## When to Use Kura
 
 **Kura is perfect when you have:**
+
 - 100+ conversations to analyze (scales to millions)
 - A need to understand user patterns, not individual conversations
 - Unstructured conversation data from chatbots, support systems, or AI assistants
 - Questions like "What are users struggling with?" or "What features are they requesting?"
 
 **Kura might not be the best fit if:**
+
 - You have fewer than 100 conversations (manual review might be faster)
 - You need real-time analysis (Kura is designed for batch processing)
 - You only need keyword-based search (use traditional search tools instead)
@@ -77,21 +83,25 @@ uv pip install kura
 ## Common Use Cases
 
 ### Product Teams
+
 - **Feature Discovery**: Find the features users ask for in their own words
 - **Pain Point Analysis**: Identify friction in user journeys
 - **Roadmap Prioritization**: Quantify impact of potential improvements
 
 ### Customer Success
+
 - **Support Deflection**: Find common issues to create better docs/FAQs
 - **Escalation Patterns**: Identify conversations that lead to churn
 - **Success Patterns**: Discover what makes users successful
 
 ### AI/ML Teams
+
 - **Prompt Engineering**: Find where prompts fail or confuse users
 - **Model Evaluation**: Understand model performance beyond metrics
 - **Training Data**: Identify gaps in model knowledge
 
 ### Analytics Teams
+
 - **Behavioral Insights**: Understand user segments by conversation patterns
 - **Trend Analysis**: Track how user needs evolve over time
 - **ROI Measurement**: Connect conversation patterns to business outcomes
@@ -108,19 +118,15 @@ from kura import (
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
+    visualise_pipeline_results,
 )
-from kura.checkpoints import (
-    HFDatasetCheckpointManager,
-    JSONLCheckpointManager,
-    ParquetCheckpointManager,
-)
-from kura.v1.visualization import visualise_pipeline_results
+from kura.checkpoints import JSONLCheckpointManager
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
-from kura.k_means import MiniBatchKmeansClusteringMethod
-from kura.cluster import ClusterModel
+from kura.cluster import ClusterDescriptionModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
+
 
 async def main():
     # Initialize models
@@ -129,79 +135,44 @@ async def main():
     # SummaryModel now supports caching to speed up re-runs!
     summary_model = SummaryModel(
         console=console,
-        max_concurrent_requests=100,
-        enable_caching=True,  # NEW: Cache summaries to disk
-        cache_dir="./.summary_cache"  # Optional: specify cache location
-    )
-
-    # Use MiniBatch K-means for better performance with large datasets
-    minibatch_kmeans_clustering = MiniBatchKmeansClusteringMethod(
-        clusters_per_group=10,  # Target items per cluster
-        batch_size=1000,  # Mini-batch size for processing
-        max_iter=100,  # Maximum iterations
-        random_state=42,  # Random seed for reproducibility
+        cache_dir="./.summary_cache",  # Optional: specify cache location
     )
 
     cluster_model = ClusterDescriptionModel(
         console=console,
     )
-    meta_cluster_model = MetaClusterModel(console=console, max_concurrent_requests=100)
+    meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
     # Set up checkpointing - you can choose from multiple backends
     # HuggingFace Datasets (advanced features, cloud sync)
-    checkpoint_manager = HFDatasetCheckpointManager("./checkpoints", enabled=True)
-
-    # Alternative checkpoint managers:
-    # checkpoint_manager = ParquetCheckpointManager("./checkpoints", enabled=True)  # 50% smaller files
-    # checkpoint_manager = JSONLCheckpointManager("./checkpoints", enabled=True)    # Human-readable
+    checkpoint_manager = JSONLCheckpointManager("./checkpoints/hf", enabled=True)
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
-        "ivanleomk/synthetic-gemini-conversations",
-        split="train"
+        "ivanleomk/synthetic-gemini-conversations", split="train"
     )
-
-    # Process through the pipeline step by step
-    print("Step 1: Generating conversation summaries...")
     summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_manager
+        conversations, model=summary_model, checkpoint_manager=checkpoint_manager
     )
-    print(f"Generated {len(summaries)} summaries")
-
-    print("Step 2: Generating base clusters from summaries...")
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        clustering_method=minibatch_kmeans_clustering,
-        checkpoint_manager=checkpoint_manager
+        checkpoint_manager=checkpoint_manager,
     )
-    print(f"Generated {len(clusters)} base clusters")
-
-    print("Step 3: Reducing clusters hierarchically...")
     reduced_clusters = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_manager
+        clusters, checkpoint_manager=checkpoint_manager, model=meta_cluster_model
     )
-    print(f"Reduced to {len(reduced_clusters)} meta clusters")
 
-    print("Step 4: Projecting clusters to 2D for visualization...")
     projected_clusters = await reduce_dimensionality_from_clusters(
         reduced_clusters,
         model=dimensionality_model,
         checkpoint_manager=checkpoint_manager,
     )
-    print(f"Generated {len(projected_clusters)} projected clusters")
 
     # Visualize results
-    visualise_pipeline_results(reduced_clusters, style="enhanced")
+    visualise_pipeline_results(projected_clusters, style="enhanced")
 
-    print(f"\nProcessed {len(conversations)} conversations")
-    print(f"Created {len(reduced_clusters)} meta clusters")
-    print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -218,20 +189,6 @@ if __name__ == "__main__":
 ### Expected Output
 
 ```text
-Step 1: Generating conversation summaries...
-   Generated 190 summaries in 8.5s (using cache: 0.1s on re-runs!)
-
-Step 2: Generating base clusters from summaries...
-   Generated 19 base clusters in 6.8s
-
-Step 3: Reducing clusters hierarchically...
-   Reduced to 10 meta clusters in 4.3s
-
-Step 4: Projecting clusters to 2D for visualization...
-   Generated 10 projected clusters in 2.3s
-
-Cluster Visualization:
-
 Programming Assistance (190 conversations)
 ├── Data Analysis & Visualization (38 conversations)
 │   ├── R Programming for statistical analysis (12 conversations)
@@ -255,6 +212,7 @@ Checkpoints saved to: ./checkpoints/
 ### For Large Datasets (10k+ conversations)
 
 1. **Use MiniBatch K-means clustering**:
+
 ```python
 from kura.k_means import MiniBatchKmeansClusteringMethod
 
@@ -266,6 +224,7 @@ clustering = MiniBatchKmeansClusteringMethod(
 ```
 
 2. **Enable streaming with HuggingFace checkpoints**:
+
 ```python
 checkpoint_mgr = HFDatasetCheckpointManager(
     "./checkpoints",
@@ -275,23 +234,23 @@ checkpoint_mgr = HFDatasetCheckpointManager(
 ```
 
 3. **Optimize API concurrency**:
+
 ```python
 # Find the sweet spot for your API limits
 summary_model = SummaryModel(
-    max_concurrent_requests=50,  # Default is 100
-    enable_caching=True
+    max_concurrent_requests=50,
 )
 ```
 
 ### Speed Optimization Tips
 
-| Optimization | Impact | When to Use |
-|-------------|--------|-------------|
-| Enable caching | 85x faster re-runs | Development, iteration |
-| MiniBatch clustering | 3-5x faster | Datasets > 5k conversations |
-| Reduce max_clusters | 2x faster meta-clustering | When fewer top-level groups acceptable |
-| Use local models | No API latency | When quality tradeoff acceptable |
-| Parallel checkpoints | 40% faster I/O | Always (enabled by default) |
+| Optimization         | Impact                    | When to Use                            |
+| -------------------- | ------------------------- | -------------------------------------- |
+| Enable caching       | 85x faster re-runs        | Development, iteration                 |
+| MiniBatch clustering | 3-5x faster               | Datasets > 5k conversations            |
+| Reduce max_clusters  | 2x faster meta-clustering | When fewer top-level groups acceptable |
+| Use local models     | No API latency            | When quality tradeoff acceptable       |
+| Parallel checkpoints | 40% faster I/O            | Always (enabled by default)            |
 
 ### Memory Optimization
 
@@ -319,6 +278,7 @@ async def process_large_dataset(conversations, batch_size=1000):
 ### Cost Optimization
 
 1. **Use cheaper models for initial exploration**:
+
 ```python
 # Start with GPT-3.5 for exploration
 exploration_model = SummaryModel(model="gpt-3.5-turbo")
@@ -328,6 +288,7 @@ production_model = SummaryModel(model="gpt-4")
 ```
 
 2. **Cache aggressively during development**:
+
 ```python
 summary_model = SummaryModel(
     enable_caching=True,
@@ -354,6 +315,7 @@ summary_model = SummaryModel(
 ```
 
 **Benefits:**
+
 - 85x faster on cached runs
 - Persistent across sessions
 - Content-based cache keys
@@ -505,23 +467,30 @@ This will:
 ### Common Issues & Solutions
 
 #### "Rate limit exceeded" errors
+
 **Problem**: Getting rate limit errors from OpenAI/Anthropic
 **Solution**: Reduce concurrent requests:
+
 ```python
 summary_model = SummaryModel(max_concurrent_requests=10)  # Lower from default 100
 ```
 
 #### Out of memory with large datasets
+
 **Problem**: Memory errors when processing 10k+ conversations
 **Solutions**:
+
 1. Use HuggingFace checkpoint manager for streaming:
+
 ```python
 checkpoint_mgr = HFDatasetCheckpointManager(
     "./checkpoints",
     streaming=True  # Enable streaming mode
 )
 ```
+
 2. Process in batches:
+
 ```python
 # Process conversations in chunks
 for i in range(0, len(conversations), 1000):
@@ -530,8 +499,10 @@ for i in range(0, len(conversations), 1000):
 ```
 
 #### "No module named 'instructor'" error
+
 **Problem**: Missing required dependencies
 **Solution**: Install with all dependencies:
+
 ```bash
 uv pip install kura[all]
 # or
@@ -539,25 +510,32 @@ pip install kura[all]
 ```
 
 #### Clusters seem random or poor quality
+
 **Problem**: Clusters don't make semantic sense
 **Solutions**:
+
 1. Ensure sufficient data (100+ conversations minimum)
 2. Adjust clustering parameters:
+
 ```python
 clustering = MiniBatchKmeansClusteringMethod(
     clusters_per_group=5,  # Fewer items per cluster for better cohesion
     random_state=42  # Set seed for reproducibility
 )
 ```
+
 3. Try different embedding models:
+
 ```python
 from kura.embedding import OpenAIEmbeddingModel
 embedding_model = OpenAIEmbeddingModel(model="text-embedding-3-large")
 ```
 
 #### Cache not working
+
 **Problem**: Summaries regenerating despite cache enabled
 **Solution**: Check cache directory permissions:
+
 ```python
 import os
 cache_dir = "./.summary_cache"
@@ -566,14 +544,19 @@ os.makedirs(cache_dir, exist_ok=True)
 ```
 
 #### "Connection refused" for web UI
+
 **Problem**: Can't access web interface
 **Solutions**:
+
 1. Check if another process is using port 8000:
+
 ```bash
 lsof -i :8000  # macOS/Linux
 netstat -ano | findstr :8000  # Windows
 ```
+
 2. Use a different port:
+
 ```bash
 kura start-app --port 8080
 ```
@@ -584,6 +567,7 @@ kura start-app --port 8080
 2. **Join discussions**: [GitHub Discussions](https://github.com/567-labs/kura/discussions)
 3. **Read the docs**: [Full Documentation](https://567-labs.github.io/kura/)
 4. **Debug mode**: Set environment variable for verbose logging:
+
 ```bash
 export KURA_LOG_LEVEL=DEBUG
 ```
