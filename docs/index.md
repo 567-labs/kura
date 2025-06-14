@@ -24,17 +24,37 @@ Every day, your AI assistant or chatbot has thousands of conversations. Within t
 
 ### What Kura Does
 
-Kura transforms unstructured conversation data into structured insights:
+!!! note "Kura transforms chaos into clarity"
 
-```
-10,000 conversations → AI Analysis → 20 clear patterns
-```
+    Imagine having 10,000 scattered conversations and ending up with 20 crystal-clear patterns that tell you exactly what your users need.
 
-- **Intent Discovery**: Find what users actually want
-- **Failure Detection**: Identify AI shortcomings early
-- **Feature Prioritization**: See which missing features matter most
-- **Semantic Clustering**: Group by meaning, not keywords
-- **Privacy-First**: Analyze patterns without exposing conversations
+Kura processes your conversation data through a sophisticated four-stage pipeline:
+
+#### **Summarization**
+
+Extract core intent from each conversation. Works with any conversation length - from quick questions to complex multi-turn dialogues. Uses AI to distill the essence while preserving critical context and user intent.
+
+Transforms: _"I've been trying to cancel my subscription for 30 minutes and the button doesn't work and I'm really frustrated..."_ **→** _"Cancel subscription"_
+
+#### **Semantic Clustering**
+
+Group by meaning, not keywords. The AI understands synonyms, context, and user intent across different phrasings and languages.
+
+Transforms: _"cancel subscription"_, _"stop my account"_, _"end my service"_, _"how do I delete my profile?"_, _"terminate my membership"_ **→** _Single cluster: "Account Cancellation"_
+
+#### **Meta-Clustering**
+
+Build hierarchy of insights. Creates multiple levels of organization: individual issues → feature categories → business themes.
+
+Transforms: _"Account Cancellation"_, _"Login Problems"_, _"Password Resets"_ **→** _"Account Management Issues" (40% of support load)_
+
+#### **Dimensionality Reduction**
+
+Create interactive exploration maps. See clusters as bubbles on a 2D map where proximity indicates similarity. Discover edge cases, identify emerging trends, and spot conversations that don't fit existing patterns.
+
+Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visualization map_
+
+**The result?** Instead of drowning in individual conversations, you get a clear picture of what's actually happening across your entire user base.
 
 ## Key Features
 
