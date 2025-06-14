@@ -165,7 +165,7 @@ Performance: 21.9s first run → 2.1s with cache (10x faster!)
 
 **Quickstart**: [Jump right in](getting-started/quickstart.md) with a complete example that processes conversations from raw data to insights in minutes.
 
-**Complete Workflow**: [See how a full analysis looks](notebooks/how-to-look-at-data.md) from loading data to interpreting clusters and extracting actionable insights.
+**Complete Workflow**: [See how a full analysis looks](./getting-started/tutorial.md) from loading data to interpreting clusters and extracting actionable insights.
 
 **Core Concepts**: Learn how Kura works under the hood - from [conversation loading](core-concepts/conversations.md) and [embedding](core-concepts/embedding.md) to [clustering](core-concepts/clustering.md), [summarization](core-concepts/summarization.md), [meta-clustering](core-concepts/meta-clustering.md), and [dimensionality reduction](core-concepts/dimensionality-reduction.md).
 
