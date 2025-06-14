@@ -14,6 +14,12 @@ from .meta_cluster import MetaClusterModel
 from .types import Conversation
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
 from .hdbscan import HDBSCANClusteringMethod
+from .v1.visualization import (
+    visualise_pipeline_results,
+    visualise_clusters_rich,
+    visualise_clusters_enhanced,
+    visualise_clusters,
+)
 
 # Import ParquetCheckpointManager from checkpoints module if available
 try:
@@ -48,6 +54,11 @@ __all__ = [
     "generate_base_clusters_from_conversation_summaries",
     "reduce_clusters_from_base_clusters",
     "reduce_dimensionality_from_clusters",
+    # Visualisation
+    "visualise_pipeline_results",
+    "visualise_clusters_rich",
+    "visualise_clusters_enhanced",
+    "visualise_clusters",
 ]
 
 # Add ParquetCheckpointManager to __all__ if available
