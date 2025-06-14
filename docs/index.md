@@ -187,87 +187,27 @@ clustering = MiniBatchKmeansClusteringMethod(
 
 ## Documentation
 
-### Getting Started
+**Installation**: [Get started](getting-started/installation.md) with Kura today. Install via pip or uv and configure your first analysis pipeline.
 
-- [Installation Guide](getting-started/installation.md)
-- [Quickstart](getting-started/quickstart.md)
+**Quickstart**: [Jump right in](getting-started/quickstart.md) with a complete example that processes conversations from raw data to insights in minutes.
 
-### Core Concepts
+**Complete Workflow**: [See how a full analysis looks](notebooks/how-to-look-at-data.md) from loading data to interpreting clusters and extracting actionable insights.
 
-- [Conversations](core-concepts/conversations.md)
-- [Embedding](core-concepts/embedding.md)
-- [Clustering](core-concepts/clustering.md)
-- [Summarization](core-concepts/summarization.md)
-- [Meta-Clustering](core-concepts/meta-clustering.md)
-- [Dimensionality Reduction](core-concepts/dimensionality-reduction.md)
+**Core Concepts**: Learn how Kura works under the hood - from [conversation loading](core-concepts/conversations.md) and [embedding](core-concepts/embedding.md) to [clustering](core-concepts/clustering.md), [summarization](core-concepts/summarization.md), [meta-clustering](core-concepts/meta-clustering.md), and [dimensionality reduction](core-concepts/dimensionality-reduction.md).
 
-### API Reference
-
-- [Procedural API Documentation](api/index.md)
+**API Reference**: [Complete documentation](api/index.md) of Kura's procedural API with examples and best practices.
 
 ## Frequently Asked Questions
 
-### How is Kura different from traditional analytics?
+1. **Can Kura work with my data and models?** Yes! Kura supports any conversation format (JSON, CSV, databases) and works with OpenAI, Anthropic, local models, or custom implementations.
 
-Traditional analytics focus on metrics (counts, rates, averages). Kura understands **meaning** - it knows that "How do I cancel?" and "I want to stop my subscription" are the same intent, even though they share no keywords.
+2. **How much data do I need?** Start with 100+ conversations for basic patterns, 1,000+ for robust clustering, or 10,000+ for detailed insights.
 
-### Can I use my own models?
+3. **Is my data secure?** Absolutely. Run Kura entirely on your infrastructure, use local models for complete isolation, and analyze patterns without exposing individual conversations.
 
-Yes! Kura is model-agnostic. You can use:
+4. **What languages does Kura support?** Any language supported by your chosen model - from English to 90+ languages with models like GPT-4.
 
-- **OpenAI**: GPT-3.5, GPT-4
-- **Anthropic**: Claude models
-- **Local models**: Via Ollama, vLLM, or HuggingFace
-- **Custom implementations**: Extend base classes
-
-### How much data do I need?
-
-- **Minimum**: 100 conversations for meaningful patterns
-- **Recommended**: 1,000+ conversations for robust clustering
-- **Optimal**: 10,000+ conversations for detailed insights
-
-### Is my data secure?
-
-- **Self-hosted option**: Run entirely on your infrastructure
-- **No data retention**: API providers don't store your conversations
-- **Privacy-first**: Analyze patterns without exposing individual chats
-- **Configurable**: Use local models for complete data isolation
-
-### What's the typical workflow?
-
-1. **Export** conversations from your platform
-2. **Load** into Kura using appropriate loader
-3. **Process** through the pipeline (summarize → cluster → visualize)
-4. **Analyze** results in web UI or export findings
-5. **Act** on insights to improve your product
-
-### How do I handle non-English conversations?
-
-Kura works with any language supported by your chosen model:
-
-```python
-# Use a multilingual model
-summary_model = SummaryModel(
-    model="gpt-4",  # Supports 90+ languages
-    custom_instructions="Respond in the same language as the input"
-)
-```
-
-### Can I integrate Kura into my application?
-
-Yes! Kura is designed as a library:
-
-```python
-# Use in your async application
-from kura import summarise_conversations
-
-async def analyze_user_feedback(conversations):
-    summaries = await summarise_conversations(
-        conversations,
-        model=summary_model
-    )
-    return summaries
-```
+5. **Can I integrate Kura into my application?** Yes, Kura is designed as a library for seamless integration into your existing async applications.
 
 ## About
 
