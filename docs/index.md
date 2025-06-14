@@ -22,13 +22,30 @@ Every day, your AI assistant or chatbot has thousands of conversations. Within t
 - **Revenue opportunities** from unmet needs
 - **Critical failures** affecting user trust
 
+Make sense of that data with Kura today
+
+```bash
+# Install from PyPI
+pip install kura
+
+# Or use uv for faster installation
+uv pip install kura
+```
+
 ### What Kura Does
 
 !!! note "Kura transforms chaos into clarity"
 
-    Imagine having 10,000 scattered conversations and ending up with 20 crystal-clear patterns that tell you exactly what your users need.
+    Imagine having 10,000 scattered conversations and ending up with 20 crystal-clear patterns that tell you exactly what your users need. That's what Kura does.
 
-Kura processes your conversation data through a sophisticated four-stage pipeline:
+Kura is built for scale and flexibility, processing your conversation data through a sophisticated four-stage pipeline.
+
+1. **Smart caching** makes re-runs 85x faster
+2. **Checkpointing system** never loses progress
+3. **Parallel processing** handles thousands of conversations,
+4. **Extensible design** works with any model (OpenAI, Anthropic, local)
+
+We also provide a web-ui that ships with the package to visualise the different clusters that we've extracted.
 
 #### **Summarization**
 
@@ -55,26 +72,6 @@ Create interactive exploration maps. See clusters as bubbles on a 2D map where p
 Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visualization map_
 
 **The result?** Instead of drowning in individual conversations, you get a clear picture of what's actually happening across your entire user base.
-
-## Key Features
-
-- **Smart Summarization**: Convert conversations to task descriptions (with caching!)
-- **Hierarchical Clustering**: Multi-level grouping
-- **Metadata Extraction**: Language, sentiment, topics
-- **Fully Extensible**: Bring your own models
-- **Checkpoint System**: Never lose progress
-- **Performance Optimized**: MiniBatch clustering, parallel processing
-- **Web UI**: Interactive cluster visualization
-
-## Installation
-
-```bash
-# Install from PyPI
-pip install kura
-
-# Or use uv for faster installation
-uv pip install kura
-```
 
 ## Quick Start
 
@@ -160,49 +157,6 @@ Programming Assistance Clusters (190 conversations)
 └── ... (more clusters)
 
 Performance: 21.9s first run → 2.1s with cache (10x faster!)
-```
-
-## Performance Features
-
-### Smart Caching (New in v0.3.0+)
-
-Kura now includes intelligent caching for expensive operations:
-
-```python
-# Enable caching for 85x faster development iterations
-summary_model = SummaryModel(
-    enable_caching=True,
-    cache_dir="./.kura_cache",
-    cache_ttl_days=7,  # Auto-expire old entries
-)
-
-# Cache automatically handles:
-# - Content-based deduplication
-# - Thread-safe operations
-# - Automatic cleanup
-# - Cross-session persistence
-```
-
-### Parallel Processing
-
-```python
-# Process multiple conversations simultaneously
-summary_model = SummaryModel(
-    max_concurrent_requests=100,  # Parallel API calls
-    enable_caching=True,
-)
-```
-
-### MiniBatch Clustering
-
-```python
-# Handle large datasets efficiently
-from kura.k_means import MiniBatchKmeansClusteringMethod
-
-clustering = MiniBatchKmeansClusteringMethod(
-    batch_size=1000,  # Process in chunks
-    clusters_per_group=10,
-)
 ```
 
 ## Documentation
