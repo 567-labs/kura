@@ -191,7 +191,9 @@ claude_summaries = await summarise_conversations(conversations, model=claude_mod
 **Cache behavior with custom prompts:**
 
 ```python
-model = SummaryModel(cache_dir="./cache")
+from kura.cache import DiskCacheStrategy
+
+model = SummaryModel(cache=DiskCacheStrategy("./cache"))
 
 # Different prompts create separate cache entries
 summaries_default = await model.summarise(
@@ -214,13 +216,14 @@ The cache is managed automatically, but you can control the cache directory loca
 ```python
 import os
 from kura.summarisation import SummaryModel
+from kura.cache import DiskCacheStrategy
 
 # Use environment variable for cache location
 cache_dir = os.getenv("KURA_CACHE_DIR", "./default_cache")
-model = SummaryModel(cache_dir=cache_dir)
+model = SummaryModel(cache=DiskCacheStrategy(cache_dir))
 
 # Or use project-specific cache directories
-model = SummaryModel(cache_dir=f"./cache/{project_name}/summaries")
+model = SummaryModel(cache=DiskCacheStrategy(f"./cache/{project_name}/summaries"))
 ```
 
 **Cache size considerations:** The cache grows with unique conversations. Each cached summary includes the full `ConversationSummary` object. Monitor cache directory size for large-scale deployments.

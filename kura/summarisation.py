@@ -9,7 +9,7 @@ from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
-from kura.cache import CacheStrategy, DiskCacheStrategy
+from kura.cache import CacheStrategy
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
@@ -101,8 +101,7 @@ class SummaryModel(BaseSummaryModel):
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries",
         console: Optional[Console] = None,
-        cache_strategy: Optional[CacheStrategy] = None,
-        cache_dir: Optional[str] = None,
+        cache: Optional[CacheStrategy] = None,
     ):
         """
         Initialize SummaryModel with core configuration.
@@ -112,8 +111,7 @@ class SummaryModel(BaseSummaryModel):
         Args:
             model: model identifier (e.g., "openai/gpt-4o-mini")
             max_concurrent_requests: Maximum concurrent API requests
-            cache_strategy: Caching strategy to use (optional)
-            cache_dir: Directory for disk cache storage (optional, creates DiskCacheStrategy if provided)
+            cache: Caching strategy to use (optional)
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
@@ -121,12 +119,7 @@ class SummaryModel(BaseSummaryModel):
         self.console = console
         
         # Initialize cache
-        if cache_strategy is not None:
-            self.cache = cache_strategy
-        elif cache_dir is not None:
-            self.cache = DiskCacheStrategy(cache_dir)
-        else:
-            self.cache = None
+        self.cache = cache
 
         cache_info = type(self.cache).__name__ if self.cache else "None"
         logger.info(
