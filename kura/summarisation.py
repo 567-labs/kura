@@ -9,7 +9,7 @@ from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
-from kura.cache import CacheStrategy, DiskCacheStrategy, NoCacheStrategy
+from kura.cache import CacheStrategy, DiskCacheStrategy
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
@@ -120,17 +120,17 @@ class SummaryModel(BaseSummaryModel):
         self._checkpoint_filename = checkpoint_filename
         self.console = console
         
-        # Initialize cache strategy
+        # Initialize cache
         if cache_strategy is not None:
-            self.cache_strategy = cache_strategy
+            self.cache = cache_strategy
         elif cache_dir is not None:
-            self.cache_strategy = DiskCacheStrategy(cache_dir)
+            self.cache = DiskCacheStrategy(cache_dir)
         else:
-            self.cache_strategy = NoCacheStrategy()
+            self.cache = None
 
-        cache_info = type(self.cache_strategy).__name__
+        cache_info = type(self.cache).__name__ if self.cache else "None"
         logger.info(
-            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, cache_strategy={cache_info}"
+            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, cache={cache_info}"
         )
 
     @property
@@ -266,11 +266,12 @@ class SummaryModel(BaseSummaryModel):
         )
 
         # Check cache first
-        cache_key = self._get_cache_key(conversation, response_schema, prompt, temperature, **kwargs)
-        cached_result = self.cache_strategy.get(cache_key)
-        if cached_result is not None:
-            logger.debug(f"Found cached summary for conversation {conversation.chat_id}")
-            return cached_result
+        if self.cache:
+            cache_key = self._get_cache_key(conversation, response_schema, prompt, temperature, **kwargs)
+            cached_result = self.cache.get(cache_key)
+            if cached_result is not None:
+                logger.debug(f"Found cached summary for conversation {conversation.chat_id}")
+                return cached_result
 
         async with self.semaphore:  # type: ignore
             try:
@@ -333,8 +334,9 @@ class SummaryModel(BaseSummaryModel):
         )
         
         # Cache the result
-        self.cache_strategy.set(cache_key, result)
-        logger.debug(f"Cached summary for conversation {conversation.chat_id}")
+        if self.cache:
+            self.cache.set(cache_key, result)
+            logger.debug(f"Cached summary for conversation {conversation.chat_id}")
         
         return result
 
