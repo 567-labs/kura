@@ -68,41 +68,28 @@ class BaseEmbeddingModel(ABC):
         if self.cache is None:
             return await embed_fn(texts)
 
-        # Check cache for each text
-        cached_embeddings = {}
+        # Find uncached texts
         uncached_texts = []
-
-        for i, text in enumerate(texts):
+        for text in texts:
             cache_key = self._get_cache_key(text, **cache_kwargs)
-            cached_embedding = self.cache.get(cache_key)
-            if cached_embedding is not None:
-                cached_embeddings[i] = cached_embedding
-                logger.debug(f"Found cached embedding for text at index {i}")
-            else:
+            if self.cache.get(cache_key) is None:
                 uncached_texts.append(text)
 
-        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
+        logger.info(f"Found {len(texts) - len(uncached_texts)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
 
-        # Generate embeddings for uncached texts
-        new_embeddings = []
+        # Embed and cache uncached texts
         if uncached_texts:
             new_embeddings = await embed_fn(uncached_texts)
-            
-            # Cache the new embeddings
             for text, embedding in zip(uncached_texts, new_embeddings):
                 cache_key = self._get_cache_key(text, **cache_kwargs)
                 self.cache.set(cache_key, embedding)
                 logger.debug(f"Cached embedding for text: {text[:50]}...")
 
-        # Combine cached and new embeddings in original order
+        # Return all embeddings from cache in original order
         result = []
-        new_embedding_idx = 0
-        for i in range(len(texts)):
-            if i in cached_embeddings:
-                result.append(cached_embeddings[i])
-            else:
-                result.append(new_embeddings[new_embedding_idx])
-                new_embedding_idx += 1
+        for text in texts:
+            cache_key = self._get_cache_key(text, **cache_kwargs)
+            result.append(self.cache.get(cache_key))
 
         logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
         return result
