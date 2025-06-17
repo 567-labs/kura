@@ -87,56 +87,8 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
                 raise
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            logger.debug("Empty text list provided, returning empty embeddings")
-            return []
-
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
-
-        # If caching is disabled, use original implementation
-        if self.cache is None:
-            return await self._embed_without_cache(texts)
-
-        # Check cache for each text
-        cached_embeddings = {}
-        uncached_texts = []
-        uncached_indices = []
-
-        for i, text in enumerate(texts):
-            cache_key = self._get_cache_key(text)
-            cached_embedding = self.cache.get(cache_key)
-            if cached_embedding is not None:
-                cached_embeddings[i] = cached_embedding
-                logger.debug(f"Found cached embedding for text at index {i}")
-            else:
-                uncached_texts.append(text)
-                uncached_indices.append(i)
-
-        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
-
-        # Generate embeddings for uncached texts
-        new_embeddings = []
-        if uncached_texts:
-            new_embeddings = await self._embed_without_cache(uncached_texts)
-            
-            # Cache the new embeddings
-            for text, embedding in zip(uncached_texts, new_embeddings):
-                cache_key = self._get_cache_key(text)
-                self.cache.set(cache_key, embedding)
-                logger.debug(f"Cached embedding for text: {text[:50]}...")
-
-        # Combine cached and new embeddings in original order
-        result = []
-        new_embedding_idx = 0
-        for i in range(len(texts)):
-            if i in cached_embeddings:
-                result.append(cached_embeddings[i])
-            else:
-                result.append(new_embeddings[new_embedding_idx])
-                new_embedding_idx += 1
-
-        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
-        return result
+        return await self._embed_with_cache(texts, self._embed_without_cache)
 
     async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
         """Original embedding implementation without caching."""
@@ -191,56 +143,8 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
 
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(3))
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            logger.debug("Empty text list provided, returning empty embeddings")
-            return []
-
         logger.info(f"Starting embedding of {len(texts)} texts using SentenceTransformer")
-
-        # If caching is disabled, use original implementation
-        if self.cache is None:
-            return await self._embed_without_cache(texts)
-
-        # Check cache for each text
-        cached_embeddings = {}
-        uncached_texts = []
-        uncached_indices = []
-
-        for i, text in enumerate(texts):
-            cache_key = self._get_cache_key(text)
-            cached_embedding = self.cache.get(cache_key)
-            if cached_embedding is not None:
-                cached_embeddings[i] = cached_embedding
-                logger.debug(f"Found cached embedding for text at index {i}")
-            else:
-                uncached_texts.append(text)
-                uncached_indices.append(i)
-
-        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
-
-        # Generate embeddings for uncached texts
-        new_embeddings = []
-        if uncached_texts:
-            new_embeddings = await self._embed_without_cache(uncached_texts)
-            
-            # Cache the new embeddings
-            for text, embedding in zip(uncached_texts, new_embeddings):
-                cache_key = self._get_cache_key(text)
-                self.cache.set(cache_key, embedding)
-                logger.debug(f"Cached embedding for text: {text[:50]}...")
-
-        # Combine cached and new embeddings in original order
-        result = []
-        new_embedding_idx = 0
-        for i in range(len(texts)):
-            if i in cached_embeddings:
-                result.append(cached_embeddings[i])
-            else:
-                result.append(new_embeddings[new_embedding_idx])
-                new_embedding_idx += 1
-
-        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
-        return result
+        return await self._embed_with_cache(texts, self._embed_without_cache)
 
     async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
         """Original embedding implementation without caching."""
@@ -320,56 +224,12 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
                 raise
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            logger.debug("Empty text list provided, returning empty embeddings")
-            return []
-
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
-
-        # If caching is disabled, use original implementation
-        if self.cache is None:
-            return await self._embed_without_cache(texts)
-
-        # Check cache for each text
-        cached_embeddings = {}
-        uncached_texts = []
-        uncached_indices = []
-
-        for i, text in enumerate(texts):
-            cache_key = self._get_cache_key(text, input_type=self.input_type)
-            cached_embedding = self.cache.get(cache_key)
-            if cached_embedding is not None:
-                cached_embeddings[i] = cached_embedding
-                logger.debug(f"Found cached embedding for text at index {i}")
-            else:
-                uncached_texts.append(text)
-                uncached_indices.append(i)
-
-        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
-
-        # Generate embeddings for uncached texts
-        new_embeddings = []
-        if uncached_texts:
-            new_embeddings = await self._embed_without_cache(uncached_texts)
-            
-            # Cache the new embeddings
-            for text, embedding in zip(uncached_texts, new_embeddings):
-                cache_key = self._get_cache_key(text, input_type=self.input_type)
-                self.cache.set(cache_key, embedding)
-                logger.debug(f"Cached embedding for text: {text[:50]}...")
-
-        # Combine cached and new embeddings in original order
-        result = []
-        new_embedding_idx = 0
-        for i in range(len(texts)):
-            if i in cached_embeddings:
-                result.append(cached_embeddings[i])
-            else:
-                result.append(new_embeddings[new_embedding_idx])
-                new_embedding_idx += 1
-
-        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
-        return result
+        return await self._embed_with_cache(
+            texts, 
+            self._embed_without_cache, 
+            cache_key_kwargs={"input_type": self.input_type}
+        )
 
     async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
         """Original embedding implementation without caching."""
