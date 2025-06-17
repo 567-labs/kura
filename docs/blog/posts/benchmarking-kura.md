@@ -55,11 +55,11 @@ Understanding where computational resources are allocated is crucial for optimiz
 
 | Model            | Dataset Size | Input Tokens | Output Tokens | Summarisation | Other Steps | **Total** |
 | ---------------- | ------------ | ------------ | ------------- | ------------- | ----------- | --------- |
-| **GPT-4o-mini**  | 500          | 1,809,783    | 132,094       | 0.14          | 0.03        | **0.17**  |
-|                  | 1000         | 11,084,725   | 655,724       | 0.27          | 0.05        | **0.32**  |
-|                  | 6000         | 11,458,713   | 806,215       | 1.69          | 0.36        | **2.05**  |
-| **GPT-4.1-mini** | 500          | 1,809,783    | 132,094       | 0.50          | 0.00        | **0.50**  |
-|                  | 1000         | 11,084,725   | 655,724       | 0.75          | 0.18        | **0.93**  |
+| **GPT-4o-mini**  | 500          | 925,573      | 53,073        | 0.14          | 0.03        | **0.17**  |
+|                  | 1000         | 1,748,032    | 104,218       | 0.27          | 0.05        | **0.32**  |
+|                  | 6000         | 11,084,725   | 655,724       | 1.69          | 0.36        | **2.05**  |
+| **GPT-4.1-mini** | 500          | 959,792      | 69,856        | 0.50          | 0.00        | **0.50**  |
+|                  | 1000         | 1,809,783    | 132,094       | 0.75          | 0.18        | **0.93**  |
 |                  | 6000         | 11,458,713   | 806,215       | 4.73          | 1.21        | **5.94**  |
 
 **Time Breakdown (seconds)**
@@ -72,16 +72,6 @@ Understanding where computational resources are allocated is crucial for optimiz
 | **GPT-4.1-mini** | 500          | 20               | 33.20         | 4.99        | **38.20**  |
 |                  | 1000         | 20               | 52.50         | 14.62       | **67.10**  |
 |                  | 6000         | 20               | 346.00        | 120.02      | **466.00** |
-
-**Key Variables Summary:**
-- **Model**: GPT-4o-mini vs GPT-4.1-mini
-- **Concurrent Tasks**: 20 (conservative limit for rate limiting)
-- **Dataset Size**: 500-6,000 conversations  
-- **Cost**: $0.17-$5.94 total processing cost
-- **Latency**: 38-466 seconds total processing time
-- **Input Tokens**: 1.8M-11.5M per dataset
-- **Output Tokens**: 132K-806K per dataset
-- **Checkpoint Memory**: 0.03-0.20 MB (Parquet format)
 
 We can see that summarisation is the primary bottleneck in the pipeline. It takes up roughly 70-90% of the time and budget that we spend processing the dataset. Even so, it's not prohibitively expensive with 6000 conversations costing us just under $2.05 with GPT-4o-mini.
 
