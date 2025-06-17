@@ -10,7 +10,6 @@ from .v1.kura import (
     reduce_dimensionality_from_clusters,
 )
 from .meta_cluster import MetaClusterModel
-from .cached_embedding import CachedEmbeddingModel
 from .cache_strategy import CacheStrategy, DiskCacheStrategy
 
 from .types import Conversation
@@ -46,7 +45,6 @@ __all__ = [
     "ClusterDescriptionModel",
     "Conversation",
     "MetaClusterModel",
-    "CachedEmbeddingModel",
     "CacheStrategy",
     "DiskCacheStrategy",
     "CheckpointManager",

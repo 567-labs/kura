@@ -1,7 +1,9 @@
 from kura.base_classes import BaseEmbeddingModel
 from kura.types import ConversationSummary
+import hashlib
+import json
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Optional, Any
 from kura.utils import batch_texts
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -52,18 +54,33 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "text-embedding-3-small",
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
+        cache: Optional[Any] = None,
+        **cache_kwargs: Any,
     ):
         self.client = AsyncOpenAI()
         self.model_name = model_name
         self._model_batch_size = model_batch_size
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
+        self.cache = cache
+        self.cache_kwargs = cache_kwargs
+        
         logger.info(
-            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}"
+            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, caching={'enabled' if cache else 'disabled'}"
         )
 
     def slug(self):
         return f"openai:{self.model_name}-batchsize:{self._model_batch_size}-concurrent:{self._n_concurrent_jobs}"
+
+    def _generate_cache_key(self, text: str) -> str:
+        """Generate a cache key for a given text."""
+        cache_data = {
+            "model_name": self.model_name,
+            "text": text,
+            **self.cache_kwargs
+        }
+        cache_str = json.dumps(cache_data, sort_keys=True)
+        return hashlib.sha256(cache_str.encode()).hexdigest()
 
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(3))
     async def _embed_batch(self, texts: list[str]) -> list[list[float]]:
@@ -92,6 +109,52 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
 
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
+        # If caching is disabled, use original logic
+        if not self.cache:
+            return await self._embed_without_cache(texts)
+
+        # Check cache for each text
+        cached_embeddings = {}
+        uncached_texts = []
+        
+        for text in texts:
+            cache_key = self._generate_cache_key(text)
+            cached_embedding = self.cache.get(cache_key)
+            
+            if cached_embedding is not None:
+                cached_embeddings[text] = cached_embedding
+                logger.debug(f"Cache hit for text: {text[:50]}...")
+            else:
+                uncached_texts.append(text)
+        
+        logger.debug(f"Found {len(cached_embeddings)} cached embeddings, {len(uncached_texts)} need embedding")
+        
+        # Embed uncached texts
+        new_embeddings = {}
+        if uncached_texts:
+            fresh_embeddings = await self._embed_without_cache(uncached_texts)
+            
+            # Cache new embeddings
+            for text, embedding in zip(uncached_texts, fresh_embeddings):
+                cache_key = self._generate_cache_key(text)
+                self.cache.set(cache_key, embedding)
+                new_embeddings[text] = embedding
+                logger.debug(f"Cached embedding for text: {text[:50]}...")
+        
+        # Return embeddings in original order
+        result_embeddings = []
+        for text in texts:
+            if text in cached_embeddings:
+                result_embeddings.append(cached_embeddings[text])
+            elif text in new_embeddings:
+                result_embeddings.append(new_embeddings[text])
+            else:
+                raise RuntimeError(f"No embedding found for text: {text[:50]}...")
+        
+        return result_embeddings
+
+    async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
+        """Original embedding logic without caching."""
         # Create batches
         batches = batch_texts(texts, self._model_batch_size)
         logger.debug(

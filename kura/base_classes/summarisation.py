@@ -56,10 +56,10 @@ class BaseSummaryModel(ABC):
             ...     temperature=0.1
             ... )
         """
-        raise NotImplementedError("Subclasses must implement summarise method")
+        pass
 
     @property
     @abstractmethod
     def checkpoint_filename(self) -> str:
         """Return the filename to use for checkpointing this model's output."""
-        raise NotImplementedError("Subclasses must implement checkpoint_filename property")
+        pass
