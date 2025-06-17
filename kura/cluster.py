@@ -317,10 +317,11 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
 
 
 class KmeansClusteringModel(BaseClusteringMethod):
-    def __init__(self, clusters_per_group: int = 10):
+    def __init__(self, clusters_per_group: int = 10, reduction_factor: float = 0.5):
         self.clusters_per_group = clusters_per_group
+        self.reduction_factor = reduction_factor
         logger.info(
-            f"Initialized KmeansClusteringModel with clusters_per_group={clusters_per_group}"
+            f"Initialized KmeansClusteringModel with clusters_per_group={clusters_per_group}, reduction_factor={reduction_factor}"
         )
 
     def cluster(
@@ -350,16 +351,39 @@ class KmeansClusteringModel(BaseClusteringMethod):
         try:
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
             data = [item["item"] for item in items]
-            n_clusters = math.ceil(len(data) / self.clusters_per_group)
+            n_input = len(data)
+            
+            # Use reduction_factor for guaranteed convergence, fall back to clusters_per_group method
+            n_clusters_reduction = max(1, math.ceil(n_input * self.reduction_factor))
+            n_clusters_original = math.ceil(n_input / self.clusters_per_group)
+            
+            # Choose the method that provides better reduction (but not too aggressive)
+            n_clusters = min(n_clusters_reduction, n_clusters_original)
+            
+            # Ensure we actually reduce the number of clusters for convergence
+            if n_clusters >= n_input and n_input > 1:
+                n_clusters = max(1, n_input - 1)
 
             logger.debug(
-                f"Calculated {n_clusters} clusters for {len(data)} items (target: {self.clusters_per_group} items per cluster)"
+                f"Calculated {n_clusters} clusters for {n_input} items "
+                f"(reduction: {(1 - n_clusters/n_input)*100:.1f}%, target: {self.clusters_per_group} items per cluster)"
             )
+
+            # Handle edge case where we have very few items
+            if n_input <= n_clusters and n_input > 1:
+                logger.warning(
+                    f"Input size ({n_input}) is small relative to target clusters ({n_clusters}). "
+                    f"Creating {n_input-1} clusters to ensure reduction."
+                )
+                n_clusters = n_input - 1
+            elif n_input == 1:
+                logger.warning("Only one item provided, returning single cluster.")
+                return cast(dict[int, list[ConversationSummary]], {0: data})
 
             X = np.array(embeddings)
             logger.debug(f"Created embedding matrix of shape {X.shape}")
 
-            kmeans = KMeans(n_clusters=n_clusters)
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)  # Add random_state for reproducibility
             cluster_labels = kmeans.fit_predict(X)
 
             logger.debug(
