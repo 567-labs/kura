@@ -9,7 +9,7 @@ from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
-from kura.cache import CacheStrategy
+from kura.base_classes.cache import CacheStrategy
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
