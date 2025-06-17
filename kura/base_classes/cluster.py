@@ -28,7 +28,6 @@ class BaseClusterDescriptionModel(ABC):
         summaries: List[ConversationSummary],
         contrastive_examples: List[ConversationSummary],
         prompt: str,
-        cache_dir: Optional[str] = None,
         **kwargs
     ) -> "Cluster":
         """
@@ -38,7 +37,6 @@ class BaseClusterDescriptionModel(ABC):
             summaries: Summaries in this cluster  
             contrastive_examples: Examples from other clusters for contrast
             prompt: Prompt template for cluster generation
-            cache_dir: Optional directory for disk caching
             **kwargs: Additional model parameters
             
         Returns:

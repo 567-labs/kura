@@ -16,7 +16,6 @@ import instructor
 from instructor.models import KnownModelName
 from asyncio import Semaphore
 from rich.console import Console
-import os
 import diskcache
 import hashlib
 
@@ -82,7 +81,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         temperature: float = 0.2,
         checkpoint_filename: str = "clusters",
         console: Optional[Console] = None,
-        cache_dir: Optional[str] = None,
+        cache: Optional[diskcache.Cache] = None,
     ):
         """
         Initialize ClusterModel with core configuration.
@@ -93,23 +92,17 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
             temperature: LLM temperature for generation
             checkpoint_filename: Filename for checkpointing
             console: Rich console for progress tracking
-            cache_dir: Optional directory for disk caching
+            cache: Optional diskcache.Cache instance for caching
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
         self.temperature = temperature
         self._checkpoint_filename = checkpoint_filename
         self.console = console
-        
-        # Initialize disk cache only if cache_dir is provided
-        if cache_dir is not None:
-            os.makedirs(cache_dir, exist_ok=True)
-            self.cache = diskcache.Cache(cache_dir)
-        else:
-            self.cache = None
+        self.cache = cache
 
         logger.info(
-            f"Initialized ClusterModel with model={model}, max_concurrent_requests={max_concurrent_requests}, temperature={temperature}, cache_dir={cache_dir}"
+            f"Initialized ClusterModel with model={model}, max_concurrent_requests={max_concurrent_requests}, temperature={temperature}, cache={'enabled' if cache else 'disabled'}"
         )
 
     @property
@@ -159,7 +152,6 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         semaphore: Semaphore,
         client: instructor.AsyncInstructor,
         prompt: str = DEFAULT_CLUSTER_PROMPT,
-        cache_dir: Optional[str] = None,
         **kwargs
     ) -> Cluster:
         """
@@ -169,7 +161,6 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
             summaries: Summaries in this cluster
             contrastive_examples: Examples from other clusters for contrast
             prompt: Prompt template for cluster generation
-            cache_dir: Optional directory for disk caching (overrides instance cache)
             **kwargs: Additional model parameters
 
         Returns:
@@ -228,31 +219,6 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
                 )
                 raise
 
-    def _get_cluster_cache_key(
-        self,
-        summaries: List[ConversationSummary],
-        contrastive_examples: List[ConversationSummary],
-        prompt: str,
-        **kwargs
-    ) -> str:
-        """Generate cache key for a single cluster description."""
-        # Hash cluster summaries (sorted for stability)
-        cluster_reprs = [str(summary) for summary in summaries]
-        cluster_hash = hashlib.md5(''.join(sorted(cluster_reprs)).encode()).hexdigest()
-        
-        # Hash contrastive examples (sorted for stability)
-        contrastive_reprs = [str(summary) for summary in contrastive_examples]
-        contrastive_hash = hashlib.md5(''.join(sorted(contrastive_reprs)).encode()).hexdigest()
-        
-        # Final cache key
-        cache_components = (
-            cluster_hash,
-            contrastive_hash, 
-            hashlib.md5(prompt.encode()).hexdigest(),
-            self.checkpoint_filename,
-        )
-        
-        return hashlib.md5(str(cache_components).encode()).hexdigest()
 
     async def _generate_clusters_with_console(
         self,
