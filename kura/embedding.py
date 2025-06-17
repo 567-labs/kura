@@ -51,14 +51,16 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "text-embedding-3-small",
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
+        cache_dir: str | None = None,
     ):
+        super().__init__(cache_dir=cache_dir)
         self.client = AsyncOpenAI()
         self.model_name = model_name
         self._model_batch_size = model_batch_size
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
         logger.info(
-            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}"
+            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, cache_dir={cache_dir}"
         )
 
     def slug(self):
@@ -91,6 +93,53 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
 
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
+        # If caching is disabled, use original implementation
+        if self.cache is None:
+            return await self._embed_without_cache(texts)
+
+        # Check cache for each text
+        cached_embeddings = {}
+        uncached_texts = []
+        uncached_indices = []
+
+        for i, text in enumerate(texts):
+            cache_key = self._get_cache_key(text)
+            cached_embedding = self.cache.get(cache_key)
+            if cached_embedding is not None:
+                cached_embeddings[i] = cached_embedding
+                logger.debug(f"Found cached embedding for text at index {i}")
+            else:
+                uncached_texts.append(text)
+                uncached_indices.append(i)
+
+        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
+
+        # Generate embeddings for uncached texts
+        new_embeddings = []
+        if uncached_texts:
+            new_embeddings = await self._embed_without_cache(uncached_texts)
+            
+            # Cache the new embeddings
+            for text, embedding in zip(uncached_texts, new_embeddings):
+                cache_key = self._get_cache_key(text)
+                self.cache.set(cache_key, embedding)
+                logger.debug(f"Cached embedding for text: {text[:50]}...")
+
+        # Combine cached and new embeddings in original order
+        result = []
+        new_embedding_idx = 0
+        for i in range(len(texts)):
+            if i in cached_embeddings:
+                result.append(cached_embeddings[i])
+            else:
+                result.append(new_embeddings[new_embedding_idx])
+                new_embedding_idx += 1
+
+        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
+        return result
+
+    async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
+        """Original embedding implementation without caching."""
         # Create batches
         batches = batch_texts(texts, self._model_batch_size)
         logger.debug(
@@ -111,9 +160,6 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         for result_batch in results_list_of_lists:
             embeddings.extend(result_batch)
 
-        logger.info(
-            f"Successfully embedded {len(texts)} texts, produced {len(embeddings)} embeddings"
-        )
         return embeddings
 
 
@@ -123,11 +169,13 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "all-MiniLM-L6-v2",
         model_batch_size: int = 128,
         device: str = "cpu",
+        cache_dir: str | None = None,
     ):
+        super().__init__(cache_dir=cache_dir)
         from sentence_transformers import SentenceTransformer  # type: ignore
 
         logger.info(
-            f"Initializing SentenceTransformerEmbeddingModel with model={model_name}, batch_size={model_batch_size}"
+            f"Initializing SentenceTransformerEmbeddingModel with model={model_name}, batch_size={model_batch_size}, cache_dir={cache_dir}"
         )
         try:
             self.model = SentenceTransformer(model_name, device=device)
@@ -147,10 +195,55 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
             logger.debug("Empty text list provided, returning empty embeddings")
             return []
 
-        logger.info(
-            f"Starting embedding of {len(texts)} texts using SentenceTransformer"
-        )
+        logger.info(f"Starting embedding of {len(texts)} texts using SentenceTransformer")
 
+        # If caching is disabled, use original implementation
+        if self.cache is None:
+            return await self._embed_without_cache(texts)
+
+        # Check cache for each text
+        cached_embeddings = {}
+        uncached_texts = []
+        uncached_indices = []
+
+        for i, text in enumerate(texts):
+            cache_key = self._get_cache_key(text)
+            cached_embedding = self.cache.get(cache_key)
+            if cached_embedding is not None:
+                cached_embeddings[i] = cached_embedding
+                logger.debug(f"Found cached embedding for text at index {i}")
+            else:
+                uncached_texts.append(text)
+                uncached_indices.append(i)
+
+        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
+
+        # Generate embeddings for uncached texts
+        new_embeddings = []
+        if uncached_texts:
+            new_embeddings = await self._embed_without_cache(uncached_texts)
+            
+            # Cache the new embeddings
+            for text, embedding in zip(uncached_texts, new_embeddings):
+                cache_key = self._get_cache_key(text)
+                self.cache.set(cache_key, embedding)
+                logger.debug(f"Cached embedding for text: {text[:50]}...")
+
+        # Combine cached and new embeddings in original order
+        result = []
+        new_embedding_idx = 0
+        for i in range(len(texts)):
+            if i in cached_embeddings:
+                result.append(cached_embeddings[i])
+            else:
+                result.append(new_embeddings[new_embedding_idx])
+                new_embedding_idx += 1
+
+        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
+        return result
+
+    async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
+        """Original embedding implementation without caching."""
         # Create batches
         batches = batch_texts(texts, self._model_batch_size)
         logger.debug(
@@ -167,10 +260,6 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
                 batch_embeddings = self.model.encode(batch).tolist()
                 embeddings.extend(batch_embeddings)
                 logger.debug(f"Completed batch {i + 1}/{len(batches)}")
-
-            logger.info(
-                f"Successfully embedded {len(texts)} texts using SentenceTransformer, produced {len(embeddings)} embeddings"
-            )
         except Exception as e:
             logger.error(f"Failed to embed texts using SentenceTransformer: {e}")
             raise
@@ -186,7 +275,9 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
         n_concurrent_jobs: int = 5,
         input_type: str = "clustering",
         api_key: str | None = None,
+        cache_dir: str | None = None,
     ):
+        super().__init__(cache_dir=cache_dir)
         if not COHERE_AVAILABLE:
             raise ImportError(
                 "Cohere package is required for CohereEmbeddingModel. "
@@ -200,7 +291,7 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
         logger.info(
-            f"Initialized CohereEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, input_type={input_type}"
+            f"Initialized CohereEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, input_type={input_type}, cache_dir={cache_dir}"
         )
 
     def slug(self):
@@ -235,6 +326,53 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
 
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
+        # If caching is disabled, use original implementation
+        if self.cache is None:
+            return await self._embed_without_cache(texts)
+
+        # Check cache for each text
+        cached_embeddings = {}
+        uncached_texts = []
+        uncached_indices = []
+
+        for i, text in enumerate(texts):
+            cache_key = self._get_cache_key(text, input_type=self.input_type)
+            cached_embedding = self.cache.get(cache_key)
+            if cached_embedding is not None:
+                cached_embeddings[i] = cached_embedding
+                logger.debug(f"Found cached embedding for text at index {i}")
+            else:
+                uncached_texts.append(text)
+                uncached_indices.append(i)
+
+        logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
+
+        # Generate embeddings for uncached texts
+        new_embeddings = []
+        if uncached_texts:
+            new_embeddings = await self._embed_without_cache(uncached_texts)
+            
+            # Cache the new embeddings
+            for text, embedding in zip(uncached_texts, new_embeddings):
+                cache_key = self._get_cache_key(text, input_type=self.input_type)
+                self.cache.set(cache_key, embedding)
+                logger.debug(f"Cached embedding for text: {text[:50]}...")
+
+        # Combine cached and new embeddings in original order
+        result = []
+        new_embedding_idx = 0
+        for i in range(len(texts)):
+            if i in cached_embeddings:
+                result.append(cached_embeddings[i])
+            else:
+                result.append(new_embeddings[new_embedding_idx])
+                new_embedding_idx += 1
+
+        logger.info(f"Successfully embedded {len(texts)} texts, produced {len(result)} embeddings")
+        return result
+
+    async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:
+        """Original embedding implementation without caching."""
         # Create batches
         batches = batch_texts(texts, self._model_batch_size)
         logger.debug(
@@ -255,7 +393,4 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
         for result_batch in results_list_of_lists:
             embeddings.extend(result_batch)
 
-        logger.info(
-            f"Successfully embedded {len(texts)} texts, produced {len(embeddings)} embeddings"
-        )
         return embeddings
