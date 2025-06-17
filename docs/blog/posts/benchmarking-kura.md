@@ -55,12 +55,12 @@ Understanding where computational resources are allocated is crucial for optimiz
 
 | Model            | Dataset Size | Input Tokens | Output Tokens | Summarisation | Other Steps | **Total** |
 | ---------------- | ------------ | ------------ | ------------- | ------------- | ----------- | --------- |
-| **GPT-4o-mini**  | 500          | ~125K        | ~25K          | 0.14          | 0.03        | **0.17**  |
-|                  | 1000         | ~250K        | ~50K          | 0.27          | 0.05        | **0.32**  |
-|                  | 6000         | ~1.5M        | ~300K         | 1.69          | 0.36        | **2.05**  |
-| **GPT-4.1-mini** | 500          | ~125K        | ~25K          | 0.50          | 0.00        | **0.50**  |
-|                  | 1000         | ~250K        | ~50K          | 0.75          | 0.18        | **0.93**  |
-|                  | 6000         | ~1.5M        | ~300K         | 4.73          | 1.21        | **5.94**  |
+| **GPT-4o-mini**  | 500          | 1,809,783    | 132,094       | 0.14          | 0.03        | **0.17**  |
+|                  | 1000         | 11,084,725   | 655,724       | 0.27          | 0.05        | **0.32**  |
+|                  | 6000         | 11,458,713   | 806,215       | 1.69          | 0.36        | **2.05**  |
+| **GPT-4.1-mini** | 500          | 1,809,783    | 132,094       | 0.50          | 0.00        | **0.50**  |
+|                  | 1000         | 11,084,725   | 655,724       | 0.75          | 0.18        | **0.93**  |
+|                  | 6000         | 11,458,713   | 806,215       | 4.73          | 1.21        | **5.94**  |
 
 **Time Breakdown (seconds)**
 
@@ -79,8 +79,8 @@ Understanding where computational resources are allocated is crucial for optimiz
 - **Dataset Size**: 500-6,000 conversations  
 - **Cost**: $0.17-$5.94 total processing cost
 - **Latency**: 38-466 seconds total processing time
-- **Input Tokens**: ~125K-1.5M per dataset
-- **Output Tokens**: ~25K-300K per dataset
+- **Input Tokens**: 1.8M-11.5M per dataset
+- **Output Tokens**: 132K-806K per dataset
 - **Checkpoint Memory**: 0.03-0.20 MB (Parquet format)
 
 We can see that summarisation is the primary bottleneck in the pipeline. It takes up roughly 70-90% of the time and budget that we spend processing the dataset. Even so, it's not prohibitively expensive with 6000 conversations costing us just under $2.05 with GPT-4o-mini.
