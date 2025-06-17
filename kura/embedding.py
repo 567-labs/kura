@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 else:
     try:
         from cohere import AsyncClient
+
         COHERE_AVAILABLE = True
     except ImportError:
         AsyncClient = None  # type: ignore
@@ -192,7 +193,7 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
                 "Cohere package is required for CohereEmbeddingModel. "
                 "Install it with: uv pip install -e '.[embeddings]'"
             )
-        
+
         self.client = AsyncClient(api_key=api_key)
         self.model_name = model_name
         self.input_type = input_type
@@ -219,11 +220,10 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
                     model=self.model_name,
                     input_type=self.input_type,
                 )
-                embeddings = response.embeddings.float
                 logger.debug(
-                    f"Successfully embedded batch of {len(texts)} texts, got {len(embeddings)} embeddings"
+                    f"Successfully embedded batch of {len(texts)} texts, got {len(response.embeddings)} embeddings"
                 )
-                return embeddings
+                return response.embeddings
             except Exception as e:
                 logger.error(f"Failed to embed batch of {len(texts)} texts: {e}")
                 raise
