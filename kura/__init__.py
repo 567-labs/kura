@@ -10,8 +10,6 @@ from .v1.kura import (
     reduce_dimensionality_from_clusters,
 )
 from .meta_cluster import MetaClusterModel
-from .cache_strategy import CacheStrategy, DiskCacheStrategy
-
 from .types import Conversation
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
 from .hdbscan import HDBSCANClusteringMethod
@@ -45,8 +43,6 @@ __all__ = [
     "ClusterDescriptionModel",
     "Conversation",
     "MetaClusterModel",
-    "CacheStrategy",
-    "DiskCacheStrategy",
     "CheckpointManager",
     "MultiCheckpointManager",
     "KmeansClusteringMethod",
