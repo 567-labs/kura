@@ -100,7 +100,7 @@ nav:
       - Meta-Clustering: core-concepts/meta-clustering.md
       - Dimensionality Reduction: core-concepts/dimensionality-reduction.md
       - Checkpoints: core-concepts/checkpoints.md
-      - Logging: core-concepts/logging.md
+
   - Blog: blog/index.md
 
 plugins:

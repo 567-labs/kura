@@ -1,0 +1,73 @@
+{
+  "citation": "",
+  "description": "",
+  "features": {
+    "summary": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "request": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "topic": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "languages": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "task": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "concerning_score": {
+      "dtype": "int8",
+      "_type": "Value"
+    },
+    "user_frustration": {
+      "dtype": "int8",
+      "_type": "Value"
+    },
+    "assistant_errors": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "chat_id": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "metadata": {
+      "keys": {
+        "feature": {
+          "dtype": "string",
+          "_type": "Value"
+        },
+        "_type": "Sequence"
+      },
+      "values": {
+        "feature": {
+          "dtype": "string",
+          "_type": "Value"
+        },
+        "_type": "Sequence"
+      }
+    },
+    "embedding": {
+      "feature": {
+        "dtype": "float32",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": ""
+}
