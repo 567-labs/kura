@@ -1,9 +1,9 @@
-from kura.base_classes import BaseEmbeddingModel
+from kura.base_classes import BaseEmbeddingModel, CacheStrategy
 from kura.types import ConversationSummary
 import hashlib
 import json
 import logging
-from typing import Union, TYPE_CHECKING, Optional, Any
+from typing import Union, TYPE_CHECKING, Optional
 from kura.utils import batch_texts
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -54,8 +54,7 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "text-embedding-3-small",
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
-        cache: Optional[Any] = None,
-        **cache_kwargs: Any,
+        cache: Optional[CacheStrategy] = None,
     ):
         self.client = AsyncOpenAI()
         self.model_name = model_name
@@ -63,7 +62,6 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
         self.cache = cache
-        self.cache_kwargs = cache_kwargs
         
         logger.info(
             f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, caching={'enabled' if cache else 'disabled'}"
@@ -77,7 +75,6 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         cache_data = {
             "model_name": self.model_name,
             "text": text,
-            **self.cache_kwargs
         }
         cache_str = json.dumps(cache_data, sort_keys=True)
         return hashlib.sha256(cache_str.encode()).hexdigest()

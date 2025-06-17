@@ -4,10 +4,11 @@ Simple test to verify that embedding caching works correctly.
 """
 import asyncio
 from kura.embedding import OpenAIEmbeddingModel
+from kura.base_classes import CacheStrategy
 import os
 
 
-class MockCache:
+class MockCache(CacheStrategy):
     """Simple in-memory cache for testing."""
     def __init__(self):
         self.data = {}
