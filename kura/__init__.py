@@ -11,6 +11,7 @@ from .v1.kura import (
 )
 from .meta_cluster import MetaClusterModel
 from .cached_embedding import CachedEmbeddingModel
+from .cache_strategy import CacheStrategy, DiskCacheStrategy
 
 from .types import Conversation
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
@@ -46,6 +47,8 @@ __all__ = [
     "Conversation",
     "MetaClusterModel",
     "CachedEmbeddingModel",
+    "CacheStrategy",
+    "DiskCacheStrategy",
     "CheckpointManager",
     "MultiCheckpointManager",
     "KmeansClusteringMethod",

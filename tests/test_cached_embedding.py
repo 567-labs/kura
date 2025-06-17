@@ -3,10 +3,11 @@
 import pytest
 import tempfile
 import shutil
-from pathlib import Path
+from typing import Any, Dict, Optional
 
 from kura.cached_embedding import CachedEmbeddingModel
-from kura.base_classes import BaseEmbeddingModel, BaseCheckpointManager
+from kura.base_classes import BaseEmbeddingModel
+from kura.cache_strategy import CacheStrategy, DiskCacheStrategy
 
 
 class MockEmbeddingModel(BaseEmbeddingModel):
@@ -25,29 +26,19 @@ class MockEmbeddingModel(BaseEmbeddingModel):
         return f"mock:{self.model_name}"
 
 
-class MockCheckpointManager(BaseCheckpointManager):
-    """Mock checkpoint manager for testing."""
+class MockCacheStrategy(CacheStrategy):
+    """Mock cache strategy for testing."""
     
-    def __init__(self, checkpoint_dir: str, *, enabled: bool = True):
-        self.checkpoint_dir = Path(checkpoint_dir)
-        self.enabled = enabled
-        self.storage = {}
+    def __init__(self):
+        self.storage: Dict[str, Any] = {}
         
-    def setup_checkpoint_dir(self) -> None:
-        """Setup is handled by base test setup."""
-        pass
+    def get(self, key: str) -> Optional[Any]:
+        """Get from in-memory storage."""
+        return self.storage.get(key)
         
-    def load_checkpoint(self, filename: str, model_class: type, **kwargs):
-        """Load from in-memory storage."""
-        return self.storage.get(filename, None)
-        
-    def save_checkpoint(self, filename: str, data: list, **kwargs) -> None:
-        """Save to in-memory storage."""
-        self.storage[filename] = data
-        
-    def list_checkpoints(self) -> list[str]:
-        """List stored checkpoints."""
-        return list(self.storage.keys())
+    def set(self, key: str, value: Any) -> None:
+        """Set in in-memory storage."""
+        self.storage[key] = value
 
 
 @pytest.fixture
@@ -65,15 +56,15 @@ def mock_embedding_model():
 
 
 @pytest.fixture
-def mock_cache_manager(temp_dir):
-    """Create mock cache manager."""
-    return MockCheckpointManager(temp_dir)
+def mock_cache_strategy():
+    """Create mock cache strategy."""
+    return MockCacheStrategy()
 
 
 class TestCachedEmbeddingModel:
     """Test cases for CachedEmbeddingModel."""
 
-    def test_init_requires_model_name(self, temp_dir):
+    def test_init_requires_model_name(self):
         """Test that initialization requires model_name attribute."""
         # Create model without model_name
         class BadModel(BaseEmbeddingModel):
@@ -83,23 +74,23 @@ class TestCachedEmbeddingModel:
                 return "bad"
         
         bad_model = BadModel()
-        cache_manager = MockCheckpointManager(temp_dir)
+        cache_strategy = MockCacheStrategy()
         
         with pytest.raises(ValueError, match="must have a 'model_name' attribute"):
-            CachedEmbeddingModel(bad_model, cache_manager)
+            CachedEmbeddingModel(bad_model, cache_strategy)
 
-    def test_init_with_valid_model(self, mock_embedding_model, mock_cache_manager):
+    def test_init_with_valid_model(self, mock_embedding_model, mock_cache_strategy):
         """Test successful initialization."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
         assert cached_model.embedding_model == mock_embedding_model
-        assert cached_model.cache_manager == mock_cache_manager
+        assert cached_model.cache_strategy == mock_cache_strategy
         
-    def test_slug_with_cache(self, mock_embedding_model, mock_cache_manager):
-        """Test slug generation with caching enabled."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+    def test_slug_uses_base_model(self, mock_embedding_model, mock_cache_strategy):
+        """Test slug uses base model slug."""
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
-        expected_slug = "cached:mock:test-model"
+        expected_slug = "mock:test-model"
         assert cached_model.slug() == expected_slug
         
     def test_slug_without_cache(self, mock_embedding_model):
@@ -111,7 +102,7 @@ class TestCachedEmbeddingModel:
 
     @pytest.mark.asyncio
     async def test_embed_without_cache(self, mock_embedding_model):
-        """Test embedding without cache manager."""
+        """Test embedding without cache strategy."""
         cached_model = CachedEmbeddingModel(mock_embedding_model, None)
         
         texts = ["hello", "world"]
@@ -121,9 +112,9 @@ class TestCachedEmbeddingModel:
         assert mock_embedding_model.embed_call_count == 1
 
     @pytest.mark.asyncio
-    async def test_embed_with_empty_cache(self, mock_embedding_model, mock_cache_manager):
+    async def test_embed_with_empty_cache(self, mock_embedding_model, mock_cache_strategy):
         """Test embedding with empty cache."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
         texts = ["hello", "world"]
         result = await cached_model.embed(texts)
@@ -131,12 +122,12 @@ class TestCachedEmbeddingModel:
         assert len(result) == 2
         assert mock_embedding_model.embed_call_count == 1
         # Check that embeddings were cached
-        assert len(mock_cache_manager.storage) == 2
+        assert len(mock_cache_strategy.storage) == 2
 
     @pytest.mark.asyncio
-    async def test_embed_with_partial_cache(self, mock_embedding_model, mock_cache_manager):
+    async def test_embed_with_partial_cache(self, mock_embedding_model, mock_cache_strategy):
         """Test embedding with some cached results."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
         # First call - cache "hello"
         await cached_model.embed(["hello"])
@@ -148,9 +139,9 @@ class TestCachedEmbeddingModel:
         assert mock_embedding_model.embed_call_count == 2  # Only one more call
 
     @pytest.mark.asyncio
-    async def test_embed_fully_cached(self, mock_embedding_model, mock_cache_manager):
+    async def test_embed_fully_cached(self, mock_embedding_model, mock_cache_strategy):
         """Test embedding with all results cached."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
         texts = ["hello", "world"]
         
@@ -164,19 +155,19 @@ class TestCachedEmbeddingModel:
         assert result1 == result2
 
     @pytest.mark.asyncio
-    async def test_embed_empty_list(self, mock_embedding_model, mock_cache_manager):
+    async def test_embed_empty_list(self, mock_embedding_model, mock_cache_strategy):
         """Test embedding empty list."""
-        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_manager)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, mock_cache_strategy)
         
         result = await cached_model.embed([])
         assert result == []
         assert mock_embedding_model.embed_call_count == 0
 
-    def test_cache_key_generation(self, mock_embedding_model, mock_cache_manager):
+    def test_cache_key_generation(self, mock_embedding_model, mock_cache_strategy):
         """Test cache key generation."""
         cached_model = CachedEmbeddingModel(
             mock_embedding_model, 
-            mock_cache_manager,
+            mock_cache_strategy,
             temperature=0.5,
             batch_size=10
         )
@@ -194,18 +185,38 @@ class TestCachedEmbeddingModel:
         assert all(c in '0123456789abcdef' for c in key1)
 
     @pytest.mark.asyncio
-    async def test_cache_with_kwargs(self, temp_dir):
+    async def test_cache_with_kwargs(self):
         """Test that cache keys include kwargs."""
         model1 = MockEmbeddingModel("test-model")
         model2 = MockEmbeddingModel("test-model")
-        cache_manager = MockCheckpointManager(temp_dir)
+        cache_strategy1 = MockCacheStrategy()
+        cache_strategy2 = MockCacheStrategy()
         
         # Same model, different kwargs
-        cached_model1 = CachedEmbeddingModel(model1, cache_manager, temperature=0.5)
-        cached_model2 = CachedEmbeddingModel(model2, cache_manager, temperature=0.7)
+        cached_model1 = CachedEmbeddingModel(model1, cache_strategy1, temperature=0.5)
+        cached_model2 = CachedEmbeddingModel(model2, cache_strategy2, temperature=0.7)
         
         # Should generate different cache keys due to different kwargs
         key1 = cached_model1._generate_cache_key("hello")
         key2 = cached_model2._generate_cache_key("hello")
         
         assert key1 != key2
+
+    @pytest.mark.asyncio
+    async def test_disk_cache_strategy(self, mock_embedding_model, temp_dir):
+        """Test with actual DiskCacheStrategy."""
+        cache_strategy = DiskCacheStrategy(temp_dir)
+        cached_model = CachedEmbeddingModel(mock_embedding_model, cache_strategy)
+        
+        texts = ["hello", "world"]
+        
+        # First call - should cache
+        result1 = await cached_model.embed(texts)
+        assert len(result1) == 2
+        assert mock_embedding_model.embed_call_count == 1
+        
+        # Second call - should use cache
+        result2 = await cached_model.embed(texts)
+        assert len(result2) == 2
+        assert mock_embedding_model.embed_call_count == 1  # No additional calls
+        assert result1 == result2
