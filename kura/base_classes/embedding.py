@@ -18,6 +18,10 @@ class BaseEmbeddingModel(ABC):
         Args:
             cache_dir: Directory for disk cache storage (optional, defaults to no caching)
         """
+        # Validate that subclass has set model_name
+        if not hasattr(self, 'model_name') or not self.model_name:
+            raise AttributeError(f"{self.__class__.__name__} must set self.model_name")
+            
         # Initialize disk cache only if cache_dir is provided
         if cache_dir is not None:
             os.makedirs(cache_dir, exist_ok=True)
