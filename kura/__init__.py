@@ -10,6 +10,7 @@ from .v1.kura import (
     reduce_dimensionality_from_clusters,
 )
 from .meta_cluster import MetaClusterModel
+from .logger import StandardLogger
 
 from .types import Conversation
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
@@ -49,6 +50,8 @@ __all__ = [
     "KmeansClusteringMethod",
     "MiniBatchKmeansClusteringMethod",
     "HDBSCANClusteringMethod",
+    # Logger
+    "StandardLogger",
     # Procedural Methods
     "summarise_conversations",
     "generate_base_clusters_from_conversation_summaries",
