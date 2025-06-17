@@ -66,6 +66,7 @@ parquet = [
 ]
 embeddings = [
     "sentence-transformers>=2.2.0",
+    "cohere>=5.0.0",
 ]
 
 
