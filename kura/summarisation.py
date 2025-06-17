@@ -1,17 +1,15 @@
 from typing import Optional, Type, TypeVar, Union
 import asyncio
 import logging
-import os
 import hashlib
 
 import instructor
 from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
-import diskcache
-
 
 from kura.base_classes import BaseSummaryModel
+from kura.base_classes.cache import CacheStrategy
 from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
@@ -103,7 +101,7 @@ class SummaryModel(BaseSummaryModel):
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries",
         console: Optional[Console] = None,
-        cache_dir: Optional[str] = None,
+        cache: Optional[CacheStrategy] = None,
     ):
         """
         Initialize SummaryModel with core configuration.
@@ -113,22 +111,19 @@ class SummaryModel(BaseSummaryModel):
         Args:
             model: model identifier (e.g., "openai/gpt-4o-mini")
             max_concurrent_requests: Maximum concurrent API requests
-            cache_dir: Directory for disk cache storage (optional, defaults to no caching)
+            cache: Caching strategy to use (optional)
         """
         self.model = model
         self.max_concurrent_requests = max_concurrent_requests
         self._checkpoint_filename = checkpoint_filename
         self.console = console
         
-        # Initialize disk cache only if cache_dir is provided
-        if cache_dir is not None:
-            os.makedirs(cache_dir, exist_ok=True)
-            self.cache = diskcache.Cache(cache_dir)
-        else:
-            self.cache = None
+        # Initialize cache
+        self.cache = cache
 
+        cache_info = type(self.cache).__name__ if self.cache else "None"
         logger.info(
-            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, cache_dir={cache_dir}"
+            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, cache={cache_info}"
         )
 
     @property
@@ -263,8 +258,8 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
         )
 
-        # Check cache first (if caching is enabled)
-        if self.cache is not None:
+        # Check cache first
+        if self.cache:
             cache_key = self._get_cache_key(conversation, response_schema, prompt, temperature, **kwargs)
             cached_result = self.cache.get(cache_key)
             if cached_result is not None:
@@ -331,8 +326,8 @@ class SummaryModel(BaseSummaryModel):
             **known_data,
         )
         
-        # Cache the result (if caching is enabled)
-        if self.cache is not None:
+        # Cache the result
+        if self.cache:
             self.cache.set(cache_key, result)
             logger.debug(f"Cached summary for conversation {conversation.chat_id}")
         
