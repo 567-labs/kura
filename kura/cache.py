@@ -26,14 +26,3 @@ class DiskCacheStrategy(CacheStrategy):
         """Store a value in the disk cache."""
         self.cache.set(key, value)
 
-
-class NoCacheStrategy(CacheStrategy):
-    """No-op caching strategy that doesn't cache anything."""
-    
-    def get(self, key: str) -> Optional[Any]:
-        """Always returns None (no cache hit)."""
-        return None
-    
-    def set(self, key: str, value: Any) -> None:
-        """Does nothing (no caching)."""
-        pass
