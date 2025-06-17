@@ -2,36 +2,13 @@
 
 This guide will help you get started with Kura quickly using the procedural API for step-by-step conversation analysis.
 
-## Overview
-
-Kura provides a functional approach to conversation clustering that allows you to:
-
-- Process conversations step by step with full control
-- Use checkpoints to save intermediate results
-- Visualize results in multiple formats
-
 ## Prerequisites
 
-Before you begin, make sure you have:
-
-1. [Installed Kura](installation.md)
-2. Set up your API key (Kura uses OpenAI by default):
-   ```bash
-   export OPENAI_API_KEY=your_api_key_here
-   ```
-
-## Basic Workflow
-
-Kura's workflow consists of four main steps:
-
-1. **Summarization**: Generate concise summaries of conversations
-2. **Base Clustering**: Group similar summaries together
-3. **Meta Clustering**: Create hierarchical clusters for better organization
-4. **Dimensionality Reduction**: Project clusters to 2D for visualization
+Before you begin, make sure you have [installed Kura](installation.md) and set up your API key. Kura uses OpenAI by default, so you'll need to export your API key in your terminal.
 
 ## Complete Example
 
-Here's a complete working example:
+Here's a complete working example that you can copy and run immediately. This example processes conversations through Kura's four-stage pipeline: summarization, clustering, meta-clustering, and dimensionality reduction for visualization.
 
 ```python
 import asyncio
@@ -41,63 +18,50 @@ from kura import (
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    CheckpointManager,
+    visualise_pipeline_results,
 )
-from kura.visualization import visualise_pipeline_results
+from kura.checkpoints import JSONLCheckpointManager
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
+from kura.cluster import ClusterDescriptionModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
+
 
 async def main():
     # Initialize models
     console = Console()
-    summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)  # Uses K-means by default
+
+    # SummaryModel now supports caching to speed up re-runs!
+    summary_model = SummaryModel(
+        console=console,
+        cache_dir="./.summary_cache",  # Optional: specify cache location
+    )
+
+    cluster_model = ClusterDescriptionModel(
+        console=console,
+    )
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
-    # Optional: Use different clustering methods for specific use cases
-
-    # For exploratory analysis - HDBSCAN automatically discovers optimal cluster count
-    # from kura.hdbscan import HDBSCANClusteringMethod
-    # hdbscan_clustering = HDBSCANClusteringMethod(min_cluster_size=10)
-    # cluster_model = ClusterModel(clustering_method=hdbscan_clustering, console=console)
-
-    # For large datasets (100k+ conversations) - MiniBatch KMeans is memory efficient
-    # from kura.k_means import MiniBatchKmeansClusteringMethod
-    # minibatch_clustering = MiniBatchKmeansClusteringMethod(
-    #     clusters_per_group=10, batch_size=1000, random_state=42
-    # )
-    # cluster_model = ClusterModel(clustering_method=minibatch_clustering, console=console)
-
-    # Set up checkpointing to save intermediate results
-    checkpoint_manager = CheckpointManager("./checkpoints", enabled=True)
+    # Set up checkpointing - you can choose from multiple backends
+    # HuggingFace Datasets (advanced features, cloud sync)
+    checkpoint_manager = JSONLCheckpointManager("./checkpoints/hf", enabled=True)
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
-        "ivanleomk/synthetic-gemini-conversations",
-        split="train"
+        "ivanleomk/synthetic-gemini-conversations", split="train"
     )
-
-    # Process through the pipeline step by step
     summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_manager
+        conversations, model=summary_model, checkpoint_manager=checkpoint_manager
     )
-
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_manager
+        checkpoint_manager=checkpoint_manager,
     )
-
     reduced_clusters = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_manager
+        clusters, checkpoint_manager=checkpoint_manager, model=meta_cluster_model
     )
 
     projected_clusters = await reduce_dimensionality_from_clusters(
@@ -107,189 +71,124 @@ async def main():
     )
 
     # Visualize results
-    visualise_pipeline_results(reduced_clusters, style="enhanced")
+    visualise_pipeline_results(projected_clusters, style="basic")
 
-    print(f"\nProcessed {len(conversations)} conversations")
-    print(f"Created {len(reduced_clusters)} meta clusters")
-    print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-This example will:
+This example will process 190 synthetic programming conversations from Hugging Face, analyze them through the complete pipeline, and display the results in a clean tree structure showing how conversations are grouped into thematic clusters.
 
-1. Load 190 synthetic programming conversations from Hugging Face
-2. Process them through the complete analysis pipeline step by step
-3. Generate hierarchical clusters organized into categories
-4. Display the results with enhanced visualization
+## Understanding the Pipeline
 
-> **💡 Tip**: The example above uses K-means clustering (default). Kura provides three clustering options:
-> - **K-means** (default): Good for small-medium datasets with consistent cluster sizes
-> - **HDBSCAN**: Best for exploratory analysis, automatically discovers optimal cluster count
-> - **MiniBatch KMeans**: Memory-efficient for large datasets (100k+ conversations)
->
-> See the [clustering documentation](../core-concepts/clustering.md#clustering-algorithms) for a detailed comparison and when to use each method.
+Now let's break down each section of the code above to understand what's happening at each stage.
 
-## Visualization Options & Output
+### Model Initialization
 
-Kura provides multiple visualization styles through the `visualise_pipeline_results` function. Simply change the `style` parameter to get different output formats:
+!!! Note
+
+    **💡 What's happening here**: We initialize four key models that each handle a specific transformation in the pipeline. The `console` parameter enables rich terminal output so you can see progress as the analysis runs.
 
 ```python
-from kura.visualization import visualise_pipeline_results
-
-# Choose from: "basic", "enhanced", or "rich"
-visualise_pipeline_results(reduced_clusters, style="basic")
-visualise_pipeline_results(reduced_clusters, style="enhanced")  # Recommended
-visualise_pipeline_results(reduced_clusters, style="rich", console=console)
+console = Console()
+summary_model = SummaryModel(
+    console=console,
+    cache_dir="./.summary_cache",
+)
+cluster_model = ClusterDescriptionModel(console=console)
+meta_cluster_model = MetaClusterModel(console=console)
+dimensionality_model = HDBUMAP()
 ```
 
-### Basic Style
+1. **[SummaryModel](../core-concepts/summarization.md)**: Converts raw conversations into structured summaries with key themes and intents
+2. **[ClusterDescriptionModel](../core-concepts/clustering.md)**: Groups similar conversation summaries based on semantic content
+3. **[MetaClusterModel](../core-concepts/meta-clustering.md)**: Creates hierarchical relationships between base clusters
+4. **[HDBUMAP](../core-concepts/dimensionality-reduction.md)**: Reduces high-dimensional embeddings to 2D coordinates for visualization
 
-Clean tree structure without extra formatting:
+### Checkpoint Management
 
-**Output:**
+!!! tip "Checkpoint Strategy"
 
-```
-Clusters (190 conversations)
-╠══ Generate SEO-optimized content for blogs and scripts (38 conversations)
-║   ╠══ Assist in writing SEO-friendly blog posts (12 conversations)
-║   ╚══ Help create SEO-driven marketing content (8 conversations)
-╠══ Help analyze and visualize data with R and Tableau (25 conversations)
-║   ╠══ Assist with data analysis and visualization in R (15 conversations)
-║   ╚══ Troubleshoot sales data visualizations in Tableau (10 conversations)
-... (and more clusters)
-```
+    **What's happening here**: The checkpoint manager saves results after each pipeline stage, allowing you to resume processing or try different parameters without starting over. Choose JSONL for development, Parquet for production, or HuggingFace for advanced ML workflows.
 
-### Enhanced Style (Recommended)
+Kura supports multiple checkpoint backends that allow you to save intermediate results and resume processing from any stage. This is essential for longer analyses where you might want to experiment with different clustering parameters without re-running the expensive summarization step, [read more about the different checkpoints we support](../core-concepts/checkpoints.md).
 
-Includes progress bars, statistics, and detailed formatting:
-
-**Output:**
-
-```
-================================================================================
-🎯 ENHANCED CLUSTER VISUALIZATION
-================================================================================
-🔸 📚 All Clusters (190 total conversations)
-    📊 190 conversations (100.0%) [████████████████████]
-
-╠══ 🔸 Generate SEO-optimized content for blogs and scripts
-║   📊 38 conversations (20.0%) [████░░░░░░░░░░░░░░░░]
-║   ╠══ 🔸 Assist in writing SEO-friendly blog posts
-║   ║   📊 12 conversations (6.3%) [█░░░░░░░░░░░░░░░░░░░]
-║   ╠══ 🔸 Write blog posts about diabetes medications
-║   ║   📊 10 conversations (5.3%) [█░░░░░░░░░░░░░░░░░░░]
-║   ╚══ 🔸 Help create SEO-driven marketing content
-║       📊 8 conversations (4.2%) [░░░░░░░░░░░░░░░░░░░░]
-
-╠══ 🔸 Help analyze and visualize data with R and Tableau
-║   📊 25 conversations (13.2%) [██░░░░░░░░░░░░░░░░░░]
-║   ╠══ 🔸 Assist with data analysis and visualization in R
-║   ║   📊 15 conversations (7.9%) [█░░░░░░░░░░░░░░░░░░░]
-║   ╚══ 🔸 Troubleshoot sales data visualizations in Tableau
-║       📊 10 conversations (5.3%) [█░░░░░░░░░░░░░░░░░░░]
-
-... (and more clusters)
-
-================================================================================
-📈 CLUSTER STATISTICS
-================================================================================
-📊 Total Clusters: 29
-🌳 Root Clusters: 10
-💬 Total Conversations: 190
-📏 Average Conversations per Root Cluster: 19.0
-================================================================================
+```python
+checkpoint_manager = JSONLCheckpointManager("./checkpoints")
 ```
 
-### Rich Style
+The example uses the [JSONLCheckpointManager](../core-concepts/checkpoints.md) which stores results in a human-readable JSONL format - perfect for development and debugging.
 
-Colorful, interactive-style output with detailed descriptions and statistics tables:
+### Data Loading
 
-**Output:**
+!!! info "Data Loading"
 
+    **What's happening here**: We load conversation data from a Hugging Face dataset. Each conversation contains the raw dialogue that will be processed through the pipeline.
+
+Kura provides convenient methods for loading conversation data from various sources. The example uses a synthetic dataset from Hugging Face, but you can also load from local files, databases, or other sources.
+
+```python
+conversations = Conversation.from_hf_dataset(
+    "ivanleomk/synthetic-gemini-conversations", split="train"
+)
 ```
-╭──────────────────────────────────────────────────────────────────────────────╮
-│                        🎯 RICH CLUSTER VISUALIZATION                         │
-╰──────────────────────────────────────────────────────────────────────────────╯
 
-📚 All Clusters (190 conversations)
-├── Generate SEO-optimized content for blogs and scripts (38 conversations, 20.0%)
-│   Users requested help in creating SEO-optimized blog posts and engaging
-│   YouTube v...
-│   Progress: [███░░░░░░░░░░░░]
-│   ├── Assist in writing SEO-friendly blog posts (12 conversations, 6.3%)
-│   │   The users sought assistance in crafting engaging and SEO-friendly blog
-│   │   posts acr...
-│   │   Progress: [░░░░░░░░░░░░░░░]
-│   ├── Write blog posts about diabetes medications (10 conversations, 5.3%)
-│   │   The users sought assistance in creating blog posts focused on diabetes
-│   │   treatment...
-│   │   Progress: [░░░░░░░░░░░░░░░]
-│   └── Help create SEO-driven marketing content (8 conversations, 4.2%)
-│       The users sought assistance in developing SEO-optimized marketing
-│       content across...
-│       Progress: [░░░░░░░░░░░░░░░]
-├── Help analyze and visualize data with R and Tableau (25 conversations, 13.2%)
-│   Users sought help with analyzing and visualizing datasets in both R and
-│   Tableau,...
-│   Progress: [█░░░░░░░░░░░░░░]
-... (and more clusters)
+The [Conversation](../core-concepts/data-types.md) type provides a standardized format for dialogue data with built-in methods for loading from different sources and formats.
 
-       📈 Cluster Statistics                📊 Cluster Size Distribution
-╭─────────────────────────┬───────╮  ╭────────────────────┬───────┬────────────╮
-│ Metric                  │ Value │  │ Size Range         │ Count │ Percentage │
-├─────────────────────────┼───────┤  ├────────────────────┼───────┼────────────┤
-│ 📊 Total Clusters       │ 29    │  │ 🔥 Large (>100)    │ 0     │ 0.0%       │
-│ 🌳 Root Clusters        │ 10    │  │ 📈 Medium (21-100) │ 3     │ 30.0%      │
-│ 💬 Total Conversations  │ 190   │  │ 📊 Small (6-20)    │ 7     │ 70.0%      │
-│ 📏 Avg per Root Cluster │ 19.0  │  │ 🔍 Tiny (1-5)      │ 0     │ 0.0%       │
-╰─────────────────────────┴───────╯  ╰────────────────────┴───────┴────────────╯
+### Pipeline Execution
+
+The core pipeline consists of four sequential transformations, each building on the results of the previous stage. This modular design allows you to mix and match different approaches at each stage.
+
+> **💡 What's happening here**: Each function processes the output from the previous stage, progressively transforming raw conversations into organized, visualizable clusters.
+
+```python
+summaries = await summarise_conversations(
+    conversations, model=summary_model, checkpoint_manager=checkpoint_manager
+)
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries, model=cluster_model, checkpoint_manager=checkpoint_manager,
+)
+reduced_clusters = await reduce_clusters_from_base_clusters(
+    clusters, checkpoint_manager=checkpoint_manager, model=meta_cluster_model
+)
+projected_clusters = await reduce_dimensionality_from_clusters(
+    reduced_clusters, model=dimensionality_model, checkpoint_manager=checkpoint_manager,
+)
 ```
+
+The [summarization stage](../core-concepts/summarization.md) extracts key themes and intents from each conversation. The [clustering stage](../core-concepts/clustering.md) groups similar summaries together. The [meta-clustering stage](../core-concepts/meta-clustering.md) creates hierarchical relationships between clusters. Finally, the [dimensionality reduction stage](../core-concepts/dimensionality-reduction.md) projects the high-dimensional cluster embeddings into 2D space for visualization.
+
+### Visualization
+
+The final step displays the results in a format that makes it easy to understand how conversations have been organized. Kura provides multiple visualization styles to suit different needs and contexts.
+
+> **💡 What's happening here**: The visualization function takes the processed clusters and displays them as an organized tree structure showing the relationships between different conversation themes.
+
+```python
+visualise_pipeline_results(projected_clusters, style="basic")
+```
+
+The [visualization system](../core-concepts/visualization.md) supports three main styles: "basic" for clean output, "enhanced" for detailed statistics and progress bars, and "rich" for colorful interactive-style displays with comprehensive metrics.
+
+## Customization Options
+
+Kura's procedural design makes it easy to customize any part of the pipeline. You can swap out models, adjust parameters, or even skip certain stages depending on your specific needs.
+
+For different clustering approaches, you can replace the `ClusterDescriptionModel` with alternatives like HDBSCAN for exploratory analysis or MiniBatch K-means for large datasets. The [clustering documentation](../core-concepts/clustering.md) provides detailed guidance on when to use each approach.
+
+For different summary formats, you can configure the `SummaryModel` with custom prompts, response schemas, or even different language models. The [summarization documentation](../core-concepts/summarization.md) shows how to adapt the summarization process for specific domains or use cases.
 
 ## Using the Web Interface
 
-For a more interactive experience, Kura includes a web interface:
+For a more interactive experience, Kura includes a web interface that lets you explore results visually:
 
 ```bash
-# Start with default checkpoint directory
-kura start-app
-
-# Or use a custom checkpoint directory
 kura start-app --dir ./checkpoints
 ```
 
-Expected output:
-
-```
-🚀 Access website at (http://localhost:8000)
-
-INFO:     Started server process [14465]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-```
-
-Access the web interface at http://localhost:8000 to explore:
-
-- **Cluster Map**: 2D visualization of conversation clusters
-- **Cluster Tree**: Hierarchical view of cluster relationships
-- **Cluster Details**: In-depth information about selected clusters
-- **Conversation Dialog**: Examine individual conversations
-- **Metadata Filtering**: Filter clusters based on extracted properties
-
-## Benefits of the Procedural API
-
-1. **Fine-grained Control**: Process each step independently
-2. **Flexibility**: Mix and match different model implementations
-3. **Checkpoint Management**: Resume from any stage
-4. **Multiple Visualization Options**: Choose the best format for your needs
-5. **Functional Programming**: No hidden state, clear data flow
+The web interface provides an interactive cluster map, hierarchical tree view, and detailed conversation dialog system for exploring your results in depth.
 
 ## Next Steps
 
-Now that you've run your first analysis with Kura, you can:
-
-- [Learn about configuration options](configuration.md) to customize Kura
-- Explore [core concepts](../core-concepts/overview.md) to understand how Kura works
-- Check out the [API Reference](../api/index.md) for detailed documentation
+Now that you've run your first analysis with Kura, you can explore the [core concepts](../core-concepts/overview.md) to understand how each component works, check out the [configuration guide](configuration.md) to customize Kura for your specific needs, or dive into the [API reference](../api/index.md) for detailed documentation of all available functions and options.
