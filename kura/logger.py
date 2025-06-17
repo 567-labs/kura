@@ -65,3 +65,7 @@ class StandardLogger(BaseClusterLogger):
         """Generic logging method for arbitrary data."""
         metadata_str = f" | Metadata: {metadata}" if metadata else ""
         self.info(f"LOG [{key}]: {data}{metadata_str}")
+
+    def log_artifact(self, file_path: str, name: Optional[str] = None, **metadata) -> None:
+        """Log file artifacts (StandardLogger does nothing with artifacts)."""
+        pass

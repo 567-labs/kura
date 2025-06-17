@@ -51,3 +51,8 @@ class BaseClusterLogger(ABC):
     def log(self, data: Any, key: str, **metadata) -> None:
         """Generic logging method for arbitrary data."""
         raise NotImplementedError
+
+    @abstractmethod
+    def log_artifact(self, file_path: str, name: Optional[str] = None, **metadata) -> None:
+        """Log file artifacts."""
+        raise NotImplementedError
