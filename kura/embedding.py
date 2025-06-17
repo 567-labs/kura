@@ -228,7 +228,7 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
         return await self._embed_with_cache(
             texts, 
             self._embed_without_cache, 
-            cache_key_kwargs={"input_type": self.input_type}
+            input_type=self.input_type
         )
 
     async def _embed_without_cache(self, texts: list[str]) -> list[list[float]]:

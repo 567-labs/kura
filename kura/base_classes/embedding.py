@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Any
+from typing import Optional
 import os
 import hashlib
 import diskcache
@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseEmbeddingModel(ABC):
+    model_name: str  # Subclasses must set this
+    
     def __init__(self, cache_dir: Optional[str] = None):
         """
         Initialize embedding model with optional disk caching.
@@ -27,8 +29,6 @@ class BaseEmbeddingModel(ABC):
         """
         Generate cache key from text and model parameters.
         
-        Override this method in subclasses if custom caching behavior is needed.
-        
         Args:
             text: The text to embed
             **kwargs: Additional parameters that affect embedding output
@@ -36,11 +36,9 @@ class BaseEmbeddingModel(ABC):
         Returns:
             MD5 hash string to use as cache key
         """
-        # Get model name from subclass, fallback to class name if not available
-        model_name = getattr(self, 'model_name', self.__class__.__name__)
         cache_components = (
             text,
-            model_name,
+            self.model_name,  # Assume this always exists
             tuple(sorted(kwargs.items()))  # Any additional parameters
         )
         return hashlib.md5(str(cache_components).encode()).hexdigest()
@@ -48,16 +46,16 @@ class BaseEmbeddingModel(ABC):
     async def _embed_with_cache(
         self, 
         texts: list[str], 
-        embed_fn: Callable[[list[str]], Any],
-        cache_key_kwargs: dict[str, Any] = None
+        embed_fn,
+        **cache_kwargs
     ) -> list[list[float]]:
         """
         Handle caching logic for embedding operations.
         
         Args:
             texts: List of texts to embed
-            embed_fn: Function to call for uncached texts (should be async)
-            cache_key_kwargs: Additional kwargs for cache key generation
+            embed_fn: Async function to call for uncached texts
+            **cache_kwargs: Additional kwargs for cache key generation
             
         Returns:
             List of embeddings in the same order as input texts
@@ -70,24 +68,18 @@ class BaseEmbeddingModel(ABC):
         if self.cache is None:
             return await embed_fn(texts)
 
-        # Use empty dict if no cache key kwargs provided
-        if cache_key_kwargs is None:
-            cache_key_kwargs = {}
-
         # Check cache for each text
         cached_embeddings = {}
         uncached_texts = []
-        uncached_indices = []
 
         for i, text in enumerate(texts):
-            cache_key = self._get_cache_key(text, **cache_key_kwargs)
+            cache_key = self._get_cache_key(text, **cache_kwargs)
             cached_embedding = self.cache.get(cache_key)
             if cached_embedding is not None:
                 cached_embeddings[i] = cached_embedding
                 logger.debug(f"Found cached embedding for text at index {i}")
             else:
                 uncached_texts.append(text)
-                uncached_indices.append(i)
 
         logger.info(f"Found {len(cached_embeddings)} cached embeddings, need to generate {len(uncached_texts)} new embeddings")
 
@@ -98,7 +90,7 @@ class BaseEmbeddingModel(ABC):
             
             # Cache the new embeddings
             for text, embedding in zip(uncached_texts, new_embeddings):
-                cache_key = self._get_cache_key(text, **cache_key_kwargs)
+                cache_key = self._get_cache_key(text, **cache_kwargs)
                 self.cache.set(cache_key, embedding)
                 logger.debug(f"Cached embedding for text: {text[:50]}...")
 
