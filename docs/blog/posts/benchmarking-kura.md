@@ -13,7 +13,7 @@ We benchmarked Kura across three critical dimensions: processing performance, st
 
 1. **Fast, predictable processing**: 6,000 conversations analyzed with GPT-4o-mini in under 7 minutes and just around $2 in token costs (using 20 concurrent tasks)
 2. **Storage is not an issue**: 440x compression ratios mean even 100,000 conversations require only 20MB of storage - storage overhead is negligible for production workloads
-3. **Accurate topic discovery**: Over 85% clustering accuracy when validated against known conversation topics
+3. **Accurate topic discovery**: Over 85% cluster alignment when validated against similar conversation topics
 
 In this article, we'll walk through our benchmark methodology, detailed findings and how you can apply these results to your own use cases.
 
@@ -39,7 +39,7 @@ We focused on three critical factors for production usage:
 
 2. **Storage requirements** - This matters because Kura's checkpoint system caches results at each stage to enable resuming interrupted jobs, potentially creating significant storage overhead at scale.
 
-3. **Clustering accuracy** - We benchmarked this by using responses generated from identical questions, creating a straightforward test of whether similar conversations cluster together correctly.
+3. **Cluster alignment** - We benchmarked this by using responses generated from identical questions, creating a straightforward test of whether similar conversations cluster together correctly.
 
 We then used GPT-4o-mini and GPT-4.1-mini in two separate runs, seeing how the two different models might differ in terms of their performance and cost. We used a conservative semaphore limit of 20 concurrent tasks to stay within rate limits for most users - this can be increased for better performance if your API limits allow.
 
@@ -111,7 +111,7 @@ This has minimal storage requirements, with 100,000 conversations requiring less
 
 More importantly, as we cluster and summarize increasingly larger datasets, our compression techniques ensure storage never becomes a concern. Parquet enables us to store the same data in just a few megabytes while individual summary caching adds virtually no storage burden while providing massive performance improvements.
 
-### Clustering Accuracy
+### Cluster Alignment
 
 Since the MT-Bench dataset contains identical prompts answered by different AI models, all responses to the same question should be in the same clusters regardless of the model. This is because the underlying user intent and topic remains consistent.
 
@@ -133,7 +133,7 @@ Since we have approximately 6,000 conversations we're trying to cluster derived 
 
 ## Model Performance Comparison
 
-While GPT-4.1-mini costs approximately 3x more than GPT-4o-mini, our analysis revealed an interesting finding: both models perform similarly on clustering accuracy.
+While GPT-4.1-mini costs approximately 3x more than GPT-4o-mini, our analysis revealed an interesting finding: both models perform similarly on cluster alignment.
 
 At the top level clusters, GPT-4.1-mini edged out GPT-4o-mini by a small margin, having an average spillover rate of 9.6% relative to GPT-4o-mini's 12.3% when clustering 6,000 conversations.
 
@@ -141,7 +141,7 @@ Rather than agonizing over which “mini” to pick upfront, the most effective 
 
 Over a few cycles you’ll quickly learn which prompt formulations yield the cleanest topic separation for your particular dataset.
 
-Because GPT-4o-mini comes in at roughly one-third the cost of GPT-4.1-mini yet delivers nearly identical grouping accuracy, it’s a great choice for exploratory experimentation and large-scale runs where budget matters most.
+Because GPT-4o-mini comes in at roughly one-third the cost of GPT-4.1-mini yet delivers nearly identical cluster alignment, it’s a great choice for exploratory experimentation and large-scale runs where budget matters most.
 
 Once you’ve locked in on prompt patterns and parameters that give you coherent clusters, you can optionally switch to GPT-4.1-mini if you need more detailed, nuanced summaries for stakeholder-facing reports. In short: experiment early and often with prompts, then choose the model that best balances your needs for cost, speed, and summary quality.
 
