@@ -10,6 +10,7 @@ from .v1.kura import (
     reduce_dimensionality_from_clusters,
 )
 from .meta_cluster import MetaClusterModel
+from .cached_embedding import CachedEmbeddingModel
 
 from .types import Conversation
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
@@ -44,6 +45,7 @@ __all__ = [
     "ClusterDescriptionModel",
     "Conversation",
     "MetaClusterModel",
+    "CachedEmbeddingModel",
     "CheckpointManager",
     "MultiCheckpointManager",
     "KmeansClusteringMethod",
