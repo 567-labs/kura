@@ -9,9 +9,8 @@ class StandardLogger(BaseClusterLogger):
 
     def __init__(self, name: str = "kura_clustering"):
         """Initialize the standard logger."""
-        self.name = name
         self.logger = logging.getLogger(name)
-
+        
         if not self.logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
