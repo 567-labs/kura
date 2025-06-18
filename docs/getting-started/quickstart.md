@@ -37,67 +37,49 @@ Here's a complete working example:
 import asyncio
 from rich.console import Console
 from kura import (
+    ClusterDescriptionModel,
+    SummaryModel,
+    MetaClusterModel,
+    Conversation,
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
     reduce_dimensionality_from_clusters,
-    CheckpointManager,
+    visualise_pipeline_results,
 )
-from kura.visualization import visualise_pipeline_results
-from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
-from kura.meta_cluster import MetaClusterModel
+from kura.checkpoints import JSONLCheckpointManager
 from kura.dimensionality import HDBUMAP
 
+
 async def main():
-    # Initialize models
     console = Console()
+
+    # Define Models
     summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)  # Uses K-means by default
+    cluster_model = ClusterDescriptionModel(console=console)  # Uses K-means by default
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
-    # Optional: Use different clustering methods for specific use cases
-
-    # For exploratory analysis - HDBSCAN automatically discovers optimal cluster count
-    # from kura.hdbscan import HDBSCANClusteringMethod
-    # hdbscan_clustering = HDBSCANClusteringMethod(min_cluster_size=10)
-    # cluster_model = ClusterModel(clustering_method=hdbscan_clustering, console=console)
-
-    # For large datasets (100k+ conversations) - MiniBatch KMeans is memory efficient
-    # from kura.k_means import MiniBatchKmeansClusteringMethod
-    # minibatch_clustering = MiniBatchKmeansClusteringMethod(
-    #     clusters_per_group=10, batch_size=1000, random_state=42
-    # )
-    # cluster_model = ClusterModel(clustering_method=minibatch_clustering, console=console)
-
-    # Set up checkpointing to save intermediate results
-    checkpoint_manager = CheckpointManager("./checkpoints", enabled=True)
+    # Define Checkpoints - Kura supports multiple checkpoint formats
+    # See docs/core-concepts/checkpoints.md for Parquet, HuggingFace, and MultiCheckpointManager options
+    checkpoint_manager = JSONLCheckpointManager("./checkpoints", enabled=True)
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
-        "ivanleomk/synthetic-gemini-conversations",
-        split="train"
+        "ivanleomk/synthetic-gemini-conversations", split="train"
     )
 
     # Process through the pipeline step by step
     summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_manager
+        conversations, model=summary_model, checkpoint_manager=checkpoint_manager
     )
 
     clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_manager
+        summaries, model=cluster_model, checkpoint_manager=checkpoint_manager
     )
 
     reduced_clusters = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_manager
+        clusters, model=meta_cluster_model, checkpoint_manager=checkpoint_manager
     )
 
     projected_clusters = await reduce_dimensionality_from_clusters(
@@ -107,11 +89,8 @@ async def main():
     )
 
     # Visualize results
-    visualise_pipeline_results(reduced_clusters, style="enhanced")
+    visualise_pipeline_results(projected_clusters, style="basic")
 
-    print(f"\nProcessed {len(conversations)} conversations")
-    print(f"Created {len(reduced_clusters)} meta clusters")
-    print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -123,6 +102,25 @@ This example will:
 2. Process them through the complete analysis pipeline step by step
 3. Generate hierarchical clusters organized into categories
 4. Display the results with enhanced visualization
+
+### Expected Output
+
+```text
+Programming Assistance (190 conversations)
+╠══ Generate SEO-optimized content for blogs and scripts (38 conversations)
+║   ╠══ Assist in writing SEO-friendly blog posts (12 conversations)
+║   ╠══ Write blog posts about diabetes medications (10 conversations)
+║   ╚══ Help create SEO-driven marketing content (8 conversations)
+╠══ Help me analyze and visualize data (29 conversations)
+║   ╠══ Assist with data analysis and visualization in R (10 conversations)
+║   ╠══ Assist with data analysis and visualization using Python (8 conversations)
+║   ╚══ Assist with Tableau sales data visualizations (11 conversations)
+╠══ Assist with writing educational video scripts (20 conversations)
+╚══ ... (more clusters)
+
+Total processing time: 21.9s (2.1s with cache!)
+Checkpoints saved to: ./checkpoints/
+```
 
 > **💡 Tip**: The example above uses K-means clustering (default). Kura provides three clustering options:
 > - **K-means** (default): Good for small-medium datasets with consistent cluster sizes

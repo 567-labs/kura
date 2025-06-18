@@ -114,6 +114,10 @@ uv pip install kura
 import asyncio
 from rich.console import Console
 from kura import (
+    ClusterDescriptionModel,
+    SummaryModel,
+    MetaClusterModel,
+    Conversation,
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
@@ -121,47 +125,37 @@ from kura import (
     visualise_pipeline_results,
 )
 from kura.checkpoints import JSONLCheckpointManager
-from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterDescriptionModel
-from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
 
 
 async def main():
-    # Initialize models
     console = Console()
 
-    # SummaryModel now supports caching to speed up re-runs!
-    summary_model = SummaryModel(
-        console=console,
-        cache_dir="./.summary_cache",  # Optional: specify cache location
-    )
-
-    cluster_model = ClusterDescriptionModel(
-        console=console,
-    )
+    # Define Models
+    summary_model = SummaryModel(console=console)
+    cluster_model = ClusterDescriptionModel(console=console)  # Uses K-means by default
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
-    # Set up checkpointing - you can choose from multiple backends
-    # HuggingFace Datasets (advanced features, cloud sync)
-    checkpoint_manager = JSONLCheckpointManager("./checkpoints/hf", enabled=True)
+    # Define Checkpoints
+    checkpoint_manager = JSONLCheckpointManager("./checkpoints", enabled=True)
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
         "ivanleomk/synthetic-gemini-conversations", split="train"
     )
+
+    # Process through the pipeline step by step
     summaries = await summarise_conversations(
         conversations, model=summary_model, checkpoint_manager=checkpoint_manager
     )
+
     clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_manager,
+        summaries, model=cluster_model, checkpoint_manager=checkpoint_manager
     )
+
     reduced_clusters = await reduce_clusters_from_base_clusters(
-        clusters, checkpoint_manager=checkpoint_manager, model=meta_cluster_model
+        clusters, model=meta_cluster_model, checkpoint_manager=checkpoint_manager
     )
 
     projected_clusters = await reduce_dimensionality_from_clusters(
@@ -171,7 +165,7 @@ async def main():
     )
 
     # Visualize results
-    visualise_pipeline_results(projected_clusters, style="enhanced")
+    visualise_pipeline_results(projected_clusters, style="basic")
 
 
 if __name__ == "__main__":
