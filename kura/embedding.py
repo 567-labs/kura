@@ -38,15 +38,15 @@ def find_uncached_texts(
     return uncached_texts
 
 
-async def embed_with_cache(
+async def embed_texts(
     texts: list[str],
     cache: Optional[CacheStrategy],
     cache_key_fn: callable,
     embed_fn: callable,
 ) -> list[list[float]]:
-    """Embed texts with caching support."""
-    if not texts:
-        return []
+    """Orchestrate embedding process with optional caching."""
+    if not cache:
+        return await embed_fn(texts)
 
     # Find what needs embedding
     uncached_texts = find_uncached_texts(texts, cache, cache_key_fn)
@@ -55,28 +55,11 @@ async def embed_with_cache(
     if uncached_texts:
         embeddings = await embed_fn(uncached_texts)
 
-        # If no cache is provided uncached texts will have everything so no need to worry
-        if not cache:
-            return embeddings
-
         for text, embedding in zip(uncached_texts, embeddings):
             cache_key = cache_key_fn(text)
             cache.set(cache_key, embedding)
 
-    if cache:
-        # Get all embeddings from cache
-        cached_embeddings = []
-        for text in texts:
-            embedding = cache.get(cache_key_fn(text))
-            if embedding is None:
-                raise ValueError(
-                    f"Expected cached embedding not found for text: {text[:50]}..."
-                )
-            cached_embeddings.append(embedding)
-        return cached_embeddings
-
-    # This should be unreachable - if no cache, uncached_texts contains all texts
-    raise ValueError("Internal error: No cache provided and no embeddings computed")
+    return [cache.get(cache_key_fn(text)) for text in texts]
 
 
 async def embed_summaries(
@@ -153,7 +136,7 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
 
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
-        return await embed_with_cache(
+        return await embed_texts(
             texts=texts,
             cache=self.cache,
             cache_key_fn=self._generate_cache_key,
@@ -259,7 +242,7 @@ class SentenceTransformerEmbeddingModel(BaseEmbeddingModel):
             f"Starting embedding of {len(texts)} texts using SentenceTransformer"
         )
 
-        return await embed_with_cache(
+        return await embed_texts(
             texts=texts,
             cache=self.cache,
             cache_key_fn=self._generate_cache_key,
@@ -352,7 +335,7 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
 
         logger.info(f"Starting embedding of {len(texts)} texts using {self.model_name}")
 
-        return await embed_with_cache(
+        return await embed_texts(
             texts=texts,
             cache=self.cache,
             cache_key_fn=self._generate_cache_key,
