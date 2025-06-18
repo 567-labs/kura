@@ -5,6 +5,7 @@ from .cluster import BaseClusterDescriptionModel
 from .meta_cluster import BaseMetaClusterModel
 from .dimensionality import BaseDimensionalityReduction
 from .checkpoint import BaseCheckpointManager
+from .logger import BaseClusterLogger
 
 __all__ = [
     "BaseEmbeddingModel",
@@ -14,4 +15,5 @@ __all__ = [
     "BaseMetaClusterModel",
     "BaseDimensionalityReduction",
     "BaseCheckpointManager",
+    "BaseClusterLogger",
 ]
