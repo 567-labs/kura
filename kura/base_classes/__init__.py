@@ -1,3 +1,4 @@
+from .cache import CacheStrategy
 from .embedding import BaseEmbeddingModel
 from .summarisation import BaseSummaryModel
 from .clustering_method import BaseClusteringMethod
@@ -7,6 +8,7 @@ from .dimensionality import BaseDimensionalityReduction
 from .checkpoint import BaseCheckpointManager
 
 __all__ = [
+    "CacheStrategy",
     "BaseEmbeddingModel",
     "BaseSummaryModel",
     "BaseClusteringMethod",
