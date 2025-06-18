@@ -8,9 +8,9 @@ class CacheStrategy(ABC):
     @abstractmethod
     def get(self, key: str) -> Optional[Any]:
         """Retrieve a value from the cache by key."""
-        pass
+        raise NotImplementedError("Subclasses must implement get method")
 
     @abstractmethod
     def set(self, key: str, value: Any) -> None:
         """Store a value in the cache with the given key."""
-        pass
+        raise NotImplementedError("Subclasses must implement set method")
