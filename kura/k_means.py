@@ -1,9 +1,21 @@
 from kura.base_classes import BaseClusteringMethod
-from sklearn.cluster import KMeans, MiniBatchKMeans
 import math
-from typing import TypeVar
+from typing import TypeVar, TYPE_CHECKING
 import numpy as np
 import logging
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    from sklearn.cluster import KMeans, MiniBatchKMeans
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        from sklearn.cluster import KMeans, MiniBatchKMeans
+        SKLEARN_AVAILABLE = True
+    except ImportError:
+        KMeans = None  # type: ignore
+        MiniBatchKMeans = None  # type: ignore
+        SKLEARN_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +43,12 @@ class KmeansClusteringMethod(BaseClusteringMethod):
             "item": any,
         }
         """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError(
+                "Optional package 'scikit-learn' is required for this feature. "
+                "Install it with: uv pip install scikit-learn"
+            )
+            
         if not items:
             logger.warning("Empty items list provided to cluster method")
             return {}
@@ -138,6 +156,12 @@ class MiniBatchKmeansClusteringMethod(BaseClusteringMethod):
         Raises:
             Exception: If clustering fails due to invalid input or processing errors
         """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError(
+                "Optional package 'scikit-learn' is required for this feature. "
+                "Install it with: uv pip install scikit-learn"
+            )
+            
         if not items:
             logger.warning("Empty items list provided to MiniBatch K-means cluster method")
             return {}

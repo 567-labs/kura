@@ -1,14 +1,27 @@
-from typing import Optional, Type, TypeVar, Union
+from typing import Optional, Type, TypeVar, Union, TYPE_CHECKING
 import asyncio
 import logging
 import os
 import hashlib
 
-import instructor
-from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 import diskcache
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    import instructor
+    from instructor.models import KnownModelName
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        import instructor
+        from instructor.models import KnownModelName
+        INSTRUCTOR_AVAILABLE = True
+    except ImportError:
+        instructor = None  # type: ignore
+        KnownModelName = None  # type: ignore
+        INSTRUCTOR_AVAILABLE = False
 
 
 from kura.base_classes import BaseSummaryModel
@@ -207,6 +220,12 @@ class SummaryModel(BaseSummaryModel):
         logger.info(
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
+
+        if not INSTRUCTOR_AVAILABLE:
+            raise ImportError(
+                "Optional package 'instructor' is required for this feature. "
+                "Install it with: uv pip install instructor"
+            )
 
         client = instructor.from_provider(self.model, async_client=True)
 

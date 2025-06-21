@@ -1,9 +1,20 @@
 from __future__ import annotations
 from kura.base_classes import BaseClusteringMethod
-import hdbscan
-from typing import TypeVar
+from typing import TypeVar, TYPE_CHECKING
 import numpy as np
 import logging
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    import hdbscan
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        import hdbscan
+        HDBSCAN_AVAILABLE = True
+    except ImportError:
+        hdbscan = None  # type: ignore
+        HDBSCAN_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +78,12 @@ class HDBSCANClusteringMethod(BaseClusteringMethod):
             A dictionary mapping cluster IDs to lists of items in that cluster.
             Noise points (outliers) are assigned to cluster ID -1.
         """
+        if not HDBSCAN_AVAILABLE:
+            raise ImportError(
+                "Optional package 'hdbscan' is required for this feature. "
+                "Install it with: uv pip install hdbscan"
+            )
+            
         if not items:
             logger.warning("Empty items list provided to cluster method")
             return {}

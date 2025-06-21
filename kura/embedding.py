@@ -5,7 +5,18 @@ from typing import Union, TYPE_CHECKING
 from kura.utils import batch_texts
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
-from openai import AsyncOpenAI
+
+if TYPE_CHECKING:
+    # Import for type checking - ensures proper types during static analysis
+    from openai import AsyncOpenAI
+else:
+    # Runtime import handling - gracefully handle missing dependencies
+    try:
+        from openai import AsyncOpenAI
+        OPENAI_AVAILABLE = True
+    except ImportError:
+        AsyncOpenAI = None  # type: ignore
+        OPENAI_AVAILABLE = False
 
 if TYPE_CHECKING:
     from cohere import AsyncClient
@@ -53,6 +64,11 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
     ):
+        if not OPENAI_AVAILABLE:
+            raise ImportError(
+                "Optional package 'openai' is required for this feature. "
+                "Install it with: uv pip install openai"
+            )
         self.client = AsyncOpenAI()
         self.model_name = model_name
         self._model_batch_size = model_batch_size
