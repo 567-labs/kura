@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from kura.types.summarisation import ConversationSummary
-from kura.types.cluster import Cluster
-from typing import Dict, List
+from typing import Dict, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kura.types.summarisation import ConversationSummary
+    from kura.types.cluster import Cluster
 
 
 class BaseClusterDescriptionModel(ABC):
@@ -14,8 +16,8 @@ class BaseClusterDescriptionModel(ABC):
     @abstractmethod
     async def generate_clusters(
         self,
-        cluster_id_to_summaries: Dict[int, List[ConversationSummary]],
+        cluster_id_to_summaries: Dict[int, List["ConversationSummary"]],
         prompt: str,
         max_contrastive_examples: int = 10,
-    ) -> List[Cluster]:
+    ) -> List["Cluster"]:
         pass

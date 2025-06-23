@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from kura.types.cluster import Cluster
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kura.types.cluster import Cluster
 
 
 class BaseMetaClusterModel(ABC):
@@ -10,5 +13,5 @@ class BaseMetaClusterModel(ABC):
         pass
 
     @abstractmethod
-    async def reduce_clusters(self, clusters: list[Cluster]) -> list[Cluster]:
+    async def reduce_clusters(self, clusters: list["Cluster"]) -> list["Cluster"]:
         pass

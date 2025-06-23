@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Type, TypeVar
+from typing import Type, TypeVar, TYPE_CHECKING
 
-from kura.types import Conversation, GeneratedSummary, ConversationSummary
+if TYPE_CHECKING:
+    from kura.types import Conversation, GeneratedSummary, ConversationSummary
 
 
-T = TypeVar("T", bound=GeneratedSummary)
+T = TypeVar("T", bound="GeneratedSummary")
 
 
 class BaseSummaryModel(ABC):
@@ -24,14 +25,14 @@ class BaseSummaryModel(ABC):
     @abstractmethod
     async def summarise(
         self,
-        conversations: list[Conversation],
+        conversations: list["Conversation"],
         prompt: str,
         *,
         # All configuration exposed as parameters (not buried in class)
-        response_schema: Type[T] = GeneratedSummary,
+        response_schema: Type[T] = "GeneratedSummary",
         temperature: float = 0.2,
         **kwargs,
-    ) -> list[ConversationSummary]:
+    ) -> list["ConversationSummary"]:
         """
         Summarise conversations with configurable parameters.
 
