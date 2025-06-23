@@ -1,8 +1,6 @@
 from kura.base_classes import BaseClusteringMethod
-from sklearn.cluster import KMeans, MiniBatchKMeans
 import math
 from typing import TypeVar
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,6 +44,8 @@ class KmeansClusteringMethod(BaseClusteringMethod):
                 f"Calculated {n_clusters} clusters for {len(data)} items (target: {self.clusters_per_group} items per cluster)"
             )
 
+            import numpy as np
+            from sklearn.cluster import KMeans
             X = np.array(embeddings)
             logger.debug(f"Created embedding matrix of shape {X.shape}")
 
@@ -154,6 +154,8 @@ class MiniBatchKmeansClusteringMethod(BaseClusteringMethod):
                 f"(target: {self.clusters_per_group} items per cluster)"
             )
 
+            import numpy as np
+            from sklearn.cluster import MiniBatchKMeans
             X = np.array(embeddings)
             logger.debug(f"Created embedding matrix of shape {X.shape}")
 

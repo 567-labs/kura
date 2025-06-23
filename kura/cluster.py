@@ -10,7 +10,6 @@ from kura.types.cluster import Cluster, GeneratedCluster
 import logging
 import math
 from typing import Union, cast, Dict, List, Optional
-import numpy as np
 import asyncio
 import instructor
 from instructor.models import KnownModelName
@@ -356,6 +355,7 @@ class KmeansClusteringModel(BaseClusteringMethod):
                 f"Calculated {n_clusters} clusters for {len(data)} items (target: {self.clusters_per_group} items per cluster)"
             )
 
+            import numpy as np
             X = np.array(embeddings)
             logger.debug(f"Created embedding matrix of shape {X.shape}")
 
@@ -426,6 +426,7 @@ def get_contrastive_examples(
         return all_examples
 
     # Otherwise sample without replacement
+    import numpy as np
     selected = list(
         np.random.choice(all_examples, size=max_contrastive_examples, replace=False)
     )

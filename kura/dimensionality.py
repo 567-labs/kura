@@ -3,7 +3,6 @@ from kura.types import Cluster, ProjectedCluster
 from kura.embedding import OpenAIEmbeddingModel
 from kura.utils import calculate_cluster_levels
 from typing import Union
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,7 @@ class HDBUMAP(BaseDimensionalityReduction):
             )
             return []
 
+        import numpy as np
         embeddings = np.array(cluster_embeddings)
         logger.debug(f"Created embedding matrix of shape {embeddings.shape}")
 

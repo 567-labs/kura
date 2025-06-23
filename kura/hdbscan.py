@@ -1,8 +1,6 @@
 from __future__ import annotations
 from kura.base_classes import BaseClusteringMethod
-import hdbscan
 from typing import TypeVar
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,6 +77,8 @@ class HDBSCANClusteringMethod(BaseClusteringMethod):
 
             logger.debug(f"Extracted embeddings for {len(data)} items")
 
+            import numpy as np
+            import hdbscan
             X = np.array(embeddings)
             logger.debug(f"Created embedding matrix of shape {X.shape}")
 
