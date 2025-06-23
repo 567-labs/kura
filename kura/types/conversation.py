@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Literal, Union, Callable
 import json
 import importlib
-from tqdm import tqdm
 
 metadata_dict = dict[
     str, Union[str, int, float, bool, list[str], list[int], list[float]]
@@ -64,6 +63,8 @@ class Conversation(BaseModel):
         else:
             dataset = load_dataset(dataset_name, split=split, streaming=True)
 
+        from tqdm import tqdm
+        
         return [
             Conversation(
                 chat_id=chat_id_fn(item),
