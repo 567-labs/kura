@@ -26,6 +26,8 @@ jobs:
       run: uv sync
     
     - name: Run import benchmark
+      env:
+        OPENAI_API_KEY: sk-mock-key-for-testing
       run: |
         uv run python -c "
         import time
@@ -60,3 +62,4 @@ jobs:
         print(f'Total import time: {total_time:.4f}s')
         print('========================')
         "
+        
