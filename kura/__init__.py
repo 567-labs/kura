@@ -1,5 +1,20 @@
 # Light imports - these are fast to load
 from .types import Conversation
+import importlib as _importlib
+
+# Submodules that can be lazy-loaded
+_submodules = [
+    "checkpoint",
+    "checkpoints", 
+    "k_means",
+    "hdbscan",
+    "cluster", 
+    "summarisation",
+    "embedding",
+    "meta_cluster",
+    "dimensionality",
+    "v1",
+]
 
 # Import ParquetCheckpointManager from checkpoints module if available
 try:
@@ -21,80 +36,38 @@ except ImportError:
 
 def __getattr__(name: str):
     """Lazy loading for heavy imports to improve startup time."""
-    # Checkpoint managers
-    if name == "CheckpointManager":
-        from .checkpoint import CheckpointManager
-        return CheckpointManager
-    elif name == "MultiCheckpointManager":
-        from .checkpoints import MultiCheckpointManager
-        return MultiCheckpointManager
+    # Handle submodule access (e.g., kura.k_means)
+    if name in _submodules:
+        module = _importlib.import_module(f"kura.{name}")
+        globals()[name] = module  # Cache for subsequent accesses
+        return module
     
-    # Summary models and functions
-    elif name == "SummaryModel":
-        from .summarisation import SummaryModel
-        return SummaryModel
-    elif name == "summarise_conversations":
-        from .summarisation import summarise_conversations
-        return summarise_conversations
+    # Auto-search for classes/functions in submodules (e.g., kura.KmeansClusteringMethod)
+    for submodule_name in _submodules:
+        try:
+            module = _importlib.import_module(f"kura.{submodule_name}")
+            if hasattr(module, name):
+                attr = getattr(module, name)
+                globals()[name] = attr  # Cache for subsequent accesses
+                return attr
+        except ImportError:
+            continue
     
-    # Clustering models and functions
-    elif name == "ClusterDescriptionModel":
-        from .cluster import ClusterDescriptionModel
-        return ClusterDescriptionModel
-    elif name == "generate_base_clusters_from_conversation_summaries":
-        from .cluster import generate_base_clusters_from_conversation_summaries
-        return generate_base_clusters_from_conversation_summaries
-    
-    # Clustering methods
-    elif name == "KmeansClusteringMethod":
-        from .k_means import KmeansClusteringMethod
-        return KmeansClusteringMethod
-    elif name == "MiniBatchKmeansClusteringMethod":
-        from .k_means import MiniBatchKmeansClusteringMethod
-        return MiniBatchKmeansClusteringMethod
-    elif name == "HDBSCANClusteringMethod":
-        from .hdbscan import HDBSCANClusteringMethod
-        return HDBSCANClusteringMethod
-    
-    # Meta clustering
-    elif name == "MetaClusterModel":
-        from .meta_cluster import MetaClusterModel
-        return MetaClusterModel
-    
-    # V1 functions
-    elif name == "reduce_clusters_from_base_clusters":
-        from .v1.kura import reduce_clusters_from_base_clusters
-        return reduce_clusters_from_base_clusters
-    elif name == "reduce_dimensionality_from_clusters":
-        from .v1.kura import reduce_dimensionality_from_clusters
-        return reduce_dimensionality_from_clusters
-    
-    # Visualization functions
-    elif name == "visualise_pipeline_results":
-        from .v1.visualization import visualise_pipeline_results
-        return visualise_pipeline_results
-    elif name == "visualise_clusters_rich":
-        from .v1.visualization import visualise_clusters_rich
-        return visualise_clusters_rich
-    elif name == "visualise_clusters_enhanced":
-        from .v1.visualization import visualise_clusters_enhanced
-        return visualise_clusters_enhanced
-    elif name == "visualise_clusters":
-        from .v1.visualization import visualise_clusters
-        return visualise_clusters
-    
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+    raise AttributeError(f"module 'kura' has no attribute '{name}'")
 
 
-__all__ = [
-    "SummaryModel",
-    "ClusterDescriptionModel",
+# Auto-generate __all__ from submodules + known exports
+__all__ = _submodules + [
+    # Always available (not lazy-loaded)
     "Conversation",
+    # Main exports from submodules (for better IDE support)
+    "SummaryModel",
+    "ClusterDescriptionModel", 
     "MetaClusterModel",
     "CheckpointManager",
     "MultiCheckpointManager",
     "KmeansClusteringMethod",
-    "MiniBatchKmeansClusteringMethod",
+    "MiniBatchKmeansClusteringMethod", 
     "HDBSCANClusteringMethod",
     # Procedural Methods
     "summarise_conversations",
@@ -104,7 +77,7 @@ __all__ = [
     # Visualisation
     "visualise_pipeline_results",
     "visualise_clusters_rich",
-    "visualise_clusters_enhanced",
+    "visualise_clusters_enhanced", 
     "visualise_clusters",
 ]
 
