@@ -438,9 +438,9 @@ def get_contrastive_examples(
 
 async def generate_base_clusters_from_conversation_summaries(
     summaries: List[ConversationSummary],
-    embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
-    clustering_method: BaseClusteringMethod = KmeansClusteringModel(),
-    clustering_model: BaseClusterDescriptionModel = ClusterDescriptionModel(),
+    embedding_model: Optional[BaseEmbeddingModel] = None,
+    clustering_method: Optional[BaseClusteringMethod] = None,
+    clustering_model: Optional[BaseClusterDescriptionModel] = None,
     checkpoint_manager: Optional[CheckpointManager] = None,
     max_contrastive_examples: int = 10,
     prompt: str = DEFAULT_CLUSTER_PROMPT,
@@ -464,6 +464,14 @@ async def generate_base_clusters_from_conversation_summaries(
     """
     if not summaries:
         raise ValueError("Empty summaries list provided")
+
+    # Lazy instantiation of default models
+    if embedding_model is None:
+        embedding_model = OpenAIEmbeddingModel()
+    if clustering_method is None:
+        clustering_method = KmeansClusteringModel()
+    if clustering_model is None:
+        clustering_model = ClusterDescriptionModel()
 
     if checkpoint_manager:
         cached = checkpoint_manager.load_checkpoint(
