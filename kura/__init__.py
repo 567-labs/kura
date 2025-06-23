@@ -1,91 +1,73 @@
-# Light imports - these are fast to load
-from .types import Conversation
-import importlib as _importlib
+# Lazy loading configuration
+_LAZY_IMPORTS = {
+    # Core models
+    "SummaryModel": ("kura.summarisation", "SummaryModel"),
+    "ClusterDescriptionModel": ("kura.cluster", "ClusterDescriptionModel"),
+    "MetaClusterModel": ("kura.meta_cluster", "MetaClusterModel"),
+    
+    # Types
+    "Conversation": ("kura.types", "Conversation"),
+    
+    # Checkpoint managers
+    "CheckpointManager": ("kura.checkpoint", "CheckpointManager"),
+    "MultiCheckpointManager": ("kura.checkpoints", "MultiCheckpointManager"),
+    
+    # Clustering methods
+    "KmeansClusteringMethod": ("kura.k_means", "KmeansClusteringMethod"),
+    "MiniBatchKmeansClusteringMethod": ("kura.k_means", "MiniBatchKmeansClusteringMethod"),
+    "HDBSCANClusteringMethod": ("kura.hdbscan", "HDBSCANClusteringMethod"),
+    
+    # Procedural functions
+    "summarise_conversations": ("kura.summarisation", "summarise_conversations"),
+    "generate_base_clusters_from_conversation_summaries": ("kura.cluster", "generate_base_clusters_from_conversation_summaries"),
+    "reduce_clusters_from_base_clusters": ("kura.v1.kura", "reduce_clusters_from_base_clusters"),
+    "reduce_dimensionality_from_clusters": ("kura.v1.kura", "reduce_dimensionality_from_clusters"),
+    
+    # Visualization
+    "visualise_pipeline_results": ("kura.v1.visualization", "visualise_pipeline_results"),
+    "visualise_clusters_rich": ("kura.v1.visualization", "visualise_clusters_rich"),
+    "visualise_clusters_enhanced": ("kura.v1.visualization", "visualise_clusters_enhanced"),
+    "visualise_clusters": ("kura.v1.visualization", "visualise_clusters"),
+}
 
-# Submodules that can be lazy-loaded
-_submodules = [
-    "checkpoint",
-    "checkpoints", 
-    "k_means",
-    "hdbscan",
-    "cluster", 
-    "summarisation",
-    "embedding",
-    "meta_cluster",
-    "dimensionality",
-    "v1",
-]
-
-# Import ParquetCheckpointManager from checkpoints module if available
-try:
-    from .checkpoints.parquet import ParquetCheckpointManager
-
-    PARQUET_AVAILABLE = True
-except ImportError:
-    ParquetCheckpointManager = None
-    PARQUET_AVAILABLE = False
-
-try:
-    from .checkpoints.hf_dataset import HFDatasetCheckpointManager
-
-    HF_AVAILABLE = True
-except ImportError:
-    HFDatasetCheckpointManager = None
-    HF_AVAILABLE = False
-
+# Optional imports that may not be available
+_OPTIONAL_IMPORTS = {
+    "ParquetCheckpointManager": ("kura.checkpoints.parquet", "ParquetCheckpointManager"),
+    "HFDatasetCheckpointManager": ("kura.checkpoints.hf_dataset", "HFDatasetCheckpointManager"),
+}
 
 def __getattr__(name: str):
-    """Lazy loading for heavy imports to improve startup time."""
-    # Handle submodule access (e.g., kura.k_means)
-    if name in _submodules:
-        module = _importlib.import_module(f"kura.{name}")
-        globals()[name] = module  # Cache for subsequent accesses
-        return module
+    """Lazy loading of modules using __getattr__."""
+    # Check if already cached
+    if name in globals():
+        return globals()[name]
     
-    # Auto-search for classes/functions in submodules (e.g., kura.KmeansClusteringMethod)
-    for submodule_name in _submodules:
+    # Check required imports
+    if name in _LAZY_IMPORTS:
+        module_path, attr_name = _LAZY_IMPORTS[name]
         try:
-            module = _importlib.import_module(f"kura.{submodule_name}")
-            if hasattr(module, name):
-                attr = getattr(module, name)
-                globals()[name] = attr  # Cache for subsequent accesses
-                return attr
+            from importlib import import_module
+            module = import_module(module_path)
+            attr = getattr(module, attr_name)
+            globals()[name] = attr  # Cache it
+            return attr
+        except ImportError as e:
+            raise ImportError(f"Failed to import {name} from {module_path}: {e}")
+    
+    # Check optional imports
+    if name in _OPTIONAL_IMPORTS:
+        module_path, attr_name = _OPTIONAL_IMPORTS[name]
+        try:
+            from importlib import import_module
+            module = import_module(module_path)
+            attr = getattr(module, attr_name)
+            globals()[name] = attr  # Cache it
+            return attr
         except ImportError:
-            continue
+            raise ImportError(f"Optional dependency {name} is not available. Install the required packages.")
     
     raise AttributeError(f"module 'kura' has no attribute '{name}'")
 
-
-# Auto-generate __all__ from submodules + known exports
-__all__ = _submodules + [
-    # Always available (not lazy-loaded)
-    "Conversation",
-    # Main exports from submodules (for better IDE support)
-    "SummaryModel",
-    "ClusterDescriptionModel", 
-    "MetaClusterModel",
-    "CheckpointManager",
-    "MultiCheckpointManager",
-    "KmeansClusteringMethod",
-    "MiniBatchKmeansClusteringMethod", 
-    "HDBSCANClusteringMethod",
-    # Procedural Methods
-    "summarise_conversations",
-    "generate_base_clusters_from_conversation_summaries",
-    "reduce_clusters_from_base_clusters",
-    "reduce_dimensionality_from_clusters",
-    # Visualisation
-    "visualise_pipeline_results",
-    "visualise_clusters_rich",
-    "visualise_clusters_enhanced", 
-    "visualise_clusters",
-]
-
-# Add ParquetCheckpointManager to __all__ if available
-if PARQUET_AVAILABLE:
-    __all__.append("ParquetCheckpointManager")
-
-if HF_AVAILABLE:
-    __all__.append("HFDatasetCheckpointManager")
+__all__ = list(_LAZY_IMPORTS.keys()) + list(_OPTIONAL_IMPORTS.keys())
 
 __version__ = "1.0.0"
