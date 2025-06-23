@@ -28,38 +28,5 @@ jobs:
     - name: Run import benchmark
       env:
         OPENAI_API_KEY: sk-mock-key-for-testing
-      run: |
-        uv run python -c "
-        import time
-        import sys
-        
-        print('=== Kura Import Benchmark ===')
-        print(f'Python version: {sys.version}')
-        print()
-        
-        # Benchmark kura.types import
-        start_time = time.perf_counter()
-        try:
-            import kura.types
-            types_time = time.perf_counter() - start_time
-            print(f'✓ kura.types import: {types_time:.4f}s')
-        except Exception as e:
-            print(f'✗ kura.types import failed: {e}')
-            types_time = 0
-        
-        # Benchmark kura import
-        start_time = time.perf_counter()
-        try:
-            import kura
-            kura_time = time.perf_counter() - start_time
-            print(f'✓ kura import: {kura_time:.4f}s')
-        except Exception as e:
-            print(f'✗ kura import failed: {e}')
-            kura_time = 0
-        
-        total_time = types_time + kura_time
-        print()
-        print(f'Total import time: {total_time:.4f}s')
-        print('========================')
-        "
-        
+      run: uv run python benchmark.py
+
