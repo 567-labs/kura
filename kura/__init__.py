@@ -1,3 +1,40 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Import types for static analysis
+    from .checkpoint import CheckpointManager
+    from .checkpoints import MultiCheckpointManager
+    from .summarisation import SummaryModel, summarise_conversations
+    from .cluster import (
+        ClusterDescriptionModel,
+        generate_base_clusters_from_conversation_summaries,
+    )
+    from .v1.kura import (
+        reduce_clusters_from_base_clusters,
+        reduce_dimensionality_from_clusters,
+    )
+    from .meta_cluster import MetaClusterModel
+    from .types import Conversation
+    from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
+    from .hdbscan import HDBSCANClusteringMethod
+    from .v1.visualization import (
+        visualise_pipeline_results,
+        visualise_clusters_rich,
+        visualise_clusters_enhanced,
+        visualise_clusters,
+    )
+    
+    # Optional imports for type checking
+    try:
+        from .checkpoints.parquet import ParquetCheckpointManager
+    except ImportError:
+        ParquetCheckpointManager = None
+    
+    try:
+        from .checkpoints.hf_dataset import HFDatasetCheckpointManager
+    except ImportError:
+        HFDatasetCheckpointManager = None
+
 # Lazy loading configuration
 _LAZY_IMPORTS = {
     # Core models
