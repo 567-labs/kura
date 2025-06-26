@@ -27,8 +27,8 @@ dependencies = [
 
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 docs = [
@@ -92,3 +92,10 @@ reportMissingTypeStubs = false
 
 pythonVersion = "3.10"
 pythonPlatform = "Linux"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kura*"]
+
+[tool.setuptools.package-data]
+kura = ["static/**/*"]
