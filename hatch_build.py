@@ -14,7 +14,7 @@ class CustomBuildHook(BuildHookInterface):
         static_dir = Path(self.root) / "kura" / "static" / "dist"
 
         # Verify static directory exists
-        if not static_dir.exists():
+        if not static_dir.exists() or not any(static_dir.iterdir()):
             raise FileNotFoundError(
                 f"Static directory not found: {static_dir}. "
                 "Please build the frontend first by running 'bun run build' in the ui/ directory."
