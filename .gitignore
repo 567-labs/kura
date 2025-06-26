@@ -8,6 +8,7 @@ venv/
 build/
 develop-eggs/
 dist/
+kura/static/dist/
 downloads/
 eggs/
 .eggs/

@@ -38,6 +38,25 @@ jobs:
       - name: Build Package
         run: uv build
 
+      - name: Verify static folder in build
+        run: |
+          # Check if static folder exists in the built wheel
+          wheel_file=$(ls dist/*.whl | head -n 1)
+          if [ -z "$wheel_file" ]; then
+            echo "No wheel file found in dist/"
+            exit 1
+          fi
+          
+          # Extract and check for static folder
+          python -m zipfile -l "$wheel_file" | grep -q "kura/static/" || {
+            echo "Error: static folder not found in wheel package"
+            echo "Wheel contents:"
+            python -m zipfile -l "$wheel_file"
+            exit 1
+          }
+          
+          echo "✓ Static folder verified in wheel package"
+
       - name: Build and publish Python package
         run: uv publish
         env:
