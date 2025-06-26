@@ -1,6 +1,6 @@
 [project]
 name = "kura"
-version = "0.5.1"
+version = "0.5.2"
 description = "Kura is a tool for analysing and visualising chat data"
 readme = "README.md"
 authors = [
@@ -32,9 +32,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kura"]
-include = [
-  "kura/static/dist/**/*",
-]
 
 [dependency-groups]
 docs = [
