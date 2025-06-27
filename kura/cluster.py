@@ -13,6 +13,8 @@ from typing import Union, cast, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from instructor.models import KnownModelName
+    from instructor import AsyncInstructor
+
 import numpy as np
 import asyncio
 
@@ -115,6 +117,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
     ) -> List[Cluster]:
         """Generate clusters from a mapping of cluster IDs to summaries."""
         import instructor
+
         self.sem = Semaphore(self.max_concurrent_requests)
         self.client = instructor.from_provider(self.model, async_client=True)
 
@@ -148,7 +151,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         summaries: List[ConversationSummary],
         contrastive_examples: List[ConversationSummary],
         semaphore: Semaphore,
-        client,
+        client: "AsyncInstructor",
         prompt: str = DEFAULT_CLUSTER_PROMPT,
     ) -> Cluster:
         """
