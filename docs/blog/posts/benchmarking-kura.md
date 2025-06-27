@@ -147,7 +147,7 @@ Once you’ve locked in on prompt patterns and parameters that give you coherent
 
 ## Conclusion
 
-Kura scales predictably for production workloads. Processing 6,000 conversations costs under $6 and completes in under 8 minutes, with linear scaling projecting 100,000 conversations at $100 and 2.5 hours.
+Kura scales predictably for production workloads - Processing 6,000 conversations costs under $2 and completes in under 8 minutes. If we were to extrapolate this out, this means that Kura can process 100,000 conversations at approximately $34 dollars under 2.5 hours.
 
 Kura provides extensive customization options for your specific use case. You can experiment with clustering hyperparameters, swap models for different cost-quality tradeoffs, and customize prompts for summaries and cluster generation to match your domain requirements.
 
