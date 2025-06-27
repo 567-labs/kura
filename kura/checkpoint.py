@@ -1,4 +1,5 @@
 
+from pathlib import Path
 from typing import Optional, List, TypeVar
 import logging
 from pydantic import BaseModel
@@ -27,6 +28,17 @@ class CheckpointManager(BaseCheckpointManager):
         if not self.checkpoint_dir.exists():
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Created checkpoint directory: {self.checkpoint_dir}")
+
+    def get_checkpoint_path(self, filename: str) -> Path:
+        """Get full path for a checkpoint file.
+
+        Args:
+            filename: Name of the checkpoint file
+
+        Returns:
+            Path object for the checkpoint file
+        """
+        return self.checkpoint_dir / filename
 
     def load_checkpoint(self, filename: str, model_class: type[T], **kwargs) -> Optional[List[T]]:
         """Load data from a checkpoint file if it exists.
