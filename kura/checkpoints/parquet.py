@@ -51,13 +51,10 @@ class ParquetCheckpointManager(BaseCheckpointManager):
                 "Install with: pip install pyarrow"
             )
 
-        self.checkpoint_dir = Path(checkpoint_dir)
-        self.enabled = enabled
+        super().__init__(checkpoint_dir, enabled=enabled)
+
         self.compression = compression
         self.schemas = self._define_schemas()
-
-        if self.enabled:
-            self.setup_checkpoint_dir()
 
     def setup_checkpoint_dir(self) -> None:
         """Create checkpoint directory if it doesn't exist."""

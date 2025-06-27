@@ -12,7 +12,7 @@ import diskcache
 
 
 from kura.base_classes import BaseSummaryModel
-from kura.checkpoint import CheckpointManager
+from kura.base_classes import BaseCheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
@@ -464,7 +464,7 @@ async def summarise_conversations(
     response_schema: Type[T] = GeneratedSummary,
     prompt: str = DEFAULT_SUMMARY_PROMPT,
     temperature: float = 0.2,
-    checkpoint_manager: Optional[CheckpointManager] = None,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
     **kwargs,
 ) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations using the CLIO framework.

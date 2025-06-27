@@ -34,13 +34,14 @@ except ImportError:
 
 from kura.types import Conversation, ConversationSummary, Cluster
 from kura.types.dimensionality import ProjectedCluster
+from kura.base_classes import BaseCheckpointManager
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class HFDatasetCheckpointManager:
+class HFDatasetCheckpointManager(BaseCheckpointManager):
     """Handles checkpoint loading and saving using HuggingFace datasets.
 
     This checkpoint system provides better performance, scalability, and features
@@ -79,15 +80,12 @@ class HFDatasetCheckpointManager:
                 "Install with: pip install datasets"
             )
 
-        self.checkpoint_dir = Path(checkpoint_dir)
-        self.enabled = enabled
+        super().__init__(checkpoint_dir, enabled=enabled)
+        
         self.hub_repo = hub_repo
         self.hub_token = hub_token
         self.streaming = streaming
         self.compression = compression
-
-        if self.enabled:
-            self.setup_checkpoint_dir()
 
         # Define schemas for different data types
         self._schemas = self._define_schemas()
