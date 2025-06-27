@@ -8,7 +8,7 @@ like streaming, versioning, and cloud storage integration.
 
 import logging
 import importlib.util
-from typing import Optional, TypeVar, List, Dict, Any
+from typing import Optional, TypeVar, List, Dict, Any, Callable
 from pathlib import Path
 from datetime import datetime
 import json
@@ -613,7 +613,11 @@ class HFDatasetCheckpointManager(BaseCheckpointManager):
             return None
 
     def filter_checkpoint(
-        self, filename: str, filter_fn: callable, model_class: type[T], **kwargs
+        self,
+        filename: str,
+        filter_fn: Callable[[Dict[str, Any]], bool],
+        model_class: type[T],
+        **kwargs,
     ) -> Optional[List[T]]:
         """Filter a checkpoint dataset without loading everything into memory.
 
