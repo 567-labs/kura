@@ -204,9 +204,11 @@ class ParquetCheckpointManager(BaseCheckpointManager):
 
         # Add x_coord, y_coord, level for projected clusters
         if data_type == "projected_clusters":
-            result["x_coord"] = [c.x_coord for c in clusters]
-            result["y_coord"] = [c.y_coord for c in clusters]
-            result["level"] = [c.level for c in clusters]
+            # Type cast to ProjectedCluster to access the additional attributes
+            projected_clusters = [c for c in clusters if isinstance(c, ProjectedCluster)]
+            result["x_coord"] = [c.x_coord for c in projected_clusters]
+            result["y_coord"] = [c.y_coord for c in projected_clusters]
+            result["level"] = [c.level for c in projected_clusters]
 
         return result
 
@@ -240,7 +242,7 @@ class ParquetCheckpointManager(BaseCheckpointManager):
                 "messages": messages_data,
                 "metadata": metadata,
             }
-            conversations.append(Conversation(**conversation_dict))
+            conversations.append(Conversation.model_validate(conversation_dict))
 
         return conversations
 
@@ -279,7 +281,7 @@ class ParquetCheckpointManager(BaseCheckpointManager):
                 "metadata": metadata_data,
                 "embedding": row["embedding"],
             }
-            summaries.append(ConversationSummary(**summary_dict))
+            summaries.append(ConversationSummary.model_validate(summary_dict))
 
         return summaries
 

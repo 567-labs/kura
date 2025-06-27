@@ -210,7 +210,7 @@ class HFDatasetCheckpointManager(BaseCheckpointManager):
         if checkpoint_type == "conversations":
             # Handle Conversation model
             data["created_at"] = int(
-                model.created_at.timestamp() * 1_000_000_000
+                model.created_at.timestamp() * 1_000_000_000  # ty: ignore
             )  # Convert to nanoseconds
             for msg in data["messages"]:
                 # Handle datetime objects correctly - they might already be datetime objects
