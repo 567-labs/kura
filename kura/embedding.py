@@ -1,22 +1,12 @@
 from kura.base_classes import BaseEmbeddingModel
 from kura.types import ConversationSummary
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import Union
 from kura.utils import batch_texts
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
 from openai import AsyncOpenAI
 
-if TYPE_CHECKING:
-    from cohere import AsyncClient
-else:
-    try:
-        from cohere import AsyncClient
-
-        COHERE_AVAILABLE = True
-    except ImportError:
-        AsyncClient = None  # type: ignore
-        COHERE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -188,11 +178,15 @@ class CohereEmbeddingModel(BaseEmbeddingModel):
         input_type: str = "clustering",
         api_key: str | None = None,
     ):
-        if not COHERE_AVAILABLE:
+        from importlib.util import find_spec
+
+        if find_spec("cohere") is None:
             raise ImportError(
                 "Cohere package is required for CohereEmbeddingModel. "
                 "Install it with: uv pip install cohere"
             )
+
+        from cohere import AsyncClient
 
         self.client = AsyncClient(api_key=api_key)
         self.model_name = model_name
