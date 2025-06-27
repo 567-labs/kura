@@ -567,9 +567,8 @@ MultiCheckpointManager acts as a coordinator for multiple checkpoint backends, e
 ### Basic Usage
 
 ```python
-from kura.checkpoints import CheckpointManager, MultiCheckpointManager
-from kura.checkpoints import ParquetCheckpointManager
-
+from kura.checkpoints import ParquetCheckpointManager, MultiCheckpointManager
+from kura.checkpoint import CheckpointManager
 # Create individual managers
 jsonl_mgr = CheckpointManager("./checkpoints/jsonl")
 parquet_mgr = ParquetCheckpointManager("./checkpoints/parquet")
