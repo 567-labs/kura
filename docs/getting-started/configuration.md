@@ -1,122 +1,89 @@
 # Configuration
 
-This guide explains the various configuration options available in Kura using its procedural API (v1). This API is best for flexible pipelines where you need fine control over individual steps, the ability to skip or reorder steps, A/B test different models, or prefer a functional programming style.
+## Why Configure Kura?
 
-## Checkpoint Files
+Kura's design lets you easily customise models, prompts and clustering algorithms to tailor the analysis to your specific domain needs.
 
-Kura saves several checkpoint files during processing:
+This is important because to maximise the quality of the generated clusters, it's important to iterate and experiment with different parameters to get the best results.
 
-| Checkpoint File        | Description                      |
-| ---------------------- | -------------------------------- |
-| `conversations.json`   | Raw conversation data            |
-| `summaries.jsonl`      | Summarized conversations         |
-| `clusters.jsonl`       | Base cluster data                |
-| `meta_clusters.jsonl`  | Hierarchical cluster data        |
-| `dimensionality.jsonl` | Projected data for visualization |
+## CLI Options
 
-Checkpoint filenames are now defined as properties in their respective model classes. When using the procedural API, checkpoint management is handled via the `CheckpointManager`.
-
-## CLI Configuration
-
-When using the CLI, you can configure the checkpoint directory:
+Customizing checkpoint storage formats lets you optimize for your dataset size and workflow. HuggingFace format enables streaming for massive datasets, while JSONL is perfect for debugging and smaller analyses.
 
 ```bash
-# Start the web server with a custom checkpoint directory
-kura --dir ./my_checkpoints
+kura start-app --dir ./my_checkpoints --checkpoint-format hf-dataset
 ```
 
-The procedural API provides flexibility by breaking the pipeline into composable functions:
+Options: `--dir` (checkpoint path), `--checkpoint-format` (`jsonl` or `hf-dataset`)
+
+## Summary Models
+
+Custom response schemas and prompts extract domain-specific insights that generic summaries miss. Customer support conversations benefit from sentiment analysis, while technical discussions need complexity scoring and solution identification.
 
 ```python
-from kura.summarisation import SummaryModel, summarise_conversations
-from kura.cluster import ClusterModel, generate_base_clusters_from_conversation_summaries
-from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
-from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
-from kura.checkpoints import CheckpointManager
-# Assuming Conversation type might be needed for context, if not, it can be removed.
-# from kura.types import Conversation
-
-# Sample conversations (replace with your actual data loading)
-# conversations = [Conversation(...)]
-
-# Configure models independently
-summary_model = SummaryModel()
-cluster_model = ClusterModel()
-meta_cluster_model = MetaClusterModel(max_clusters=10)
-dimensionality_model = HDBUMAP()
-
-# Optional checkpoint management
-checkpoint_manager = CheckpointManager("./my_checkpoints", enabled=True)
-
-# Run pipeline with keyword arguments
-async def analyze(conversations): # Added conversations as an argument
-    summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_manager
-    )
-
-    clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_manager
-    )
-
-    reduced = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_manager
-    )
-
-    projected = await reduce_dimensionality_from_clusters(
-        reduced,
-        model=dimensionality_model,
-        checkpoint_manager=checkpoint_manager
-    )
-
-    return projected
+summaries = await summarise_conversations(
+    conversations,
+    model=SummaryModel(model="openai/gpt-4o-mini"),
+    response_schema=CustomSummary,  # Your Pydantic schema
+    temperature=0.1
+)
 ```
 
-The procedural API excels at working with different model implementations for the same task:
+**[→ Summarization Details](../core-concepts/summarization.md)**
+
+## Clustering
+
+Tuning clustering parameters dramatically improves grouping quality for your specific data patterns. Adjusting `clusters_per_group` and embedding models helps create clusters that match your analysis granularity needs.
 
 ```python
-# Use different backends for the same task
-from kura.summarisation import summarise_conversations
-# Assuming these model classes exist and are correctly imported
-# from kura.summarisation import OpenAISummaryModel, VLLMSummaryModel, HuggingFaceSummaryModel
-
-# Sample conversations (replace with your actual data loading)
-# conversations = [...]
-# checkpoint_mgr = CheckpointManager("./my_checkpoints")
-
-# OpenAI backend
-# openai_summaries = await summarise_conversations(
-#     conversations,
-#     model=OpenAISummaryModel(api_key="sk-..."), # Replace with actual model init if different
-#     checkpoint_manager=checkpoint_mgr
-# )
-
-# Local vLLM backend
-# vllm_summaries = await summarise_conversations(
-#     conversations,
-#     model=VLLMSummaryModel(model_path="/models/llama"), # Replace with actual model init if different
-#     checkpoint_manager=checkpoint_mgr
-# )
-
-# Hugging Face backend
-# hf_summaries = await summarise_conversations(
-#     conversations,
-#     model=HuggingFaceSummaryModel("facebook/bart-large-cnn"), # Replace with actual model init if different
-#     checkpoint_manager=checkpoint_mgr
-# )
+clusters = await generate_base_clusters_from_conversation_summaries(
+    summaries,
+    embedding_model=OpenAIEmbeddingModel(model_name="text-embedding-3-small"),
+    clustering_method=KmeansClusteringModel(clusters_per_group=15)
+)
 ```
 
-_Note: The heterogeneous models example has been commented out as it relies on specific model classes (`OpenAISummaryModel`, `VLLMSummaryModel`, `HuggingFaceSummaryModel`) whose existence and import paths are not confirmed from the provided context. Ensure these are correctly defined and imported in your actual usage._
+**[→ Clustering Details](../core-concepts/clustering.md)**
 
-## Next Steps
+## Meta-Clustering
 
-Now that you understand how to configure Kura using the procedural API, you can:
+Meta-clustering transforms hundreds of granular clusters into actionable top-level themes. Customizing the reduction ratio helps surface the right level of strategic insights for executive reporting or high-level analysis.
 
-- [Learn about core concepts](../core-concepts/overview.md)
-- [Try the Procedural API Tutorial](../getting-started/quickstart.md)
-- [Check out the API Reference](../api/index.md)
+```python
+meta_clusters = await reduce_clusters_from_base_clusters(
+    clusters,
+    model=MetaClusterModel(max_clusters=8)
+)
+```
+
+**[→ Meta-Clustering Details](../core-concepts/meta-clustering.md)**
+
+## Storage Formats
+
+Choosing the right storage format can reduce processing time by 50% and enable analysis of datasets that wouldn't fit in memory. Parquet offers faster loading and smaller files, while HuggingFace format enables cloud streaming for massive datasets.
+
+```python
+# JSONL - debugging and small datasets
+checkpoint_mgr = JSONLCheckpointManager("./checkpoints")
+
+# Parquet - 50% smaller files, faster loading
+checkpoint_mgr = ParquetCheckpointManager("./checkpoints")
+
+# HuggingFace - streaming and cloud storage
+checkpoint_mgr = HFDatasetCheckpointManager("./checkpoints")
+```
+
+**[→ Checkpoints Details](../core-concepts/checkpoints.md)**
+
+## Performance Tuning
+
+Optimizing concurrency and caching can reduce analysis time from hours to minutes. Matching request limits to your API tier prevents throttling, while intelligent caching avoids expensive re-computation during iterative development.
+
+```python
+summary_model = SummaryModel(
+    max_concurrent_requests=25,  # Lower for free tiers
+    cache_dir="./.cache"
+)
+```
+
+**[→ Performance Guide](../guides/performance.md)**
