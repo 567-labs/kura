@@ -6,6 +6,7 @@ from kura.base_classes import (
     BaseClusteringMethod,
 )
 import math
+from kura.base_classes.checkpoint import BaseCheckpointManager
 from kura.types.cluster import Cluster, GeneratedCluster
 from kura.embedding import OpenAIEmbeddingModel
 import instructor
@@ -665,3 +666,80 @@ Based on this information, determine the most appropriate higher-level cluster a
             res.extend(new_cluster)
 
         return res
+
+
+async def reduce_clusters_from_base_clusters(
+    clusters: list[Cluster],
+    *,
+    model: BaseMetaClusterModel,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
+) -> list[Cluster]:
+    """Reduce clusters into a hierarchical structure.
+
+    Iteratively combines similar clusters until the number of root clusters
+    is less than or equal to the model's max_clusters setting.
+
+    Args:
+        clusters: List of initial clusters to reduce
+        model: Meta-clustering model to use for reduction
+        checkpoint_manager: Optional checkpoint manager for caching
+
+    Returns:
+        List of clusters with hierarchical structure
+
+    Example:
+        >>> meta_model = MetaClusterModel(max_clusters=5)
+        >>> reduced = await reduce_clusters(
+        ...     clusters=base_clusters,
+        ...     model=meta_model,
+        ...     checkpoint_manager=checkpoint_mgr
+        ... )
+    """
+    logger.info(
+        f"Starting cluster reduction from {len(clusters)} initial clusters using {type(model).__name__}"
+    )
+
+    # Try to load from checkpoint
+    if checkpoint_manager:
+        cached = checkpoint_manager.load_checkpoint(model.checkpoint_filename, Cluster)
+        if cached:
+            root_count = len([c for c in cached if c.parent_id is None])
+            logger.info(
+                f"Loaded {len(cached)} clusters from checkpoint ({root_count} root clusters)"
+            )
+            return cached
+
+    # Start with all clusters as potential roots
+    all_clusters = clusters.copy()
+    root_clusters = clusters.copy()
+
+    # Get max_clusters from model if available, otherwise use default
+    max_clusters = getattr(model, "max_clusters", 10)
+    logger.info(f"Starting with {len(root_clusters)} clusters, target: {max_clusters}")
+
+    # Iteratively reduce until we have desired number of root clusters
+    while len(root_clusters) > max_clusters:
+        # Get updated clusters from meta-clustering
+        new_current_level = await model.reduce_clusters(root_clusters)
+
+        # Find new root clusters (those without parents)
+        root_clusters = [c for c in new_current_level if c.parent_id is None]
+
+        # Remove old clusters that now have parents
+        old_cluster_ids = {c.id for c in new_current_level if c.parent_id}
+        all_clusters = [c for c in all_clusters if c.id not in old_cluster_ids]
+
+        # Add new clusters to the complete list
+        all_clusters.extend(new_current_level)
+
+        logger.info(f"Reduced to {len(root_clusters)} root clusters")
+
+    logger.info(
+        f"Cluster reduction complete: {len(all_clusters)} total clusters, {len(root_clusters)} root clusters"
+    )
+
+    # Save to checkpoint
+    if checkpoint_manager:
+        checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_clusters)
+
+    return all_clusters

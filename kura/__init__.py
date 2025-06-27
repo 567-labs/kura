@@ -5,16 +5,14 @@ from .cluster import (
     ClusterDescriptionModel,
     generate_base_clusters_from_conversation_summaries,
 )
-from .v1.kura import (
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-)
+from .dimensionality import reduce_dimensionality_from_clusters
 from .meta_cluster import MetaClusterModel
 
 from .types import Conversation
+from .meta_cluster import reduce_clusters_from_base_clusters
 from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
 from .hdbscan import HDBSCANClusteringMethod
-from .v1.visualization import (
+from .visualization import (
     visualise_pipeline_results,
     visualise_clusters_rich,
     visualise_clusters_enhanced,

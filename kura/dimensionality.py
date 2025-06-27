@@ -1,8 +1,9 @@
 from kura.base_classes import BaseDimensionalityReduction, BaseEmbeddingModel
+from kura.base_classes.checkpoint import BaseCheckpointManager
 from kura.types import Cluster, ProjectedCluster
 from kura.embedding import OpenAIEmbeddingModel
 from kura.utils import calculate_cluster_levels
-from typing import Union
+from typing import Union, Optional
 import numpy as np
 import logging
 
@@ -104,3 +105,57 @@ class HDBUMAP(BaseDimensionalityReduction):
 
         logger.info(f"Successfully created {len(res)} projected clusters")
         return res
+
+
+async def reduce_dimensionality_from_clusters(
+    clusters: list[Cluster],
+    *,
+    model: BaseDimensionalityReduction,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
+) -> list[ProjectedCluster]:
+    """Reduce dimensions of clusters for visualization.
+
+    Projects clusters to 2D space using the provided dimensionality reduction model.
+    Supports different algorithms (UMAP, t-SNE, PCA, etc.) through the model interface.
+
+    Args:
+        clusters: List of clusters to project
+        model: Dimensionality reduction model to use (UMAP, t-SNE, etc.)
+        checkpoint_manager: Optional checkpoint manager for caching
+
+    Returns:
+        List of projected clusters with 2D coordinates
+
+    Example:
+        >>> dim_model = HDBUMAP(n_components=2)
+        >>> projected = await reduce_dimensionality(
+        ...     clusters=hierarchical_clusters,
+        ...     model=dim_model,
+        ...     checkpoint_manager=checkpoint_mgr
+        ... )
+    """
+    logger.info(
+        f"Starting dimensionality reduction for {len(clusters)} clusters using {type(model).__name__}"
+    )
+
+    # Try to load from checkpoint
+    if checkpoint_manager:
+        cached = checkpoint_manager.load_checkpoint(
+            model.checkpoint_filename, ProjectedCluster
+        )
+        if cached:
+            logger.info(f"Loaded {len(cached)} projected clusters from checkpoint")
+            return cached
+
+    # Reduce dimensionality
+    logger.info("Projecting clusters to 2D space...")
+    projected_clusters = await model.reduce_dimensionality(clusters)
+    logger.info(f"Projected {len(projected_clusters)} clusters to 2D")
+
+    # Save to checkpoint
+    if checkpoint_manager:
+        checkpoint_manager.save_checkpoint(
+            model.checkpoint_filename, projected_clusters
+        )
+
+    return projected_clusters
