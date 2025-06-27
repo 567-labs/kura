@@ -1,4 +1,8 @@
-"""Kura - Conversation Analysis Library"""
+"""Kura - Conversation Analysis Library
+
+This module uses lazy loading via __getattr__ (PEP 562, Python 3.7+).
+Submodules are imported on first access and cached in globals().
+"""
 
 import importlib
 from typing import Any
@@ -16,6 +20,9 @@ _submodules = [
     "hdbscan",
     "visualization",
 ]
+
+# Expose all submodules for IDE/static analysis support
+__all__ = _submodules
 
 
 def __getattr__(name: str) -> Any:
