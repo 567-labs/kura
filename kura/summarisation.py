@@ -99,7 +99,7 @@ class SummaryModel(BaseSummaryModel):
 
     def __init__(
         self,
-        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
+        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries",
         console: Optional[Console] = None,
