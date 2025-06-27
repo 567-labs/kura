@@ -33,17 +33,17 @@ The procedural API provides a functional approach to conversation analysis with 
 
 ### Pipeline Functions
 
-::: kura.summarise_conversations
+::: kura.summarisation.summarise_conversations
 
-::: kura.generate_base_clusters_from_conversation_summaries
+::: kura.cluster.generate_base_clusters_from_conversation_summaries
 
-::: kura.reduce_clusters_from_base_clusters
+::: kura.meta_cluster.reduce_clusters_from_base_clusters
 
-::: kura.reduce_dimensionality_from_clusters
+::: kura.dimensionality.reduce_dimensionality_from_clusters
 
 ### Checkpoint Management
 
-::: kura.CheckpointManager
+::: kura.checkpoint.CheckpointManager
 
 ## Implementation Classes
 
