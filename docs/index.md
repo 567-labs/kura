@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Kura: Procedural API for Chat Data Analysis
 
 ![Kura Architecture](assets/images/kura-architecture.png)
@@ -72,6 +77,48 @@ Create interactive exploration maps. See clusters as bubbles on a 2D map where p
 Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visualization map_
 
 **The result?** Instead of drowning in individual conversations, you get a clear picture of what's actually happening across your entire user base.
+
+## 📚 Documentation
+
+<div class="grid cards" markdown>
+
+-   :material-rocket-launch: **Get Started Fast**
+
+    ---
+
+    Install Kura and configure your first analysis pipeline in minutes.
+
+    [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
+
+-   :material-lightning-bolt: **Quick Start**
+
+    ---
+
+    Jump right in with a complete example that processes conversations from raw data to insights.
+
+    [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
+
+-   :octicons-workflow-24:: **Complete Workflow**
+
+    ---
+
+    See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
+
+    [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
+
+-   :material-brain: **Core Concepts**
+
+    ---
+
+    Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
+
+    [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
+
+</div>
+
+!!! tip "New to Kura?"
+
+    Start with the [Installation Guide](getting-started/installation.md) → [Quick Start](getting-started/quickstart.md) → [Core Concepts](core-concepts/overview.md) for the best learning experience.
 
 ## Quick Start
 
@@ -150,48 +197,6 @@ Programming Assistance Clusters (190 conversations)
 
 Performance: 21.9s first run → 2.1s with cache (10x faster!)
 ```
-
-## 📚 Documentation
-
-<div class="grid cards" markdown>
-
--   :material-rocket-launch: **Get Started Fast**
-
-    ---
-
-    Install Kura and configure your first analysis pipeline in minutes.
-
-    [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
-
--   :material-lightning-bolt: **Quick Start**
-
-    ---
-
-    Jump right in with a complete example that processes conversations from raw data to insights.
-
-    [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
-
--   :octicons-workflow-24:: **Complete Workflow**
-
-    ---
-
-    See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
-
-    [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
-
--   :material-brain: **Core Concepts**
-
-    ---
-
-    Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
-
-    [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
-
-</div>
-
-!!! tip "New to Kura?"
-
-    Start with the [Installation Guide](getting-started/installation.md) → [Quick Start](getting-started/quickstart.md) → [Core Concepts](core-concepts/overview.md) for the best learning experience.
 
 ## Frequently Asked Questions
 
