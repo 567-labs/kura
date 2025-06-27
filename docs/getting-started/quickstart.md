@@ -12,63 +12,61 @@ Here's a complete working example that you can copy and run immediately. This ex
 
 ```python
 import asyncio
-from rich.console import Console
 from kura.summarisation import SummaryModel, summarise_conversations
-from kura.cluster import ClusterDescriptionModel, generate_base_clusters_from_conversation_summaries
+from kura.cluster import (
+    ClusterDescriptionModel,
+    generate_base_clusters_from_conversation_summaries,
+)
 from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
 from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
-from kura.visualization import visualise_pipeline_results
 from kura.checkpoints import JSONLCheckpointManager
-from kura.types import Conversation
+from kura.types import Conversation, ProjectedCluster
+from kura.visualization import visualise_pipeline_results
 
 
-async def main():
-    console = Console()
+# Load conversations
+conversations = Conversation.from_hf_dataset(
+    "ivanleomk/synthetic-gemini-conversations", split="train"
+)
 
-    # SummaryModel now supports caching to speed up re-runs!
-    summary_model = SummaryModel(
-        console=console,
-        cache_dir="./.summary_cache",  # Optional: specify cache location
-    )
+# Set up models with new caching support!
+summary_model = SummaryModel(cache_dir="./.summary_cache")
+cluster_model = ClusterDescriptionModel()
+meta_cluster_model = MetaClusterModel(max_clusters=10)
+dimensionality_model = HDBUMAP()
 
-    cluster_model = ClusterDescriptionModel(
-        console=console,
-    )
-    meta_cluster_model = MetaClusterModel(console=console)
-    dimensionality_model = HDBUMAP()
+# Set up checkpoint manager
+checkpoint_mgr = JSONLCheckpointManager("./checkpoints", enabled=False)
 
-    # Set up checkpointing - you can choose from multiple backends
-    # HuggingFace Datasets (advanced features, cloud sync)
-    checkpoint_manager = JSONLCheckpointManager("./checkpoints/hf", enabled=True)
 
-    # Load conversations from Hugging Face dataset
-    conversations = Conversation.from_hf_dataset(
-        "ivanleomk/synthetic-gemini-conversations", split="train"
-    )
+# Run pipeline with explicit steps
+async def process_conversations() -> list[ProjectedCluster]:
+    # Step 1: Generate summaries
     summaries = await summarise_conversations(
-        conversations, model=summary_model, checkpoint_manager=checkpoint_manager
+        conversations, model=summary_model, checkpoint_manager=checkpoint_mgr
     )
+
+    # Step 2: Create base clusters
     clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_manager,
-    )
-    reduced_clusters = await reduce_clusters_from_base_clusters(
-        clusters, checkpoint_manager=checkpoint_manager, model=meta_cluster_model
+        summaries, model=cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
-    projected_clusters = await reduce_dimensionality_from_clusters(
-        reduced_clusters,
-        model=dimensionality_model,
-        checkpoint_manager=checkpoint_manager,
+    # Step 3: Build hierarchy
+    meta_clusters = await reduce_clusters_from_base_clusters(
+        clusters, model=meta_cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
-    # Visualize results
-    visualise_pipeline_results(projected_clusters, style="basic")
+    # Step 4: Project to 2D
+    projected = await reduce_dimensionality_from_clusters(
+        meta_clusters, model=dimensionality_model, checkpoint_manager=checkpoint_mgr
+    )
+
+    return projected
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Execute the pipeline
+results = asyncio.run(process_conversations())
+visualise_pipeline_results(results, style="enhanced")
 ```
 
 This example will process 190 synthetic programming conversations from Hugging Face, analyze them through the complete pipeline, and display the results in a clean tree structure showing how conversations are grouped into thematic clusters.
