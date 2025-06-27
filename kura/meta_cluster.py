@@ -9,7 +9,7 @@ import math
 from kura.base_classes.checkpoint import BaseCheckpointManager
 from kura.types.cluster import Cluster, GeneratedCluster
 from kura.embedding import OpenAIEmbeddingModel
-import instructor
+
 from asyncio import Semaphore
 from pydantic import BaseModel, field_validator, ValidationInfo
 import re
@@ -80,7 +80,7 @@ class MetaClusterModel(BaseMetaClusterModel):
         self,
         max_concurrent_requests: int = 50,
         model: str = "openai/gpt-4o-mini",
-        embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
+        embedding_model: Optional[BaseEmbeddingModel] = None,
         clustering_model: Union[BaseClusteringMethod, None] = None,
         max_clusters: int = 10,
         console: Optional["Console"] = None,
@@ -93,6 +93,9 @@ class MetaClusterModel(BaseMetaClusterModel):
 
         self.max_concurrent_requests = max_concurrent_requests
         self.sem = Semaphore(max_concurrent_requests)
+
+        import instructor
+
         self.client = instructor.from_provider(model, async_client=True)
         self.console = console
         self.max_clusters = max_clusters

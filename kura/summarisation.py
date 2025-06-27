@@ -1,11 +1,11 @@
-from typing import Optional, Type, TypeVar, Union
+from typing import Optional, Type, TypeVar, Union, TYPE_CHECKING
 import asyncio
 import logging
 import os
 import hashlib
 
-import instructor
-from instructor.models import KnownModelName
+if TYPE_CHECKING:
+    from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 import diskcache
@@ -208,6 +208,7 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
 
+        import instructor
         client = instructor.from_provider(self.model, async_client=True)
 
         if not self.console:
