@@ -1,4 +1,3 @@
-import pandas as pd
 from typing import List
 from kura.types import Conversation
 
@@ -8,6 +7,8 @@ def generate_cumulative_chart_data(conversations: List[Conversation]) -> dict:
     Generate cumulative word count chart data for human messages in conversations.
     Returns a dict containing the Plotly data and layout.
     """
+    import pandas as pd
+    
     messages_data = []
     for conv in conversations:
         for msg in conv.messages:
@@ -37,6 +38,8 @@ def generate_cumulative_chart_data(conversations: List[Conversation]) -> dict:
 
 
 def generate_messages_per_chat_data(conversations: List[Conversation]) -> dict:
+    import pandas as pd
+    
     messages_data = []
     for conv in conversations:
         for msg in conv.messages:
@@ -70,6 +73,8 @@ def generate_messages_per_chat_data(conversations: List[Conversation]) -> dict:
 
 
 def generate_messages_per_week_data(conversations: List[Conversation]) -> dict:
+    import pandas as pd
+    
     messages_data = []
     for conv in conversations:
         for msg in conv.messages:
@@ -100,6 +105,8 @@ def generate_messages_per_week_data(conversations: List[Conversation]) -> dict:
 
 
 def generate_new_chats_per_week_data(conversations: List[Conversation]) -> dict:
+    import pandas as pd
+    
     chat_starts = pd.DataFrame(
         [
             {

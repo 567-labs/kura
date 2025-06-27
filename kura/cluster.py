@@ -9,11 +9,13 @@ from kura.types.summarisation import ConversationSummary
 from kura.types.cluster import Cluster, GeneratedCluster
 import logging
 import math
-from typing import Union, cast, Dict, List, Optional
+from typing import Union, cast, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from instructor.models import KnownModelName
 import numpy as np
 import asyncio
-import instructor
-from instructor.models import KnownModelName
+
 from asyncio import Semaphore
 from rich.console import Console
 
@@ -74,7 +76,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
 
     def __init__(
         self,
-        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
+        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         temperature: float = 0.2,
         checkpoint_filename: str = "clusters",
@@ -112,6 +114,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         max_contrastive_examples: int = 10,
     ) -> List[Cluster]:
         """Generate clusters from a mapping of cluster IDs to summaries."""
+        import instructor
         self.sem = Semaphore(self.max_concurrent_requests)
         self.client = instructor.from_provider(self.model, async_client=True)
 
@@ -145,7 +148,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         summaries: List[ConversationSummary],
         contrastive_examples: List[ConversationSummary],
         semaphore: Semaphore,
-        client: instructor.AsyncInstructor,
+        client,
         prompt: str = DEFAULT_CLUSTER_PROMPT,
     ) -> Cluster:
         """
