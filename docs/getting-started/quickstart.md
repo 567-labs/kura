@@ -13,23 +13,13 @@ Here's a complete working example that you can copy and run immediately. This ex
 ```python
 import asyncio
 from rich.console import Console
-from kura import (
-    ClusterDescriptionModel,
-    SummaryModel,
-    MetaClusterModel,
-    Conversation,
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    visualise_pipeline_results,
-)
+from kura.summarisation import SummaryModel, summarise_conversations
+from kura.cluster import ClusterDescriptionModel, generate_base_clusters_from_conversation_summaries
+from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
+from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
+from kura.visualization import visualise_pipeline_results
 from kura.checkpoints import JSONLCheckpointManager
 from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterDescriptionModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
 
 
 async def main():

@@ -75,19 +75,12 @@ Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visual
 
 ## Quick Start
 
-```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
+from kura.summarisation import SummaryModel, summarise_conversations
+from kura.cluster import ClusterModel, generate_base_clusters_from_conversation_summaries
+from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
+from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
+from kura.checkpoints import CheckpointManager
 from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
 import asyncio
 
 # Load conversations
