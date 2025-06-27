@@ -14,6 +14,10 @@ Here's a complete working example that you can copy and run immediately. This ex
 import asyncio
 from rich.console import Console
 from kura import (
+    ClusterDescriptionModel,
+    SummaryModel,
+    MetaClusterModel,
+    Conversation,
     summarise_conversations,
     generate_base_clusters_from_conversation_summaries,
     reduce_clusters_from_base_clusters,
@@ -29,7 +33,6 @@ from kura.dimensionality import HDBUMAP
 
 
 async def main():
-    # Initialize models
     console = Console()
 
     # SummaryModel now supports caching to speed up re-runs!

@@ -88,9 +88,9 @@ nav:
       - Configuration: getting-started/configuration.md
       - Tutorial:
           - Overview: getting-started/tutorial.md
-          - Cluster Conversations: notebooks/how-to-look-at-data/1. Cluster Conversations.ipynb
-          - Better Summaries: notebooks/how-to-look-at-data/2. Better Summaries.ipynb
-          - Classifiers: notebooks/how-to-look-at-data/3. Classifiers.ipynb
+          - Cluster Conversations: notebooks/how-to-look-at-data/01_clustering_task.ipynb
+          - Better Summaries: notebooks/how-to-look-at-data/02_summaries_task.ipynb
+          - Classifiers: notebooks/how-to-look-at-data/03_classifiers_task.ipynb
   - Core Concepts:
       - Overview: core-concepts/overview.md
       - Conversations: core-concepts/conversations.md

@@ -1,6 +1,6 @@
 [project]
 name = "kura"
-version = "0.5.0"
+version = "0.5.2"
 description = "Kura is a tool for analysing and visualising chat data"
 readme = "README.md"
 authors = [
@@ -30,6 +30,20 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
+[tool.hatch.build.targets.wheel]
+include = [
+  "kura/",
+]
+exclude = [
+  "kura/**/__pycache__",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+"kura/static/dist" = "kura/static/dist"
+
 [dependency-groups]
 docs = [
     "mkdocs-material>=9.6.14",
@@ -57,6 +71,7 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.5.49",
     "datasets>=3.6.0",
+    "jupyter>=1.1.1",
 ]
 visualization = [
     "rich>=13.9.4",
@@ -66,6 +81,7 @@ parquet = [
 ]
 embeddings = [
     "sentence-transformers>=2.2.0",
+    "cohere>=5.0.0",
 ]
 
 
