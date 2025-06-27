@@ -46,7 +46,13 @@ class ClusterLabel(BaseModel):
 
     @field_validator("higher_level_cluster")
     def validate_higher_level_cluster(cls, v: str, info: ValidationInfo) -> str:
-        candidate_clusters = info.context["candidate_clusters"]  # pyright: ignore
+        if not info.context:
+            raise ValueError("Context is missing")
+
+        if "candidate_clusters" not in info.context:
+            raise ValueError("Candidate clusters are missing from context")
+
+        candidate_clusters = info.context["candidate_clusters"]
 
         # Exact match check
         if v in candidate_clusters:
