@@ -27,7 +27,7 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --all-groups --dev
       - name: Run ty type checker
         run: uvx ty check kura
       - name: Run pyright type checker
