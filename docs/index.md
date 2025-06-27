@@ -151,17 +151,47 @@ Programming Assistance Clusters (190 conversations)
 Performance: 21.9s first run → 2.1s with cache (10x faster!)
 ```
 
-## Documentation
+## 📚 Documentation
 
-**Installation**: [Get started](getting-started/installation.md) with Kura today. Install via pip or uv and configure your first analysis pipeline.
+<div class="grid cards" markdown>
 
-**Quickstart**: [Jump right in](getting-started/quickstart.md) with a complete example that processes conversations from raw data to insights in minutes.
+-   :material-rocket-launch: **Get Started Fast**
 
-**Complete Workflow**: [See how a full analysis looks](./getting-started/tutorial.md) from loading data to interpreting clusters and extracting actionable insights.
+    ---
 
-**Core Concepts**: Learn how Kura works under the hood - from [conversation loading](core-concepts/conversations.md) and [embedding](core-concepts/embedding.md) to [clustering](core-concepts/clustering.md), [summarization](core-concepts/summarization.md), [meta-clustering](core-concepts/meta-clustering.md), and [dimensionality reduction](core-concepts/dimensionality-reduction.md).
+    Install Kura and configure your first analysis pipeline in minutes.
 
-**API Reference**: [Complete documentation](api/index.md) of Kura's procedural API with examples and best practices.
+    [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
+
+-   :material-lightning-bolt: **Quick Start**
+
+    ---
+
+    Jump right in with a complete example that processes conversations from raw data to insights.
+
+    [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
+
+-   :octicons-workflow-24:: **Complete Workflow**
+
+    ---
+
+    See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
+
+    [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
+
+-   :material-brain: **Core Concepts**
+
+    ---
+
+    Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
+
+    [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
+
+</div>
+
+!!! tip "New to Kura?"
+
+    Start with the [Installation Guide](getting-started/installation.md) → [Quick Start](getting-started/quickstart.md) → [Core Concepts](core-concepts/overview.md) for the best learning experience.
 
 ## Frequently Asked Questions
 
