@@ -75,69 +75,68 @@ Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visual
 
 ## Quick Start
 
+```python
+import asyncio
 from kura.summarisation import SummaryModel, summarise_conversations
-from kura.cluster import ClusterModel, generate_base_clusters_from_conversation_summaries
+from kura.cluster import (
+    ClusterDescriptionModel,
+    generate_base_clusters_from_conversation_summaries,
+)
 from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
 from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
-from kura.checkpoints import CheckpointManager
-from kura.types import Conversation
-import asyncio
+from kura.checkpoints import JSONLCheckpointManager
+from kura.types import Conversation, ProjectedCluster
+from kura.visualization import visualise_pipeline_results
+
 
 # Load conversations
 conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations",
-    split="train"
+    "ivanleomk/synthetic-gemini-conversations", split="train"
 )
 
 # Set up models with new caching support!
-summary_model = SummaryModel(
-    enable_caching=True,  # NEW: 85x faster on re-runs!
-    cache_dir="./.summary_cache"
-)
-cluster_model = ClusterModel()
+summary_model = SummaryModel(cache_dir="./.summary_cache")
+cluster_model = ClusterDescriptionModel()
 meta_cluster_model = MetaClusterModel(max_clusters=10)
 dimensionality_model = HDBUMAP()
 
 # Set up checkpoint manager
-checkpoint_mgr = CheckpointManager("./checkpoints", enabled=True)
+checkpoint_mgr = JSONLCheckpointManager("./checkpoints", enabled=False)
+
 
 # Run pipeline with explicit steps
-async def process_conversations():
+async def process_conversations() -> list[ProjectedCluster]:
     # Step 1: Generate summaries
     summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_mgr
+        conversations, model=summary_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 2: Create base clusters
     clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        summaries, model=cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 3: Build hierarchy
     meta_clusters = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        clusters, model=meta_cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 4: Project to 2D
     projected = await reduce_dimensionality_from_clusters(
-        meta_clusters,
-        model=dimensionality_model,
-        checkpoint_manager=checkpoint_mgr
+        meta_clusters, model=dimensionality_model, checkpoint_manager=checkpoint_mgr
     )
 
     return projected
 
+
 # Execute the pipeline
 results = asyncio.run(process_conversations())
 visualise_pipeline_results(results, style="enhanced")
+```
 
-# Expected output:
+This in turn results in the following output
+
+```bash
 Programming Assistance Clusters (190 conversations)
 ├── Data Analysis & Visualization (38 conversations)
 │   ├── "Help me create R plots for statistical analysis"
