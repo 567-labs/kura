@@ -46,7 +46,7 @@ class BaseCheckpointManager(ABC):
         This method should be implemented by subclasses to handle
         any setup required for the checkpoint storage backend.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
     def load_checkpoint(

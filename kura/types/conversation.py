@@ -38,7 +38,10 @@ class Conversation(BaseModel):
     @classmethod
     def from_conversation_dump(cls, file_path: str) -> list["Conversation"]:
         with open(file_path, "r") as f:
-            return [Conversation(**conversation) for conversation in json.load(f)]
+            return [
+                Conversation(**conversation)  # ty: ignore
+                for conversation in json.load(f)
+            ]
 
     @classmethod
     def from_hf_dataset(

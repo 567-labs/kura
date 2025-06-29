@@ -3,17 +3,21 @@ from kura.base_classes import (
     BaseClusteringMethod,
     BaseClusterDescriptionModel,
 )
-from kura.checkpoint import CheckpointManager
+from kura.base_classes import BaseCheckpointManager
 from kura.embedding import embed_summaries, OpenAIEmbeddingModel
 from kura.types.summarisation import ConversationSummary
 from kura.types.cluster import Cluster, GeneratedCluster
 import logging
 import math
-from typing import Union, cast, Dict, List, Optional
+from typing import Union, cast, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from instructor.models import KnownModelName
+    from instructor import AsyncInstructor
+
 import numpy as np
 import asyncio
-import instructor
-from instructor.models import KnownModelName
+
 from asyncio import Semaphore
 from rich.console import Console
 
@@ -74,7 +78,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
 
     def __init__(
         self,
-        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
+        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         temperature: float = 0.2,
         checkpoint_filename: str = "clusters",
@@ -112,6 +116,8 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         max_contrastive_examples: int = 10,
     ) -> List[Cluster]:
         """Generate clusters from a mapping of cluster IDs to summaries."""
+        import instructor
+
         self.sem = Semaphore(self.max_concurrent_requests)
         self.client = instructor.from_provider(self.model, async_client=True)
 
@@ -145,7 +151,7 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         summaries: List[ConversationSummary],
         contrastive_examples: List[ConversationSummary],
         semaphore: Semaphore,
-        client: instructor.AsyncInstructor,
+        client: "AsyncInstructor",
         prompt: str = DEFAULT_CLUSTER_PROMPT,
     ) -> Cluster:
         """
@@ -437,10 +443,10 @@ def get_contrastive_examples(
 
 async def generate_base_clusters_from_conversation_summaries(
     summaries: List[ConversationSummary],
-    embedding_model: BaseEmbeddingModel = OpenAIEmbeddingModel(),
-    clustering_method: BaseClusteringMethod = KmeansClusteringModel(),
-    clustering_model: BaseClusterDescriptionModel = ClusterDescriptionModel(),
-    checkpoint_manager: Optional[CheckpointManager] = None,
+    embedding_model: Optional[BaseEmbeddingModel] = None,
+    clustering_method: Optional[BaseClusteringMethod] = None,
+    clustering_model: Optional[BaseClusterDescriptionModel] = None,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
     max_contrastive_examples: int = 10,
     prompt: str = DEFAULT_CLUSTER_PROMPT,
     **kwargs,
@@ -463,6 +469,14 @@ async def generate_base_clusters_from_conversation_summaries(
     """
     if not summaries:
         raise ValueError("Empty summaries list provided")
+
+    # Initialize default models if not provided
+    if embedding_model is None:
+        embedding_model = OpenAIEmbeddingModel()
+    if clustering_method is None:
+        clustering_method = KmeansClusteringModel()
+    if clustering_model is None:
+        clustering_model = ClusterDescriptionModel()
 
     if checkpoint_manager:
         cached = checkpoint_manager.load_checkpoint(

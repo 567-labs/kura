@@ -1,18 +1,18 @@
-from typing import Optional, Type, TypeVar, Union
+from typing import Optional, Type, TypeVar, Union, TYPE_CHECKING
 import asyncio
 import logging
 import os
 import hashlib
 
-import instructor
-from instructor.models import KnownModelName
+if TYPE_CHECKING:
+    from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 import diskcache
 
 
 from kura.base_classes import BaseSummaryModel
-from kura.checkpoint import CheckpointManager
+from kura.base_classes import BaseCheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
@@ -99,7 +99,7 @@ class SummaryModel(BaseSummaryModel):
 
     def __init__(
         self,
-        model: Union[str, KnownModelName] = "openai/gpt-4o-mini",
+        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries",
         console: Optional[Console] = None,
@@ -208,6 +208,7 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
 
+        import instructor
         client = instructor.from_provider(self.model, async_client=True)
 
         if not self.console:
@@ -463,7 +464,7 @@ async def summarise_conversations(
     response_schema: Type[T] = GeneratedSummary,
     prompt: str = DEFAULT_SUMMARY_PROMPT,
     temperature: float = 0.2,
-    checkpoint_manager: Optional[CheckpointManager] = None,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
     **kwargs,
 ) -> list[ConversationSummary]:
     """Generate summaries for a list of conversations using the CLIO framework.
