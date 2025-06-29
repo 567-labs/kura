@@ -3,7 +3,7 @@ from kura.base_classes import (
     BaseClusteringMethod,
     BaseClusterDescriptionModel,
 )
-from kura.checkpoint import CheckpointManager
+from kura.base_classes import BaseCheckpointManager
 from kura.embedding import embed_summaries, OpenAIEmbeddingModel
 from kura.types.summarisation import ConversationSummary
 from kura.types.cluster import Cluster, GeneratedCluster
@@ -446,7 +446,7 @@ async def generate_base_clusters_from_conversation_summaries(
     embedding_model: Optional[BaseEmbeddingModel] = None,
     clustering_method: Optional[BaseClusteringMethod] = None,
     clustering_model: Optional[BaseClusterDescriptionModel] = None,
-    checkpoint_manager: Optional[CheckpointManager] = None,
+    checkpoint_manager: Optional[BaseCheckpointManager] = None,
     max_contrastive_examples: int = 10,
     prompt: str = DEFAULT_CLUSTER_PROMPT,
     **kwargs,
