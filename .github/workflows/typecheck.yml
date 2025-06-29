@@ -1,0 +1,31 @@
+name: Type Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  WORKING_DIRECTORY: "."
+
+jobs:
+  TypeCheck:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install the project
+        run: uv sync --all-groups --dev
+      - name: Run ty type checker
+        run: uvx ty check kura
