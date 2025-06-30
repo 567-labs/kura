@@ -27,12 +27,14 @@ git clone https://github.com/567-labs/kura.git
 cd kura
 
 # Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv .venv --python 3.10
+source .venv/bin/activate
 
 # Install in development mode with dev dependencies
-uv pip install -e . --group dev
+uv sync --all-groups
 ```
+
+We use `ruff` and `ty` for linting and type checking. You can run these with `uvx ruff check` and `uvx ty check kura`.
 
 ## Setting up API Keys
 
@@ -49,20 +51,12 @@ export OPENAI_API_KEY=your_api_key_here
 set OPENAI_API_KEY=your_api_key_here
 ```
 
-## Installing Optional Dependencies
-
-Kura supports additional features with optional dependencies:
-
-```bash
-uv sync --all-extras --group dev --group docs
-```
-
 ## Verifying Your Installation
 
 To verify that Kura is installed correctly, run:
 
 ```bash
-python -c "from kura import summarise_conversations; print('Kura installed successfully')"
+python -c "from kura.summarisation import summarise_conversations; print('Kura installed successfully')"
 ```
 
 You should see a confirmation message with no errors.

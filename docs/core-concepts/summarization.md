@@ -13,7 +13,7 @@ These structured summaries power Kura's ability to identify broad usage patterns
 Here's the simplest way to summarize conversations:
 
 ```python
-from kura import summarise_conversations
+from kura.summarisation import summarise_conversations
 from kura.summarisation import SummaryModel
 from kura.types import Conversation, Message
 from datetime import datetime
@@ -150,8 +150,7 @@ summaries4 = await model.summarise(conversations, response_schema=CustomSummary)
 **Basic caching setup:**
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
 
 async def main():
     # Initialize model with caching enabled
@@ -261,8 +260,7 @@ Kura's summarization follows a procedural, configurable design where you control
 Different models offer varying performance, cost, and capability trade-offs. You might choose Claude for better reasoning, GPT-4 for consistency, or local models for privacy. Model configuration happens at initialization time since it affects API clients and connection pooling.
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import SummaryModel, summarise_conversations
 
 # Use a different model with custom settings
 model = SummaryModel(
@@ -356,8 +354,7 @@ print(summaries[0].metadata["technical_depth"])
 Here's a complete example combining all customization features for technical conversation analysis:
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
 from kura.types.summarisation import GeneratedSummary
 from pydantic import Field
 

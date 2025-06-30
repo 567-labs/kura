@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Kura: Procedural API for Chat Data Analysis
 
 ![Kura Architecture](assets/images/kura-architecture.png)
@@ -73,78 +78,112 @@ Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visual
 
 **The result?** Instead of drowning in individual conversations, you get a clear picture of what's actually happening across your entire user base.
 
+## 📚 Documentation
+
+<div class="grid cards" markdown>
+
+-   :material-rocket-launch: **Get Started Fast**
+
+    ---
+
+    Install Kura and configure your first analysis pipeline in minutes.
+
+    [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
+
+-   :material-lightning-bolt: **Quick Start**
+
+    ---
+
+    Jump right in with a complete example that processes conversations from raw data to insights.
+
+    [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
+
+-   :octicons-workflow-24:: **Complete Workflow**
+
+    ---
+
+    See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
+
+    [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
+
+-   :material-brain: **Core Concepts**
+
+    ---
+
+    Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
+
+    [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
+
+</div>
+
+!!! tip "New to Kura?"
+
+    Start with the [Installation Guide](getting-started/installation.md) → [Quick Start](getting-started/quickstart.md) → [Core Concepts](core-concepts/overview.md) for the best learning experience.
+
 ## Quick Start
 
 ```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
-from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
 import asyncio
+from kura.summarisation import SummaryModel, summarise_conversations
+from kura.cluster import (
+    ClusterDescriptionModel,
+    generate_base_clusters_from_conversation_summaries,
+)
+from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
+from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
+from kura.checkpoints import JSONLCheckpointManager
+from kura.types import Conversation, ProjectedCluster
+from kura.visualization import visualise_pipeline_results
+
 
 # Load conversations
 conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations",
-    split="train"
+    "ivanleomk/synthetic-gemini-conversations", split="train"
 )
 
 # Set up models with new caching support!
-summary_model = SummaryModel(
-    enable_caching=True,  # NEW: 85x faster on re-runs!
-    cache_dir="./.summary_cache"
-)
-cluster_model = ClusterModel()
+summary_model = SummaryModel(cache_dir="./.summary_cache")
+cluster_model = ClusterDescriptionModel()
 meta_cluster_model = MetaClusterModel(max_clusters=10)
 dimensionality_model = HDBUMAP()
 
 # Set up checkpoint manager
-checkpoint_mgr = CheckpointManager("./checkpoints", enabled=True)
+checkpoint_mgr = JSONLCheckpointManager("./checkpoints", enabled=False)
+
 
 # Run pipeline with explicit steps
-async def process_conversations():
+async def process_conversations() -> list[ProjectedCluster]:
     # Step 1: Generate summaries
     summaries = await summarise_conversations(
-        conversations,
-        model=summary_model,
-        checkpoint_manager=checkpoint_mgr
+        conversations, model=summary_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 2: Create base clusters
     clusters = await generate_base_clusters_from_conversation_summaries(
-        summaries,
-        model=cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        summaries, model=cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 3: Build hierarchy
     meta_clusters = await reduce_clusters_from_base_clusters(
-        clusters,
-        model=meta_cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        clusters, model=meta_cluster_model, checkpoint_manager=checkpoint_mgr
     )
 
     # Step 4: Project to 2D
     projected = await reduce_dimensionality_from_clusters(
-        meta_clusters,
-        model=dimensionality_model,
-        checkpoint_manager=checkpoint_mgr
+        meta_clusters, model=dimensionality_model, checkpoint_manager=checkpoint_mgr
     )
 
     return projected
 
+
 # Execute the pipeline
 results = asyncio.run(process_conversations())
 visualise_pipeline_results(results, style="enhanced")
+```
 
-# Expected output:
+This in turn results in the following output
+
+```bash
 Programming Assistance Clusters (190 conversations)
 ├── Data Analysis & Visualization (38 conversations)
 │   ├── "Help me create R plots for statistical analysis"
@@ -158,18 +197,6 @@ Programming Assistance Clusters (190 conversations)
 
 Performance: 21.9s first run → 2.1s with cache (10x faster!)
 ```
-
-## Documentation
-
-**Installation**: [Get started](getting-started/installation.md) with Kura today. Install via pip or uv and configure your first analysis pipeline.
-
-**Quickstart**: [Jump right in](getting-started/quickstart.md) with a complete example that processes conversations from raw data to insights in minutes.
-
-**Complete Workflow**: [See how a full analysis looks](./getting-started/tutorial.md) from loading data to interpreting clusters and extracting actionable insights.
-
-**Core Concepts**: Learn how Kura works under the hood - from [conversation loading](core-concepts/conversations.md) and [embedding](core-concepts/embedding.md) to [clustering](core-concepts/clustering.md), [summarization](core-concepts/summarization.md), [meta-clustering](core-concepts/meta-clustering.md), and [dimensionality reduction](core-concepts/dimensionality-reduction.md).
-
-**API Reference**: [Complete documentation](api/index.md) of Kura's procedural API with examples and best practices.
 
 ## Frequently Asked Questions
 

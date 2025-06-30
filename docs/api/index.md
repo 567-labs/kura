@@ -13,15 +13,12 @@ The API reference is organized by module, with each module containing related cl
 To use these classes in your code, import them from their respective modules:
 
 ```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
+from kura.summarisation import SummaryModel, summarise_conversations
+from kura.cluster import generate_base_clusters_from_conversation_summaries
+from kura.meta_cluster import reduce_clusters_from_base_clusters
+from kura.dimensionality import reduce_dimensionality_from_clusters
+from kura.checkpoints import CheckpointManager
 from kura.embedding import OpenAIEmbeddingModel
-from kura.summarisation import SummaryModel
 # And so on...
 ```
 
