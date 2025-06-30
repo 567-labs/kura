@@ -122,7 +122,7 @@ class SummaryModel(BaseSummaryModel):
         # Handle both string model names and instructor client instances
         if isinstance(model, str):
             self.client = instructor.from_provider(model, async_client=True)
-        if isinstance(model, instructor.AsyncInstructor):
+        elif isinstance(model, instructor.AsyncInstructor):
             self.client = model
         else:
             raise ValueError(

@@ -97,6 +97,8 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
             checkpoint_filename: Filename for checkpointing
             console: Rich console for progress tracking
         """
+        import instructor
+
         # Handle both string model names and instructor client instances
         if isinstance(model, str):
             self.client = instructor.from_provider(model, async_client=True)
