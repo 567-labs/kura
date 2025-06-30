@@ -14,6 +14,7 @@ from typing import Union, cast, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from instructor.models import KnownModelName
     from instructor import AsyncInstructor
+    import instructor
 
 import numpy as np
 import asyncio
@@ -78,7 +79,9 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
 
     def __init__(
         self,
-        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
+        model: Union[
+            str, "KnownModelName", "instructor.AsyncInstructor"
+        ] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         temperature: float = 0.2,
         checkpoint_filename: str = "clusters",
@@ -88,20 +91,31 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         Initialize ClusterModel with core configuration.
 
         Args:
-            model: model identifier (e.g., "openai/gpt-4o-mini")
+            model: model identifier (e.g., "openai/gpt-4o-mini") or instructor client
             max_concurrent_requests: Maximum concurrent API requests
             temperature: LLM temperature for generation
             checkpoint_filename: Filename for checkpointing
             console: Rich console for progress tracking
         """
-        self.model = model
+        import instructor
+
+        # Handle both string model names and instructor client instances
+        if isinstance(model, str):
+            self.client = instructor.from_provider(model, async_client=True)
+        elif isinstance(model, instructor.AsyncInstructor):
+            self.client = model
+        else:
+            raise ValueError(
+                f"Invalid model type of type({type(model)}). Expected str or instructor.AsyncInstructor."
+            )
+
         self.max_concurrent_requests = max_concurrent_requests
         self.temperature = temperature
         self._checkpoint_filename = checkpoint_filename
         self.console = console
 
         logger.info(
-            f"Initialized ClusterModel with model={model}, max_concurrent_requests={max_concurrent_requests}, temperature={temperature}"
+            f"Initialized ClusterModel with client={self.client}, max_concurrent_requests={max_concurrent_requests}, temperature={temperature}"
         )
 
     @property
@@ -116,10 +130,8 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
         max_contrastive_examples: int = 10,
     ) -> List[Cluster]:
         """Generate clusters from a mapping of cluster IDs to summaries."""
-        import instructor
 
         self.sem = Semaphore(self.max_concurrent_requests)
-        self.client = instructor.from_provider(self.model, async_client=True)
 
         if not self.console:
             # Simple processing without rich display
