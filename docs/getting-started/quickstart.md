@@ -13,32 +13,23 @@ Here's a complete working example that you can copy and run immediately. This ex
 ```python
 import asyncio
 from rich.console import Console
-from kura import (
-    ClusterDescriptionModel,
-    SummaryModel,
-    MetaClusterModel,
-    Conversation,
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    visualise_pipeline_results,
-)
-from kura.checkpoints import JSONLCheckpointManager
+from kura.cache import DiskCacheStrategy
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterDescriptionModel
+from kura.meta_cluster import reduce_clusters_from_base_clusters, MetaClusterModel
+from kura.dimensionality import reduce_dimensionality_from_clusters, HDBUMAP
+from kura.visualization import visualise_pipeline_results
 from kura.types import Conversation
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterDescriptionModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
+from kura.checkpoints import JSONLCheckpointManager
 
 
 async def main():
     console = Console()
 
-    # SummaryModel now supports caching to speed up re-runs!
+    # SummaryModel now uses DiskCacheStrategy for caching to speed up re-runs by 85x!
     summary_model = SummaryModel(
         console=console,
-        cache_dir="./.summary_cache",  # Optional: specify cache location
+        cache=DiskCacheStrategy(cache_dir="./.summary")  # Uses disk-based caching
     )
 
     cluster_model = ClusterDescriptionModel(
@@ -97,7 +88,7 @@ Now let's break down each section of the code above to understand what's happeni
 console = Console()
 summary_model = SummaryModel(
     console=console,
-    cache_dir="./.summary_cache",
+    cache=DiskCacheStrategy(cache_dir="./.summary")
 )
 cluster_model = ClusterDescriptionModel(console=console)
 meta_cluster_model = MetaClusterModel(console=console)

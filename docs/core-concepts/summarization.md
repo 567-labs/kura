@@ -13,8 +13,7 @@ These structured summaries power Kura's ability to identify broad usage patterns
 Here's the simplest way to summarize conversations:
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
 from kura.types import Conversation, Message
 from datetime import datetime
 import asyncio
@@ -105,21 +104,22 @@ Kura's `SummaryModel` supports optional disk caching using `diskcache` to store 
 
 ### Enabling Caching
 
-Caching is **disabled by default**. Enable it by providing a `cache_dir` parameter:
+Caching is **disabled by default**. Enable it by providing a `DiskCacheStrategy` instance:
 
 ```python
 from kura.summarisation import SummaryModel
+from kura.cache import DiskCacheStrategy
 
 # Enable caching with custom directory
 model = SummaryModel(
     model="openai/gpt-4o-mini",
-    cache_dir="./summary_cache"  # Creates cache directory if needed
+    cache=DiskCacheStrategy(cache_dir="./summary_cache")  # Creates cache directory if needed
 )
 
 # Caching disabled (default behavior)
 model_no_cache = SummaryModel(
     model="openai/gpt-4o-mini"
-    # cache_dir=None (default)
+    # cache=None (default)
 )
 ```
 
@@ -150,14 +150,14 @@ summaries4 = await model.summarise(conversations, response_schema=CustomSummary)
 **Basic caching setup:**
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cache import DiskCacheStrategy
 
 async def main():
     # Initialize model with caching enabled
     model = SummaryModel(
         model="openai/gpt-4o-mini",
-        cache_dir="./my_summary_cache"
+        cache=DiskCacheStrategy(cache_dir="./my_summary_cache")
     )
     
     # First run: generates summaries and caches them
@@ -172,15 +172,17 @@ async def main():
 **Working with different cache directories:**
 
 ```python
+from kura.cache import DiskCacheStrategy
+
 # Separate caches for different model configurations
 gpt4_model = SummaryModel(
     model="openai/gpt-4o", 
-    cache_dir="./cache/gpt4"
+    cache=DiskCacheStrategy(cache_dir="./cache/gpt4")
 )
 
 claude_model = SummaryModel(
     model="anthropic/claude-3-5-sonnet-20241022",
-    cache_dir="./cache/claude"
+    cache=DiskCacheStrategy(cache_dir="./cache/claude")
 )
 
 # Each model maintains its own cache
@@ -220,10 +222,10 @@ from kura.cache import DiskCacheStrategy
 
 # Use environment variable for cache location
 cache_dir = os.getenv("KURA_CACHE_DIR", "./default_cache")
-model = SummaryModel(cache=DiskCacheStrategy(cache_dir))
+model = SummaryModel(cache=DiskCacheStrategy(cache_dir=cache_dir))
 
 # Or use project-specific cache directories
-model = SummaryModel(cache=DiskCacheStrategy(f"./cache/{project_name}/summaries"))
+model = SummaryModel(cache=DiskCacheStrategy(cache_dir=f"./cache/{project_name}/summaries"))
 ```
 
 **Cache size considerations:** The cache grows with unique conversations. Each cached summary includes the full `ConversationSummary` object. Monitor cache directory size for large-scale deployments.
@@ -261,8 +263,7 @@ Kura's summarization follows a procedural, configurable design where you control
 Different models offer varying performance, cost, and capability trade-offs. You might choose Claude for better reasoning, GPT-4 for consistency, or local models for privacy. Model configuration happens at initialization time since it affects API clients and connection pooling.
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
 
 # Use a different model with custom settings
 model = SummaryModel(
@@ -356,8 +357,7 @@ print(summaries[0].metadata["technical_depth"])
 Here's a complete example combining all customization features for technical conversation analysis:
 
 ```python
-from kura import summarise_conversations
-from kura.summarisation import SummaryModel
+from kura.summarisation import summarise_conversations, SummaryModel
 from kura.types.summarisation import GeneratedSummary
 from pydantic import Field
 

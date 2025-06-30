@@ -10,19 +10,18 @@ The API reference is organized by module, with each module containing related cl
 - Instance methods with parameter details and return types
 - Properties and attributes
 
-To use these classes in your code, import them from their respective modules:
+To use these classes in your code, import them from their specific modules:
 
 ```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
-from kura.embedding import OpenAIEmbeddingModel
-from kura.summarisation import SummaryModel
-# And so on...
+# Import functions from their specific modules
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterDescriptionModel
+from kura.meta_cluster import reduce_clusters_from_base_clusters, MetaClusterModel
+from kura.dimensionality import reduce_dimensionality_from_clusters, HDBUMAP
+from kura.visualization import visualise_pipeline_results
+from kura.types import Conversation
+from kura.checkpoints import JSONLCheckpointManager
+from kura.cache import DiskCacheStrategy
 ```
 
 ## Core Classes
