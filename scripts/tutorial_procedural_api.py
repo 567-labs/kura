@@ -2,13 +2,6 @@ import time
 import asyncio
 from contextlib import contextmanager
 
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-)
-
 from kura import MultiCheckpointManager
 from kura.checkpoints import (
     HFDatasetCheckpointManager,
@@ -16,11 +9,14 @@ from kura.checkpoints import (
     ParquetCheckpointManager,
 )
 from kura.types import Conversation
-from kura.summarisation import SummaryModel
+from kura.summarisation import SummaryModel, summarise_conversations
 from kura.k_means import MiniBatchKmeansClusteringMethod
-from kura.cluster import ClusterDescriptionModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
+from kura.cluster import (
+    ClusterDescriptionModel,
+    generate_base_clusters_from_conversation_summaries,
+)
+from kura.meta_cluster import MetaClusterModel, reduce_clusters_from_base_clusters
+from kura.dimensionality import HDBUMAP, reduce_dimensionality_from_clusters
 from rich.console import Console
 
 

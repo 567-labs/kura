@@ -113,26 +113,24 @@ uv pip install kura
 ```python
 import asyncio
 from rich.console import Console
-from kura import (
-    ClusterDescriptionModel,
-    SummaryModel,
-    MetaClusterModel,
-    Conversation,
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    visualise_pipeline_results,
-)
+from kura.cache import DiskCacheStrategy
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterDescriptionModel
+from kura.meta_cluster import reduce_clusters_from_base_clusters, MetaClusterModel
+from kura.dimensionality import reduce_dimensionality_from_clusters, HDBUMAP
+from kura.visualization import visualise_pipeline_results
+from kura.types import Conversation
 from kura.checkpoints import JSONLCheckpointManager
-from kura.dimensionality import HDBUMAP
 
 
 async def main():
     console = Console()
 
     # Define Models
-    summary_model = SummaryModel(console=console)
+    summary_model = SummaryModel(
+        console=console,
+        cache=DiskCacheStrategy(cache_dir="./.summary"),  # Uses disk-based caching
+    )
     cluster_model = ClusterDescriptionModel(console=console)  # Uses K-means by default
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
@@ -208,6 +206,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and contr
 ## License
 
 [MIT License](LICENSE)
+
 ## About
 
 Kura is under active development. If you face any issues or have suggestions, please feel free to [open an issue](https://github.com/567-labs/kura/issues) or a PR. For more details on the technical implementation, check out this [walkthrough of the code](https://ivanleo.com/blog/understanding-user-conversations).

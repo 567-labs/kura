@@ -101,7 +101,7 @@ async def embed_with_retry(
 Avoid these common mistakes:
 
 - Hidden configuration (LangChain mistake): Don't bury important parameters in class constructors
-- Inheritance traps: Don't force inheritance for customization when composition works better  
+- Inheritance traps: Don't force inheritance for customization when composition works better
 - Monolithic functions: Break down large functions with mixed responsibilities
 
 ## Documentation Guidelines
@@ -145,6 +145,16 @@ Use MkDocs-specific functionality to improve readability, but sparingly. Aim for
 Callouts work well for important notes, warnings, or tips that complement the main content. Cards are effective for showing different options or pathways.
 
 Keep each page self-contained with focused, digestible information. Users should be able to understand a concept completely from a single page without jumping between multiple sections.
+
+if you're using a callout/Admonition, make sure to put it under a header in the form
+
+```
+#Header
+!!!info "Info"
+    This is an info callout.
+
+<some quick paragrapj here explaining everything about this speicifc callout>
+```
 
 ## Command Reference
 

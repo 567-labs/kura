@@ -19,13 +19,11 @@ from contextlib import contextmanager
 from typing import Dict, Any
 
 # Import Kura components
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager,
-)
+from kura.summarisation import summarise_conversations
+from kura.cluster import generate_base_clusters_from_conversation_summaries
+from kura.meta_cluster import reduce_clusters_from_base_clusters
+from kura.dimensionality import reduce_dimensionality_from_clusters
+from kura.checkpoint import CheckpointManager
 
 try:
     from kura import ParquetCheckpointManager

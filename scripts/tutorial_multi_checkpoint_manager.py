@@ -11,14 +11,10 @@ import shutil
 from datetime import datetime
 from typing import List
 
-from kura import (
-    CheckpointManager,
-    MultiCheckpointManager,
-    Conversation,
-    SummaryModel,
-    summarise_conversations,
-)
-from kura.types import Message
+from kura.checkpoints import MultiCheckpointManager
+from kura.checkpoint import CheckpointManager
+from kura.summarisation import SummaryModel, summarise_conversations
+from kura.types import Message, Conversation
 
 
 def create_sample_conversations() -> List[Conversation]:
