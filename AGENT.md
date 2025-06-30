@@ -153,7 +153,7 @@ if you're using a callout/Admonition, make sure to put it under a header in the 
 !!!info "Info"
     This is an info callout.
 
-<some quick paragrapj here explaining everything about this speicifc callout>
+<some quick paragraph here explaining everything about this specific callout>
 ```
 
 ## Command Reference
