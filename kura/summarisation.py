@@ -10,7 +10,6 @@ from rich.console import Console
 
 from kura.base_classes import BaseSummaryModel
 from kura.base_classes.cache import CacheStrategy
-from kura.checkpoint import CheckpointManager
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
 
@@ -117,7 +116,7 @@ class SummaryModel(BaseSummaryModel):
         self.max_concurrent_requests = max_concurrent_requests
         self._checkpoint_filename = checkpoint_filename
         self.console = console
-        
+
         # Initialize cache
         self.cache = cache
 
@@ -130,28 +129,28 @@ class SummaryModel(BaseSummaryModel):
     def checkpoint_filename(self) -> str:
         """Return the filename to use for checkpointing this model's output."""
         return self._checkpoint_filename
-    
+
     def _get_cache_key(
-        self, 
-        conversation: Conversation, 
-        response_schema: Type[T], 
-        prompt: str, 
+        self,
+        conversation: Conversation,
+        response_schema: Type[T],
+        prompt: str,
         temperature: float,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Generate a cache key from conversation messages and parameters."""
         # Create role-content pairs for each message
         message_data = [(msg.role, msg.content) for msg in conversation.messages]
-        
+
         # Include all parameters that affect the output
         cache_components = (
             tuple(message_data),
             response_schema.__name__,
             hashlib.md5(prompt.encode()).hexdigest(),
             temperature,
-            self.model
+            self.model,
         )
-        
+
         return hashlib.md5(str(cache_components).encode()).hexdigest()
 
     async def summarise(
@@ -204,6 +203,7 @@ class SummaryModel(BaseSummaryModel):
         )
 
         import instructor
+
         client = instructor.from_provider(self.model, async_client=True)
 
         if not self.console:
@@ -261,10 +261,14 @@ class SummaryModel(BaseSummaryModel):
 
         # Check cache first
         if self.cache:
-            cache_key = self._get_cache_key(conversation, response_schema, prompt, temperature, **kwargs)
+            cache_key = self._get_cache_key(
+                conversation, response_schema, prompt, temperature, **kwargs
+            )
             cached_result = self.cache.get(cache_key)
             if cached_result is not None:
-                logger.debug(f"Found cached summary for conversation {conversation.chat_id}")
+                logger.debug(
+                    f"Found cached summary for conversation {conversation.chat_id}"
+                )
                 return cached_result
 
         async with self.semaphore:  # type: ignore
@@ -326,12 +330,12 @@ class SummaryModel(BaseSummaryModel):
             },
             **known_data,
         )
-        
+
         # Cache the result
         if self.cache:
             self.cache.set(cache_key, result)
             logger.debug(f"Cached summary for conversation {conversation.chat_id}")
-        
+
         return result
 
     async def _summarise_with_console(
