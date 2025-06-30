@@ -1,5 +1,4 @@
 from kura.base_classes import BaseClusteringMethod
-from sklearn.cluster import KMeans, MiniBatchKMeans
 import math
 from typing import TypeVar
 import numpy as np
@@ -38,6 +37,8 @@ class KmeansClusteringMethod(BaseClusteringMethod):
         logger.info(f"Starting K-means clustering of {len(items)} items")
 
         try:
+            from sklearn.cluster import KMeans
+            
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
             data: list[T] = [item["item"] for item in items]  # pyright: ignore
             n_clusters = math.ceil(len(data) / self.clusters_per_group)
@@ -145,6 +146,8 @@ class MiniBatchKmeansClusteringMethod(BaseClusteringMethod):
         logger.info(f"Starting MiniBatch K-means clustering of {len(items)} items")
 
         try:
+            from sklearn.cluster import MiniBatchKMeans
+            
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
             data: list[T] = [item["item"] for item in items]  # pyright: ignore
             n_clusters = math.ceil(len(data) / self.clusters_per_group)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 from kura.base_classes import BaseClusteringMethod
-import hdbscan
 from typing import TypeVar
 import numpy as np
 import logging
@@ -74,6 +73,8 @@ class HDBSCANClusteringMethod(BaseClusteringMethod):
         logger.info(f"Starting HDBSCAN clustering of {len(items)} items")
 
         try:
+            import hdbscan
+            
             embeddings = [item["embedding"] for item in items]  # pyright: ignore
             data: list[T] = [item["item"] for item in items]  # pyright: ignore
 

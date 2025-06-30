@@ -1,71 +1,39 @@
-from .checkpoint import CheckpointManager
-from .checkpoints import MultiCheckpointManager
-from .summarisation import SummaryModel, summarise_conversations
-from .cluster import (
-    ClusterDescriptionModel,
-    generate_base_clusters_from_conversation_summaries,
-)
-from .v1.kura import (
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-)
-from .meta_cluster import MetaClusterModel
+"""Kura - Conversation Analysis Library
 
-from .types import Conversation
-from .k_means import KmeansClusteringMethod, MiniBatchKmeansClusteringMethod
-from .hdbscan import HDBSCANClusteringMethod
-from .v1.visualization import (
-    visualise_pipeline_results,
-    visualise_clusters_rich,
-    visualise_clusters_enhanced,
-    visualise_clusters,
-)
+This module uses lazy loading via __getattr__ (PEP 562, Python 3.7+).
+Submodules are imported on first access and cached in globals().
+"""
 
-# Import ParquetCheckpointManager from checkpoints module if available
-try:
-    from .checkpoints.parquet import ParquetCheckpointManager
+import importlib
+from typing import Any
 
-    PARQUET_AVAILABLE = True
-except ImportError:
-    ParquetCheckpointManager = None
-    PARQUET_AVAILABLE = False
-
-try:
-    from .checkpoints.hf_dataset import HFDatasetCheckpointManager
-
-    HF_AVAILABLE = True
-except ImportError:
-    HFDatasetCheckpointManager = None
-    HF_AVAILABLE = False
-
-
-__all__ = [
-    "SummaryModel",
-    "ClusterDescriptionModel",
-    "Conversation",
-    "MetaClusterModel",
-    "CheckpointManager",
-    "MultiCheckpointManager",
-    "KmeansClusteringMethod",
-    "MiniBatchKmeansClusteringMethod",
-    "HDBSCANClusteringMethod",
-    # Procedural Methods
-    "summarise_conversations",
-    "generate_base_clusters_from_conversation_summaries",
-    "reduce_clusters_from_base_clusters",
-    "reduce_dimensionality_from_clusters",
-    # Visualisation
-    "visualise_pipeline_results",
-    "visualise_clusters_rich",
-    "visualise_clusters_enhanced",
-    "visualise_clusters",
+# List of submodules that can be lazily loaded
+_submodules = [
+    "checkpoint",
+    "checkpoints",
+    "summarisation",
+    "cluster",
+    "dimensionality",
+    "meta_cluster",
+    "types",
+    "k_means",
+    "hdbscan",
+    "visualization",
 ]
 
-# Add ParquetCheckpointManager to __all__ if available
-if PARQUET_AVAILABLE:
-    __all__.append("ParquetCheckpointManager")
+# Expose all submodules for IDE/static analysis support
+__all__ = _submodules
 
-if HF_AVAILABLE:
-    __all__.append("HFDatasetCheckpointManager")
 
-__version__ = "1.0.0"
+def __getattr__(name: str) -> Any:
+    """Lazily import submodules and their contents."""
+    if name in globals():
+        return globals()[name]
+
+    if name in _submodules:
+        # Import the submodule
+        module = importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

@@ -6,6 +6,7 @@ supporting different save and load strategies for flexibility and reliability.
 """
 
 import logging
+from pathlib import Path
 from typing import List, Optional, TypeVar, Literal, Dict, Any
 from pydantic import BaseModel
 
@@ -91,7 +92,7 @@ class MultiCheckpointManager(BaseCheckpointManager):
             if mgr.enabled:
                 mgr.setup_checkpoint_dir()
 
-    def get_checkpoint_path(self, filename: str) -> str:
+    def get_checkpoint_path(self, filename: str) -> Path:
         """Get checkpoint path from the primary manager.
 
         Note: This method is mainly for compatibility. In a multi-manager setup,
@@ -99,12 +100,13 @@ class MultiCheckpointManager(BaseCheckpointManager):
         """
         return self.managers[0].get_checkpoint_path(filename)
 
-    def load_checkpoint(self, filename: str, model_class: type[T]) -> Optional[List[T]]:
+    def load_checkpoint(self, filename: str, model_class: type[T], **kwargs) -> Optional[List[T]]:
         """Load checkpoint using the configured strategy.
 
         Args:
             filename: Name of the checkpoint file
             model_class: Pydantic model class for deserializing the data
+            **kwargs: Additional arguments passed to underlying managers
 
         Returns:
             List of model instances if checkpoint exists, None otherwise
@@ -116,7 +118,7 @@ class MultiCheckpointManager(BaseCheckpointManager):
             # Try each manager until one succeeds
             for mgr in self.managers:
                 if mgr.enabled:
-                    result = mgr.load_checkpoint(filename, model_class)
+                    result = mgr.load_checkpoint(filename, model_class, **kwargs)
                     if result is not None:
                         logger.info(
                             f"Loaded checkpoint '{filename}' from {type(mgr).__name__}"
@@ -130,7 +132,7 @@ class MultiCheckpointManager(BaseCheckpointManager):
             # Only try the first enabled manager
             for mgr in self.managers:
                 if mgr.enabled:
-                    result = mgr.load_checkpoint(filename, model_class)
+                    result = mgr.load_checkpoint(filename, model_class, **kwargs)
                     if result is not None:
                         logger.info(
                             f"Loaded checkpoint '{filename}' from primary manager {type(mgr).__name__}"
@@ -146,12 +148,13 @@ class MultiCheckpointManager(BaseCheckpointManager):
         else:
             raise ValueError(f"Unknown load strategy: {self.load_strategy}")
 
-    def save_checkpoint(self, filename: str, data: List[T]) -> None:
+    def save_checkpoint(self, filename: str, data: List[T], **kwargs) -> None:
         """Save checkpoint using the configured strategy.
 
         Args:
             filename: Name of the checkpoint file
             data: List of model instances to save
+            **kwargs: Additional arguments passed to underlying managers
         """
         if not self.enabled:
             return
@@ -161,7 +164,7 @@ class MultiCheckpointManager(BaseCheckpointManager):
             saved_to = []
             for mgr in self.managers:
                 if mgr.enabled:
-                    mgr.save_checkpoint(filename, data)
+                    mgr.save_checkpoint(filename, data, **kwargs)
                     saved_to.append(type(mgr).__name__)
 
             if saved_to:
@@ -173,7 +176,7 @@ class MultiCheckpointManager(BaseCheckpointManager):
             # Save only to the first enabled manager
             for mgr in self.managers:
                 if mgr.enabled:
-                    mgr.save_checkpoint(filename, data)
+                    mgr.save_checkpoint(filename, data, **kwargs)
                     logger.info(
                         f"Saved checkpoint '{filename}' to primary manager {type(mgr).__name__}"
                     )

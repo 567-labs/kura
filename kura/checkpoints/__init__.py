@@ -18,26 +18,17 @@ The MultiCheckpointManager allows using multiple backends simultaneously for
 redundancy and performance optimization.
 """
 
+import importlib.util
+
 from kura.base_classes import BaseCheckpointManager
 from .jsonl import JSONLCheckpointManager
 from .multi import MultiCheckpointManager
 
-# Import ParquetCheckpointManager if PyArrow is available
-try:
-    from .parquet import ParquetCheckpointManager
+# Check if optional dependencies are available
+PARQUET_AVAILABLE = importlib.util.find_spec("pyarrow") is not None
+HF_DATASETS_AVAILABLE = importlib.util.find_spec("datasets") is not None
 
-    PARQUET_AVAILABLE = True
-except ImportError:
-    ParquetCheckpointManager = None
-    PARQUET_AVAILABLE = False
-
-# Import HFDatasetCheckpointManager if datasets is available
-try:
-    from .hf_dataset import HFDatasetCheckpointManager, HF_DATASETS_AVAILABLE
-except ImportError:
-    HFDatasetCheckpointManager = None
-    HF_DATASETS_AVAILABLE = False
-
+# Base exports
 __all__ = [
     "BaseCheckpointManager",
     "JSONLCheckpointManager",
@@ -46,9 +37,11 @@ __all__ = [
     "HF_DATASETS_AVAILABLE",
 ]
 
-# Add ParquetCheckpointManager to exports if available
+# Conditional imports and exports
 if PARQUET_AVAILABLE:
+    from .parquet import ParquetCheckpointManager as ParquetCheckpointManager
     __all__.append("ParquetCheckpointManager")
 
 if HF_DATASETS_AVAILABLE:
+    from .hf_dataset import HFDatasetCheckpointManager as HFDatasetCheckpointManager
     __all__.append("HFDatasetCheckpointManager")

@@ -1668,7 +1668,7 @@ wheels = [
 
 [[package]]
 name = "kura"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
@@ -1690,6 +1690,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "datasets" },
+    { name = "jupyter" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "pre-commit" },
@@ -1743,6 +1744,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "datasets", specifier = ">=3.6.0" },
+    { name = "jupyter", specifier = ">=1.1.1" },
     { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "mkdocs-material", specifier = ">=9.5.49" },
     { name = "pre-commit", specifier = ">=4.2.0" },

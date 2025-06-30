@@ -7,17 +7,23 @@ like streaming, versioning, and cloud storage integration.
 """
 
 import logging
-from typing import Optional, TypeVar, List, Dict, Any
+import importlib.util
+from typing import Optional, TypeVar, List, Dict, Any, Callable
 from pathlib import Path
 from datetime import datetime
 import json
 from pydantic import BaseModel
+from kura.types import Conversation, ConversationSummary, Cluster
+from kura.types.dimensionality import ProjectedCluster
+from kura.base_classes import BaseCheckpointManager
 
-# Import HuggingFace datasets components
-try:
+# Check if HuggingFace datasets is available
+HF_DATASETS_AVAILABLE = importlib.util.find_spec("datasets") is not None
+
+# Conditional imports to avoid shadowing
+if HF_DATASETS_AVAILABLE:
     from datasets import (
         Dataset,
-        DatasetDict,
         Features,
         Value,
         Sequence,
@@ -26,21 +32,13 @@ try:
     )
     from datasets.features import ClassLabel
 
-    HF_DATASETS_AVAILABLE = True
-except ImportError:
-    HF_DATASETS_AVAILABLE = False
-    Dataset = DatasetDict = Features = Value = Sequence = None
-    load_from_disk = load_dataset = ClassLabel = None
-
-from kura.types import Conversation, ConversationSummary, Cluster
-from kura.types.dimensionality import ProjectedCluster
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class HFDatasetCheckpointManager:
+class HFDatasetCheckpointManager(BaseCheckpointManager):
     """Handles checkpoint loading and saving using HuggingFace datasets.
 
     This checkpoint system provides better performance, scalability, and features
@@ -79,15 +77,12 @@ class HFDatasetCheckpointManager:
                 "Install with: pip install datasets"
             )
 
-        self.checkpoint_dir = Path(checkpoint_dir)
-        self.enabled = enabled
+        super().__init__(checkpoint_dir, enabled=enabled)
+
         self.hub_repo = hub_repo
         self.hub_token = hub_token
         self.streaming = streaming
         self.compression = compression
-
-        if self.enabled:
-            self.setup_checkpoint_dir()
 
         # Define schemas for different data types
         self._schemas = self._define_schemas()
@@ -215,7 +210,7 @@ class HFDatasetCheckpointManager:
         if checkpoint_type == "conversations":
             # Handle Conversation model
             data["created_at"] = int(
-                model.created_at.timestamp() * 1_000_000_000
+                model.created_at.timestamp() * 1_000_000_000  # ty: ignore
             )  # Convert to nanoseconds
             for msg in data["messages"]:
                 # Handle datetime objects correctly - they might already be datetime objects
@@ -469,13 +464,17 @@ class HFDatasetCheckpointManager:
                         name=filename,
                         streaming=True,
                         token=self.hub_token,
-                    )["train"]
+                        split=kwargs.get("split", "train"),
+                    )
                     # For streaming, we need to collect all items
                     dict_data = list(dataset)
                 else:
                     dataset = load_dataset(
-                        self.hub_repo, name=filename, token=self.hub_token
-                    )["train"]
+                        self.hub_repo,
+                        name=filename,
+                        token=self.hub_token,
+                        split=kwargs.get("split", "train"),
+                    )
                     dict_data = dataset
 
                 logger.info(
@@ -594,7 +593,7 @@ class HFDatasetCheckpointManager:
                 "num_rows": len(dataset),
                 "num_columns": len(dataset.column_names),
                 "column_names": dataset.column_names,
-                "features": str(dataset.features),
+                "features": str(dataset.features),  # ty: ignore
                 "size_bytes": sum(
                     f.stat().st_size for f in checkpoint_path.rglob("*") if f.is_file()
                 ),
@@ -614,7 +613,11 @@ class HFDatasetCheckpointManager:
             return None
 
     def filter_checkpoint(
-        self, filename: str, filter_fn: callable, model_class: type[T], **kwargs
+        self,
+        filename: str,
+        filter_fn: Callable[[Dict[str, Any]], bool],
+        model_class: type[T],
+        **kwargs,
     ) -> Optional[List[T]]:
         """Filter a checkpoint dataset without loading everything into memory.
 
