@@ -40,7 +40,7 @@ async def main():
 
     # Set up checkpointing - you can choose from multiple backends
     # HuggingFace Datasets (advanced features, cloud sync)
-    checkpoint_manager = JSONLCheckpointManager("./checkpoints/hf", enabled=True)
+    checkpoint_manager = JSONLCheckpointManager("./checkpoints", enabled=True)
 
     # Load conversations from Hugging Face dataset
     conversations = Conversation.from_hf_dataset(
@@ -132,9 +132,9 @@ The [Conversation](../core-concepts/data-types.md) type provides a standardized 
 
 ### Pipeline Execution
 
-The core pipeline consists of four sequential transformations, each building on the results of the previous stage. This modular design allows you to mix and match different approaches at each stage.
+> **What's happening here**: Each function processes the output from the previous stage, progressively transforming raw conversations into organized, visualizable clusters.
 
-> **💡 What's happening here**: Each function processes the output from the previous stage, progressively transforming raw conversations into organized, visualizable clusters.
+The core pipeline consists of four sequential transformations, each building on the results of the previous stage. This modular design allows you to mix and match different approaches at each stage.
 
 ```python
 summaries = await summarise_conversations(
@@ -155,9 +155,9 @@ The [summarization stage](../core-concepts/summarization.md) extracts key themes
 
 ### Visualization
 
-The final step displays the results in a format that makes it easy to understand how conversations have been organized. Kura provides multiple visualization styles to suit different needs and contexts.
+> **What's happening here**: The visualization function takes the processed clusters and displays them as an organized tree structure showing the relationships between different conversation themes.
 
-> **💡 What's happening here**: The visualization function takes the processed clusters and displays them as an organized tree structure showing the relationships between different conversation themes.
+The final step displays the results in a format that makes it easy to understand how conversations have been organized. Kura provides multiple visualization styles to suit different needs and contexts.
 
 ```python
 visualise_pipeline_results(projected_clusters, style="basic")
@@ -169,7 +169,7 @@ The [visualization system](../core-concepts/visualization.md) supports three mai
 
 Kura's procedural design makes it easy to customize any part of the pipeline. You can swap out models, adjust parameters, or even skip certain stages depending on your specific needs.
 
-For different clustering approaches, you can replace the `ClusterDescriptionModel` with alternatives like HDBSCAN for exploratory analysis or MiniBatch K-means for large datasets. The [clustering documentation](../core-concepts/clustering.md) provides detailed guidance on when to use each approach.
+For different clustering approaches, you can replace our default clustering model with alternatives like HDBSCAN for exploratory analysis or MiniBatch K-means for large datasets. The [clustering documentation](../core-concepts/clustering.md) provides detailed guidance on when to use each approach.
 
 For different summary formats, you can configure the `SummaryModel` with custom prompts, response schemas, or even different language models. The [summarization documentation](../core-concepts/summarization.md) shows how to adapt the summarization process for specific domains or use cases.
 

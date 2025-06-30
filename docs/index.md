@@ -82,39 +82,40 @@ Transforms: _High-dimensional cluster embeddings_ **→** _Interactive 2D visual
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **Get Started Fast**
+-   :material-rocket-launch: **Get Started Fast**
 
-  ***
+    ---
 
-  Install Kura and configure your first analysis pipeline in minutes.
+    Install Kura and configure your first analysis pipeline in minutes.
 
-  [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
+    [:octicons-arrow-right-24: Installation Guide](getting-started/installation.md)
 
-- :material-lightning-bolt: **Quick Start**
+-   :material-lightning-bolt: **Quick Start**
 
-  ***
+    ---
 
-  Jump right in with a complete example that processes conversations from raw data to insights.
+    Jump right in with a complete example that processes conversations from raw data to insights.
 
-  [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
+    [:octicons-arrow-right-24: Quick Start Tutorial](getting-started/quickstart.md)
 
-- :octicons-workflow-24:: **Complete Workflow**
+-   :octicons-workflow-24:: **Complete Workflow**
 
-  ***
+    ---
 
-  See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
+    See how a full analysis looks from loading data to interpreting clusters and extracting actionable insights.
 
-  [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
+    [:octicons-arrow-right-24: Full Tutorial](getting-started/tutorial.md)
 
-- :material-brain: **Core Concepts**
+-   :material-brain: **Core Concepts**
 
-  ***
+    ---
 
-  Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
+    Learn how Kura works under the hood - from conversation loading and embedding to clustering and visualization.
 
-  [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
+    [:octicons-arrow-right-24: Deep Dive](core-concepts/overview.md)
 
 </div>
+
 
 !!! tip "New to Kura?"
 
