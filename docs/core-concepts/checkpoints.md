@@ -567,8 +567,7 @@ MultiCheckpointManager acts as a coordinator for multiple checkpoint backends, e
 ### Basic Usage
 
 ```python
-from kura import CheckpointManager, MultiCheckpointManager
-from kura.checkpoints import ParquetCheckpointManager
+from kura.checkpoints import CheckpointManager, MultiCheckpointManager, ParquetCheckpointManager
 
 # Create individual managers
 jsonl_mgr = CheckpointManager("./checkpoints/jsonl")
@@ -752,17 +751,10 @@ multi_mgr.delete_checkpoint("old_summaries.jsonl")
 
 ```python
 import asyncio
-from kura import (
-    CheckpointManager,
-    MultiCheckpointManager,
-    SummaryModel,
-    ClusterDescriptionModel,
-    MetaClusterModel,
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters
-)
-from kura.checkpoints import ParquetCheckpointManager
+from kura.checkpoints import CheckpointManager, MultiCheckpointManager, ParquetCheckpointManager
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterDescriptionModel
+from kura.meta_cluster import reduce_clusters_from_base_clusters, MetaClusterModel
 
 async def run_analysis_with_multi_checkpoints(conversations):
     # Set up multi-backend checkpointing

@@ -63,7 +63,7 @@ You can customise the embedding model used at each step by simply creating an in
 Here is how we might do so in the initial clustering step using the Cohere `embed-v4.0` model.
 
 ```python
-from kura import generate_base_clusters_from_conversation_summaries
+from kura.cluster import generate_base_clusters_from_conversation_summaries
 from kura.embedding import CohereEmbeddingModel
 
 # Custom embedding model (Cohere example)

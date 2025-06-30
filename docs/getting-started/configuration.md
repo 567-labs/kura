@@ -28,17 +28,11 @@ kura --dir ./my_checkpoints
 The procedural API provides flexibility by breaking the pipeline into composable functions:
 
 ```python
-from kura import (
-    summarise_conversations,
-    generate_base_clusters_from_conversation_summaries,
-    reduce_clusters_from_base_clusters,
-    reduce_dimensionality_from_clusters,
-    CheckpointManager
-)
-from kura.summarisation import SummaryModel
-from kura.cluster import ClusterModel
-from kura.meta_cluster import MetaClusterModel
-from kura.dimensionality import HDBUMAP
+from kura.summarisation import summarise_conversations, SummaryModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterModel
+from kura.meta_cluster import reduce_clusters_from_base_clusters, MetaClusterModel
+from kura.dimensionality import reduce_dimensionality_from_clusters, HDBUMAP
+from kura.checkpoints import CheckpointManager
 # Assuming Conversation type might be needed for context, if not, it can be removed.
 # from kura.types import Conversation
 
@@ -87,7 +81,7 @@ The procedural API excels at working with different model implementations for th
 
 ```python
 # Use different backends for the same task
-from kura import summarise_conversations
+from kura.summarisation import summarise_conversations
 # Assuming these model classes exist and are correctly imported
 # from kura.summarisation import OpenAISummaryModel, VLLMSummaryModel, HuggingFaceSummaryModel
 

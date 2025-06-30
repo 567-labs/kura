@@ -11,8 +11,7 @@ The clustering process takes `ConversationSummary` objects (from [Summarization]
 Here's the simplest way to cluster conversation summaries:
 
 ```python
-from kura import generate_base_clusters_from_conversation_summaries
-from kura.cluster import ClusterModel
+from kura.cluster import generate_base_clusters_from_conversation_summaries, ClusterModel
 from kura.types import ConversationSummary
 import asyncio
 

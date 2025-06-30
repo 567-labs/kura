@@ -62,7 +62,7 @@ uv sync --all-extras --group dev --group docs
 To verify that Kura is installed correctly, run:
 
 ```bash
-python -c "from kura import summarise_conversations; print('Kura installed successfully')"
+python -c "from kura.summarisation import summarise_conversations; print('Kura installed successfully')"
 ```
 
 You should see a confirmation message with no errors.
