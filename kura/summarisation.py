@@ -3,6 +3,8 @@ import asyncio
 import logging
 import hashlib
 
+from kura.base_classes.checkpoint import BaseCheckpointManager
+
 if TYPE_CHECKING:
     from instructor.models import KnownModelName
 from tqdm.asyncio import tqdm_asyncio
