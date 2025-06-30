@@ -102,6 +102,10 @@ class ClusterDescriptionModel(BaseClusterDescriptionModel):
             self.client = instructor.from_provider(model, async_client=True)
         elif isinstance(model, instructor.AsyncInstructor):
             self.client = model
+        else:
+            raise ValueError(
+                f"Invalid model type of type({type(model)}). Expected str or instructor.AsyncInstructor."
+            )
 
         self.max_concurrent_requests = max_concurrent_requests
         self.temperature = temperature

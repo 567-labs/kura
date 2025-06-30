@@ -7,6 +7,7 @@ from kura.base_classes.checkpoint import BaseCheckpointManager
 
 if TYPE_CHECKING:
     from instructor.models import KnownModelName
+    import instructor
 from tqdm.asyncio import tqdm_asyncio
 from rich.console import Console
 
@@ -98,7 +99,9 @@ class SummaryModel(BaseSummaryModel):
 
     def __init__(
         self,
-        model: Union[str, "KnownModelName"] = "openai/gpt-4o-mini",
+        model: Union[
+            str, "KnownModelName", "instructor.AsyncInstructor"
+        ] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
         checkpoint_filename: str = "summaries",
         console: Optional[Console] = None,
@@ -110,11 +113,22 @@ class SummaryModel(BaseSummaryModel):
         Per-use configuration (schemas, prompts, temperature) are method parameters.
 
         Args:
-            model: model identifier (e.g., "openai/gpt-4o-mini")
+            model: model identifier (e.g., "openai/gpt-4o-mini") or instructor client
             max_concurrent_requests: Maximum concurrent API requests
             cache: Caching strategy to use (optional)
         """
-        self.model = model
+        import instructor
+
+        # Handle both string model names and instructor client instances
+        if isinstance(model, str):
+            self.client = instructor.from_provider(model, async_client=True)
+        if isinstance(model, instructor.AsyncInstructor):
+            self.client = model
+        else:
+            raise ValueError(
+                f"Invalid model type of type({type(model)}). Expected str or instructor.AsyncInstructor."
+            )
+
         self.max_concurrent_requests = max_concurrent_requests
         self._checkpoint_filename = checkpoint_filename
         self.console = console
@@ -124,7 +138,7 @@ class SummaryModel(BaseSummaryModel):
 
         cache_info = type(self.cache).__name__ if self.cache else "None"
         logger.info(
-            f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, cache={cache_info}"
+            f"Initialized SummaryModel with client={self.client}, max_concurrent_requests={max_concurrent_requests}, cache={cache_info}"
         )
 
     @property
@@ -201,12 +215,8 @@ class SummaryModel(BaseSummaryModel):
         self.semaphore = asyncio.Semaphore(self.max_concurrent_requests)
 
         logger.info(
-            f"Starting summarization of {len(conversations)} conversations using model {self.model}"
+            f"Starting summarization of {len(conversations)} conversations using client {self.client}"
         )
-
-        import instructor
-
-        client = instructor.from_provider(self.model, async_client=True)
 
         if not self.console:
             # Simple progress tracking with tqdm
@@ -214,7 +224,7 @@ class SummaryModel(BaseSummaryModel):
                 *[
                     self._summarise_single_conversation(
                         conversation,
-                        client=client,
+                        client=self.client,
                         response_schema=response_schema,
                         prompt=prompt,
                         temperature=temperature,
@@ -228,7 +238,7 @@ class SummaryModel(BaseSummaryModel):
             # Rich console progress tracking with live summary display
             summaries = await self._summarise_with_console(
                 conversations,
-                client=client,
+                client=self.client,
                 response_schema=response_schema,
                 prompt=prompt,
                 temperature=temperature,
@@ -428,7 +438,7 @@ class SummaryModel(BaseSummaryModel):
             for conversation in conversations:
                 coro = self._summarise_single_conversation(
                     conversation,
-                    client=client,
+                    client=self.client,
                     response_schema=response_schema,
                     prompt=prompt,
                     temperature=temperature,
