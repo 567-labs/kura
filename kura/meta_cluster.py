@@ -16,11 +16,13 @@ import re
 from thefuzz import fuzz
 import asyncio
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from instructor.models import KnownModelName
+    import instructor
 
 # Rich imports handled by Kura base class
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from rich.console import Console
 
@@ -84,25 +86,36 @@ class MetaClusterModel(BaseMetaClusterModel):
 
     def __init__(
         self,
+        model: Union[
+            str, "KnownModelName", "instructor.AsyncInstructor"
+        ] = "openai/gpt-4o-mini",
         max_concurrent_requests: int = 50,
-        model: str = "openai/gpt-4o-mini",
         embedding_model: Optional[BaseEmbeddingModel] = None,
         clustering_model: Union[BaseClusteringMethod, None] = None,
         max_clusters: int = 10,
         console: Optional["Console"] = None,
         **kwargs,  # For future use
     ):
+        import instructor
+
         if clustering_model is None:
             from kura.cluster import KmeansClusteringModel
 
             clustering_model = KmeansClusteringModel(12)
 
+        # Handle both string model names and instructor client instances
+        if isinstance(model, str):
+            self.client = instructor.from_provider(model, async_client=True)
+        elif isinstance(model, instructor.AsyncInstructor):
+            # Assume it's an instructor client
+            self.client = model
+        else:
+            raise ValueError(
+                f"Invalid model type of type({type(model)}). Expected str or instructor.AsyncInstructor."
+            )
+
         self.max_concurrent_requests = max_concurrent_requests
         self.sem = Semaphore(max_concurrent_requests)
-
-        import instructor
-
-        self.client = instructor.from_provider(model, async_client=True)
         self.console = console
         self.max_clusters = max_clusters
 
@@ -111,11 +124,10 @@ class MetaClusterModel(BaseMetaClusterModel):
 
         self.embedding_model = embedding_model
         self.clustering_model = clustering_model
-        self.model = model
         self.console = console
 
         logger.info(
-            f"Initialized MetaClusterModel with model={model}, max_concurrent_requests={max_concurrent_requests}, embedding_model={type(embedding_model).__name__}, clustering_model={type(clustering_model).__name__}, max_clusters={max_clusters}"
+            f"Initialized MetaClusterModel with client={self.client}, max_concurrent_requests={max_concurrent_requests}, embedding_model={type(embedding_model).__name__}, clustering_model={type(clustering_model).__name__}, max_clusters={max_clusters}"
         )
 
         # Debug: Check if console is set
